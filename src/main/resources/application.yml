@@ -1,0 +1,103 @@
+spring:
+  application:
+    name: school-management
+
+  profiles:
+    active: dev   # Por defecto arranca con dev (puedes cambiarlo a prod en el server)
+
+---
+
+# ==============================
+# Perfil DEV (localhost)
+# ==============================
+spring:
+  config:
+    activate:
+      on-profile: dev
+
+  datasource:
+    url: jdbc:mysql://localhost:3306/ipet132_db?useSSL=false&serverTimezone=America/Argentina/Buenos_Aires
+    username: root
+    password: root
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: update   # create, create-drop, validate, none, update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.MySQL8Dialect
+
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: tu_correo@gmail.com
+    password: tu_password_app   # usar app password, no el personal
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+
+  security:
+    jwt:
+      secret: "my-secret-key-change-in-prod"
+      expiration: 3600000   # 1 hora en ms
+
+server:
+  port: 8080
+
+---
+
+# ==============================
+# Perfil PROD (despliegue en server / nube)
+# ==============================
+spring:
+  config:
+    activate:
+      on-profile: prod
+
+  datasource:
+    url: jdbc:mysql://prod-db:3306/ipet132_db?useSSL=true&serverTimezone=UTC
+    username: ${DB_USER}
+    password: ${DB_PASSWORD}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: validate   # En producción no modificamos el schema
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQL8Dialect
+
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: ${MAIL_USER}
+    password: ${MAIL_PASSWORD}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true   # útil si la DB ya tiene datos
+
+    security:
+      jwt:
+        secret: "my-secret-key-change-in-prod"
+        expiration:
+          access: 3600000      # 1 hora
+          refresh: 604800000   # 7 días
+          confirmation: 900000 # 15 min   # 1 hora en ms
+
+server:
+  port: 8080
