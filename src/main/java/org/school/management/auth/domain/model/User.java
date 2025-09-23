@@ -9,7 +9,6 @@ import org.school.management.auth.domain.valueobject.RoleName;
 import org.school.management.auth.domain.valueobject.UserId;
 import org.school.management.shared.domain.valueobjects.Email;
 import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import java.time.LocalDateTime;
 import java.util.Collection;
@@ -25,7 +24,7 @@ import java.util.stream.Collectors;
 public class User implements UserDetails {
 
     @EqualsAndHashCode.Include
-    private UserId id;
+    private UserId userId;
 
     private Email email;
 

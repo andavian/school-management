@@ -8,6 +8,7 @@ import io.jsonwebtoken.security.Keys;
 import io.jsonwebtoken.security.SignatureException;
 import lombok.extern.slf4j.Slf4j;
 import org.school.management.auth.domain.model.User;
+import org.school.management.auth.domain.valueobject.UserId;
 import org.school.management.auth.infra.security.exception.InvalidTokenException;
 import org.school.management.auth.infra.security.exception.TokenExpiredException;
 import org.school.management.auth.infra.security.exception.TokenProcessingException;
@@ -44,7 +45,7 @@ public class JwtTokenProvider {
         return Keys.hmacShaKeyFor(jwtSecret.getBytes());
     }
 
-    private String buildToken(UUID userId, String username, Map<String, Object> claims, long expirationMillis) {
+    private String buildToken(UserId userId, String username, Map<String, Object> claims, long expirationMillis) {
         claims.put("userId", userId.toString());
 
         return Jwts.builder()

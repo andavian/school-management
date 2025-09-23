@@ -1,29 +1,32 @@
 package org.school.management.auth.domain.valueobject;
 
 import lombok.*;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import java.util.Set;
 
-@Value                                     // Inmutable
-public class RoleName {
+@Value
+public class RoleName implements GrantedAuthority {
+
+
     private static final Set<String> VALID_ROLES = Set.of(
             "ADMIN", "TEACHER", "STUDENT", "PARENT", "STAFF"
     );
 
-    String value;
+    String name;
 
-    private RoleName(String value) {
-        if (value == null || value.trim().isEmpty()) {
+    private RoleName(String name) {
+        if (name == null || name.trim().isEmpty()) {
             throw new IllegalArgumentException("Role name cannot be null or empty");
         }
 
-        String upperValue = value.trim().toUpperCase();
+        String upperValue = name.trim().toUpperCase();
 
         if (!VALID_ROLES.contains(upperValue)) {
-            throw new IllegalArgumentException("Invalid role name: " + value + ". Valid roles: " + VALID_ROLES);
+            throw new IllegalArgumentException("Invalid role name: " + name + ". Valid roles: " + VALID_ROLES);
         }
 
-        this.value = upperValue;
+        this.name = upperValue;
     }
 
     public static RoleName of(String value) {
@@ -52,18 +55,28 @@ public class RoleName {
     }
 
     public boolean isAdmin() {
-        return "ADMIN".equals(value);
+        return "ADMIN".equals(name);
     }
 
     public boolean isTeacher() {
-        return "TEACHER".equals(value);
+        return "TEACHER".equals(name);
     }
 
     public boolean isStudent() {
-        return "STUDENT".equals(value);
+        return "STUDENT".equals(name);
     }
 
     public SimpleGrantedAuthority toAuthority() {
-        return new SimpleGrantedAuthority(this.getValue());
+        return new SimpleGrantedAuthority(this.getName());
     }
-}
+
+           @Override
+        public String getAuthority() {
+            return "ROLE_" + name;  // convención de Spring Security
+        }
+
+        @Override
+        public String toString() {
+            return name;
+        }
+    }
