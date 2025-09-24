@@ -1,26 +1,26 @@
-package org.school.management.auth.infra.persistence.mapper;
+package org.school.management.auth.infra.persistence.mappers;
 
 import org.school.management.auth.domain.model.User;
 import org.school.management.auth.domain.valueobject.*;
 import org.school.management.auth.infra.persistence.entity.UserEntity;
-import org.mapstruct.*;
 import org.school.management.shared.domain.valueobjects.Email;
-
+import org.mapstruct.*;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Mapper(componentModel = "spring")
 public interface AuthPersistenceMapper {
+
     // Domain → Entity (para save)
-    @Mapping(source = "id.value", target = "id")
+    @Mapping(source = "userId.value", target = "userId")
     @Mapping(source = "email.value", target = "email")
     @Mapping(source = "password.value", target = "password")
     @Mapping(source = "roles", target = "roles", qualifiedByName = "rolesToString")
     UserEntity toEntity(User user);
 
     // Entity → Domain (para queries)
-    @Mapping(source = "id", target = "id", qualifiedByName = "uuidToUserId")
+    @Mapping(source = "userId", target = "userId", qualifiedByName = "uuidToUserId")
     @Mapping(source = "email", target = "email", qualifiedByName = "stringToEmail")
     @Mapping(source = "password", target = "password", qualifiedByName = "stringToHashedPassword")
     @Mapping(source = "roles", target = "roles", qualifiedByName = "stringToRoles")
@@ -30,7 +30,7 @@ public interface AuthPersistenceMapper {
     @Named("rolesToString")
     default String rolesToString(Set<RoleName> roles) {
         return roles.stream()
-                .map(RoleName::getValue)
+                .map(RoleName::getName)
                 .collect(Collectors.joining(","));
     }
 
@@ -62,4 +62,3 @@ public interface AuthPersistenceMapper {
         return HashedPassword.of(hashedPassword);
     }
 }
-
