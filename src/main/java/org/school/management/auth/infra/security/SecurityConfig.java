@@ -55,13 +55,13 @@ public class SecurityConfig {
     // ============================================
     // CORS configurable por environment
     // ============================================
-    @Value("${app.cors.allowed-origins:http://localhost:3000,http://localhost:5173}")
+    @Value("${app.cors.allowed-origins}")
     private List<String> allowedOrigins;
 
-    @Value("${app.cors.allowed-methods:GET,POST,PUT,PATCH,DELETE,OPTIONS}")
+    @Value("${app.cors.allowed-methods}")
     private List<String> allowedMethods;
 
-    @Value("${app.cors.max-age:3600}")
+    @Value("${app.cors.max-age}")
     private Long corsMaxAge;
 
     private final AuthenticationProvider authenticationProvider;

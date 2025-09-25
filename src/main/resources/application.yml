@@ -1,12 +1,10 @@
 spring:
   application:
     name: school-management
-
   profiles:
-    active: dev   # Por defecto arranca con dev (puedes cambiarlo a prod en el server)
+    active: dev # Por defecto arranca con dev (puedes cambiarlo a prod en el server)
 
 ---
-
 # ==============================
 # Perfil DEV (localhost)
 # ==============================
@@ -23,7 +21,7 @@ spring:
 
   jpa:
     hibernate:
-      ddl-auto: update   # create, create-drop, validate, none, update
+      ddl-auto: update # create, create-drop, validate, none, update
     show-sql: true
     properties:
       hibernate:
@@ -34,7 +32,7 @@ spring:
     host: smtp.gmail.com
     port: 587
     username: tu_correo@gmail.com
-    password: tu_password_app   # usar app password, no el personal
+    password: tu_password_app # usar app password, no el personal
     properties:
       mail:
         smtp:
@@ -42,16 +40,62 @@ spring:
           starttls:
             enable: true
 
-  security:
-    jwt:
-      secret: "my-secret-key-change-in-prod"
-      expiration: 3600000   # 1 hora en ms
 
 server:
   port: 8080
 
----
+# ============================================
+# Configuración de la aplicación
+# ============================================
+app:
+  # Configuración CORS para desarrollo
+  cors:
+    allowed-origins:
+      - "http://localhost:3000"
+      - "http://localhost:5173"
+      - "http://localhost:4321"
+      - "http://localhost:8090"
+      - "http://127.0.0.1:*"
+    allowed-methods:
+      - GET
+      - POST
+      - PUT
+      - PATCH
+      - DELETE
+      - OPTIONS
+    allowed-headers:
+      - "*"
+    exposed-headers:
+      - "Authorization"
+      - "X-Total-Count"
+    allow-credentials: true
+    max-age: 0 # Sin cache en desarrollo
 
+  # Configuración JWT mejorada
+  security:
+    jwt:
+      secret-key: "dev-secret-key-change-in-prod-must-be-256-bits-long"
+      access-token-expiration: 3600    # 1 hora en segundos
+      refresh-token-expiration: 86400  # 24 horas en segundos
+      issuer: "school-management-dev"
+
+  # Configuración específica de la escuela
+  school:
+    name: "IPET 132"
+    institutional-email-domain: "ipet132.edu.ar"
+    default-student-role: "STUDENT"
+    default-teacher-role: "TEACHER"
+
+# Logging para desarrollo
+logging:
+  level:
+    org.school.management: DEBUG
+    org.springframework.security: DEBUG
+    org.hibernate.SQL: DEBUG
+  pattern:
+    console: "%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
+
+---
 # ==============================
 # Perfil PROD (despliegue en server / nube)
 # ==============================
@@ -61,18 +105,28 @@ spring:
       on-profile: prod
 
   datasource:
-    url: jdbc:mysql://prod-db:3306/ipet132_db?useSSL=true&serverTimezone=UTC
+    url: jdbc:mysql://${DB_HOST:prod-db}:${DB_PORT:3306}/${DB_NAME:ipet132_db}?useSSL=true&serverTimezone=UTC
     username: ${DB_USER}
     password: ${DB_PASSWORD}
     driver-class-name: com.mysql.cj.jdbc.Driver
+    # Configuración del pool de conexiones para producción
+    hikari:
+      maximum-pool-size: 20
+      minimum-idle: 5
+      idle-timeout: 300000
+      max-lifetime: 600000
 
   jpa:
     hibernate:
-      ddl-auto: validate   # En producción no modificamos el schema
+      ddl-auto: validate # En producción no modificamos el schema
     show-sql: false
     properties:
       hibernate:
         dialect: org.hibernate.dialect.MySQL8Dialect
+        jdbc:
+          batch_size: 25
+        order_inserts: true
+        order_updates: true
 
   mail:
     host: smtp.gmail.com
@@ -89,15 +143,136 @@ spring:
   flyway:
     enabled: true
     locations: classpath:db/migration
-    baseline-on-migrate: true   # útil si la DB ya tiene datos
+    baseline-on-migrate: true # útil si la DB ya tiene datos
 
-    security:
-      jwt:
-        secret: "my-secret-key-change-in-prod"
-        expiration:
-          access: 3600000      # 1 hora
-          refresh: 604800000   # 7 días
-          confirmation: 900000 # 15 min   # 1 hora en ms
 
 server:
-  port: 8080
+  port: ${PORT:8080}
+  # Configuración de seguridad para producción
+  servlet:
+    session:
+      timeout: 30m
+  compression:
+    enabled: true
+  http2:
+    enabled: true
+
+# ============================================
+# Configuración CORS para PRODUCCIÓN
+# ============================================
+app:
+  cors:
+    allowed-origins:
+      - "https://${FRONTEND_DOMAIN:tu-frontend.vercel.app}"
+      - "https://admin.${FRONTEND_DOMAIN:tu-frontend.vercel.app}"
+
+    allowed-methods:
+      - GET
+      - POST
+      - PUT
+      - PATCH
+      - DELETE
+      - OPTIONS
+    allowed-headers:
+      - "Content-Type"
+      - "Authorization"
+      - "Accept"
+      - "Origin"
+      - "X-Requested-With"
+    exposed-headers:
+      - "Authorization"
+      - "X-Total-Count"
+      - "Access-Control-Allow-Origin"
+    allow-credentials: true
+    max-age: 7200 # 2 horas de cache en producción
+
+  # Configuración JWT para producción
+  security:
+    jwt:
+      secret-key: ${JWT_SECRET_KEY} # DEBE ser variable de entorno
+      access-token-expiration: 3600    # 1 hora
+      refresh-token-expiration: 604800 # 7 días
+      issuer: "school-management-prod"
+
+  # Configuración específica de la escuela
+  school:
+    name: "IPET 132"
+    institutional-email-domain: "ipet132.edu.ar"
+    default-student-role: "STUDENT"
+    default-teacher-role: "TEACHER"
+
+# Logging para producción
+logging:
+  level:
+    org.school.management: INFO
+    org.springframework.security: WARN
+    org.hibernate.SQL: WARN
+  file:
+    name: logs/school-management.log
+  pattern:
+    file: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
+
+# Configuración de actuator para monitoreo
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+      base-path: /actuator
+  endpoint:
+    health:
+      show-details: when-authorized
+  info:
+    build:
+      enabled: true
+    git:
+      enabled: true
+
+---
+# ==============================
+# Perfil TEST (para testing)
+# ==============================
+spring:
+  config:
+    activate:
+      on-profile: test
+
+  datasource:
+    url: jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    username: sa
+    password:
+    driver-class-name: org.h2.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.H2Dialect
+
+  mail:
+    host: localhost
+    port: 1025 # Mailhog para testing
+
+app:
+  security:
+    jwt:
+      secret-key: "test-secret-key-for-testing-only"
+      access-token-expiration: 3600
+      refresh-token-expiration: 86400
+      issuer: "school-management-test"
+
+  cors:
+    allowed-origins:
+      - "*"
+    allowed-methods:
+      - "*"
+    allowed-headers:
+      - "*"
+    allow-credentials: false
+    max-age: 0
+
+logging:
+  level:
+    org.school.management: WARN
