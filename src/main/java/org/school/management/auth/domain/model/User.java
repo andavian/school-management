@@ -7,6 +7,7 @@ import org.school.management.auth.domain.valueobject.HashedPassword;
 import org.school.management.auth.domain.valueobject.PlainPassword;
 import org.school.management.auth.domain.valueobject.RoleName;
 import org.school.management.auth.domain.valueobject.UserId;
+import org.school.management.shared.domain.valueobjects.DNI;
 import org.school.management.shared.domain.valueobjects.Email;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -26,7 +27,7 @@ public class User implements UserDetails {
     @EqualsAndHashCode.Include
     private UserId userId;
 
-    private Email email;
+    private DNI dni;
 
     private HashedPassword password;
 
@@ -48,11 +49,11 @@ public class User implements UserDetails {
     // Factory Methods
     // ============================================
 
-    public static User create(Email email, PlainPassword plainPassword,
+    public static User create(DNI dni, PlainPassword plainPassword,
                               Set<RoleName> roles, HashedPassword.PasswordEncoder encoder) {
         return new User(
                 UserId.generate(),
-                email,
+                dni,
                 plainPassword.hash(encoder),
                 new HashSet<>(roles),
                 true,
@@ -62,11 +63,11 @@ public class User implements UserDetails {
         );
     }
 
-    public static User reconstruct(UserId id, Email email, HashedPassword hashedPassword,
+    public static User reconstruct(UserId id, DNI dni, HashedPassword hashedPassword,
                                    Set<RoleName> roles, boolean isActive,
                                    LocalDateTime createdAt, LocalDateTime lastLoginAt,
                                    LocalDateTime updatedAt) {
-        return new User(id, email, hashedPassword, new HashSet<>(roles),
+        return new User(id, dni, hashedPassword, new HashSet<>(roles),
                 isActive, createdAt, lastLoginAt, updatedAt);
     }
 
@@ -121,6 +122,10 @@ public class User implements UserDetails {
         this.updatedAt = LocalDateTime.now();
     }
 
+    // ============================================
+    // Role Methods
+    // ============================================
+
     public boolean hasRole(RoleName role) {
         return this.roles.contains(role);
     }
@@ -139,6 +144,10 @@ public class User implements UserDetails {
 
     public boolean isStudent() {
         return hasRole(RoleName.student());
+    }
+
+    public boolean isParent() {
+        return hasRole(RoleName.parent());
     }
 
     private void recordLogin() {
@@ -163,7 +172,7 @@ public class User implements UserDetails {
 
     @Override
     public String getUsername() {
-         return email.getValue(); // Se usa email en lugar de username
+         return dni.getValue(); // Se usa email en lugar de username
         }
 
     @Override

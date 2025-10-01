@@ -9,7 +9,7 @@ import java.util.UUID;
 @Table(name = "blacklisted_tokens", indexes = {
         @Index(name = "idx_token_hash", columnList = "token_hash", unique = true),
         @Index(name = "idx_expires_at", columnList = "expires_at"),
-        @Index(name = "idx_user_email", columnList = "user_email"),
+        @Index(name = "idx_user_dni", columnList = "user_dni"),
         @Index(name = "idx_token_type", columnList = "token_type"),
         @Index(name = "idx_blacklisted_at", columnList = "blacklisted_at")
 })
@@ -41,8 +41,8 @@ public class BlacklistedTokenEntity {
     @Column(name = "reason", length = 100)
     private String reason;
 
-    @Column(name = "user_email", nullable = false, length = 254)
-    private String userEmail;
+    @Column(name = "user_dni", nullable = false, length = 20)
+    private String userDni;
 
     @PrePersist
     protected void onCreate() {

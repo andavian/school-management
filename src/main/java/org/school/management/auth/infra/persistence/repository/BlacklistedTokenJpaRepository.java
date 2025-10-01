@@ -17,10 +17,10 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.stream.Collectors;
+
 
 // JPA Repository Interface
-interface BlacklistedTokenJpaRepository extends JpaRepository<BlacklistedTokenEntity, UUID> {
+public interface BlacklistedTokenJpaRepository extends JpaRepository<BlacklistedTokenEntity, UUID> {
 
     Optional<BlacklistedTokenEntity> findByTokenHash(String tokenHash);
 

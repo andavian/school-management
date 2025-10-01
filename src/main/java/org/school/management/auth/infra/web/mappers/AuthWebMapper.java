@@ -1,8 +1,19 @@
 package org.school.management.auth.infra.web.mappers;
 
-import org.school.management.auth.infra.web.dto.*;
-import org.school.management.auth.application.dto.*;
+import org.school.management.auth.application.dto.requests.ChangePasswordRequest;
+import org.school.management.auth.application.dto.requests.CreateTeacherRequest;
+import org.school.management.auth.application.dto.requests.CreateUserRequest;
+import org.school.management.auth.application.dto.requests.LoginRequest;
+import org.school.management.auth.application.dto.responses.CreateTeacherResponse;
+import org.school.management.auth.application.dto.responses.LoginResponse;
+import org.school.management.auth.application.dto.responses.UserResponse;
 import org.mapstruct.*;
+import org.school.management.auth.infra.web.dto.requests.ChangePasswordApiRequest;
+import org.school.management.auth.infra.web.dto.requests.CreateTeacherApiRequest;
+import org.school.management.auth.infra.web.dto.requests.CreateUserApiRequest;
+import org.school.management.auth.infra.web.dto.requests.LoginApiRequest;
+import org.school.management.auth.infra.web.dto.response.*;
+
 import java.time.LocalDateTime;
 
 @Mapper(componentModel = "spring")
@@ -13,28 +24,39 @@ public interface AuthWebMapper {
 
     LoginRequest toApplicationDto(LoginApiRequest apiRequest);
 
-    @Mapping(source = "currentPassword", target = "currentPassword")
-    @Mapping(source = "newPassword", target = "newPassword")
-    @Mapping(target = "userId", ignore = true) // Se setea en el controller desde el token
+    CreateTeacherRequest toApplicationDto(CreateTeacherApiRequest apiRequest);
+
+    @Mapping(target = "userId", ignore = true)
     ChangePasswordRequest toApplicationDto(ChangePasswordApiRequest apiRequest);
 
-    // Application Responses → API Responses
-    UserApiResponse toApiResponse(UserResponse userResponse);
+        UserApiResponse toApiResponse(UserResponse userResponse);
 
     @Mapping(source = "token", target = "accessToken")
     @Mapping(constant = "Bearer", target = "tokenType")
     LoginApiResponse toApiResponse(LoginResponse loginResponse);
 
-    // Utility methods
-    @Mapping(constant = "true", target = "success")
-    @Mapping(expression = "java(java.time.LocalDateTime.now().toString())", target = "timestamp")
-    SuccessApiResponse toSuccessResponse(String message);
+    CreateTeacherApiResponse toApiResponse(CreateTeacherResponse response);
 
+    // Utility methods para records
+
+    // Utility methods para records
     default SuccessApiResponse createSuccessResponse(String message) {
-        return SuccessApiResponse.builder()
-                .success(true)
-                .message(message)
-                .timestamp(LocalDateTime.now().toString())
-                .build();
+        return new SuccessApiResponse(
+                true,
+                message,
+                LocalDateTime.now().toString()
+        );
+    }
+
+    default ErrorApiResponse createErrorResponse(String message, String errorCode, String path) {
+        return new ErrorApiResponse(
+                false,
+                message,
+                errorCode,
+                LocalDateTime.now(),
+                path,
+                java.util.List.of()
+        );
     }
 }
+

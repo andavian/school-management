@@ -2,8 +2,8 @@ package org.school.management.auth.application.usecases;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.school.management.auth.application.dto.BlacklistTokenRequest;
-import org.school.management.auth.application.dto.BlacklistedTokenResponse;
+import org.school.management.auth.application.dto.requests.BlacklistTokenRequest;
+import org.school.management.auth.application.dto.responses.BlacklistedTokenResponse;
 import org.school.management.auth.application.mappers.BlacklistedTokenApplicationMapper;
 import org.school.management.auth.domain.model.BlacklistedToken;
 import org.school.management.auth.domain.repository.BlacklistedTokenRepository;

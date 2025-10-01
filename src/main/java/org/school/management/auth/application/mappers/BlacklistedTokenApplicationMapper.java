@@ -1,10 +1,9 @@
 package org.school.management.auth.application.mappers;
 
+import org.school.management.auth.application.dto.requests.BlacklistTokenRequest;
+import org.school.management.auth.application.dto.responses.BlacklistedTokenResponse;
 import org.school.management.auth.domain.model.BlacklistedToken;
-import org.school.management.auth.domain.valueobject.BlacklistedTokenId;
-import org.school.management.auth.application.dto.*;
 import org.mapstruct.*;
-import java.time.LocalDateTime;
 
 @Mapper(componentModel = "spring")
 public interface BlacklistedTokenApplicationMapper {
@@ -16,11 +15,11 @@ public interface BlacklistedTokenApplicationMapper {
 
     default BlacklistedToken toDomain(BlacklistTokenRequest request) {
         return BlacklistedToken.create(
-                request.getTokenHash(),
-                request.getTokenType(),
-                request.getExpiresAt(),
-                request.getReason(),
-                request.getUserEmail()
+                request.tokenHash(),
+                request.tokenType(),
+                request.expiresAt(),
+                request.reason(),
+                request.userEmail()
         );
     }
 }
