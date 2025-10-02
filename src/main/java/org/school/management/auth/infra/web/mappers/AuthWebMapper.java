@@ -1,17 +1,12 @@
 package org.school.management.auth.infra.web.mappers;
 
-import org.school.management.auth.application.dto.requests.ChangePasswordRequest;
-import org.school.management.auth.application.dto.requests.CreateTeacherRequest;
-import org.school.management.auth.application.dto.requests.CreateUserRequest;
-import org.school.management.auth.application.dto.requests.LoginRequest;
+import org.school.management.auth.application.dto.requests.*;
+import org.school.management.auth.application.dto.responses.CreateStudentResponse;
 import org.school.management.auth.application.dto.responses.CreateTeacherResponse;
 import org.school.management.auth.application.dto.responses.LoginResponse;
 import org.school.management.auth.application.dto.responses.UserResponse;
 import org.mapstruct.*;
-import org.school.management.auth.infra.web.dto.requests.ChangePasswordApiRequest;
-import org.school.management.auth.infra.web.dto.requests.CreateTeacherApiRequest;
-import org.school.management.auth.infra.web.dto.requests.CreateUserApiRequest;
-import org.school.management.auth.infra.web.dto.requests.LoginApiRequest;
+import org.school.management.auth.infra.web.dto.requests.*;
 import org.school.management.auth.infra.web.dto.response.*;
 
 import java.time.LocalDateTime;
@@ -26,10 +21,12 @@ public interface AuthWebMapper {
 
     CreateTeacherRequest toApplicationDto(CreateTeacherApiRequest apiRequest);
 
+    CreateStudentRequest toApplicationDto(CreateStudentApiRequest apiRequest);
+
     @Mapping(target = "userId", ignore = true)
     ChangePasswordRequest toApplicationDto(ChangePasswordApiRequest apiRequest);
 
-        UserApiResponse toApiResponse(UserResponse userResponse);
+    UserApiResponse toApiResponse(UserResponse userResponse);
 
     @Mapping(source = "token", target = "accessToken")
     @Mapping(constant = "Bearer", target = "tokenType")
@@ -37,7 +34,7 @@ public interface AuthWebMapper {
 
     CreateTeacherApiResponse toApiResponse(CreateTeacherResponse response);
 
-    // Utility methods para records
+    CreateStudentApiResponse toApiResponse(CreateStudentResponse response);
 
     // Utility methods para records
     default SuccessApiResponse createSuccessResponse(String message) {

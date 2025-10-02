@@ -1,26 +1,32 @@
 package org.school.management.auth.application.mappers;
 
+import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
+import org.mapstruct.Named;
 import org.school.management.auth.application.dto.requests.CreateStudentRequest;
 import org.school.management.auth.application.dto.requests.CreateTeacherRequest;
 import org.school.management.auth.application.dto.responses.LoginResponse;
 import org.school.management.auth.application.dto.responses.UserResponse;
 import org.school.management.auth.domain.model.User;
-import org.school.management.auth.domain.valueobject.*;
-import org.school.management.shared.domain.valueobjects.Email;
-import org.mapstruct.*;
+import org.school.management.auth.domain.valueobject.HashedPassword;
+import org.school.management.auth.domain.valueobject.PlainPassword;
+import org.school.management.auth.domain.valueobject.RoleName;
+import org.school.management.auth.domain.valueobject.UserId;
+import org.school.management.shared.domain.valueobjects.DNI;
+
 import java.util.Set;
 import java.util.stream.Collectors;
 
 @Mapper(componentModel = "spring")
 public interface AuthApplicationMapper {
 
-    // User → UserResponse (para consultas)
+    // User → UserResponse - ACTUALIZADO
     @Mapping(source = "userId.value", target = "userId")
-    @Mapping(source = "email.value", target = "email")
+    @Mapping(source = "dni.value", target = "dni")                              // ← NUEVO
     @Mapping(source = "roles", target = "roles", qualifiedByName = "rolesToStrings")
     UserResponse toUserResponse(User user);
 
-    // User + Token → LoginResponse (para login)
+    // User + Token → LoginResponse
     @Mapping(source = "user", target = "user")
     @Mapping(source = "token", target = "token")
     @Mapping(source = "refreshToken", target = "refreshToken")
@@ -28,9 +34,9 @@ public interface AuthApplicationMapper {
     @Mapping(constant = "Bearer", target = "tokenType")
     LoginResponse toLoginResponse(User user, String token, String refreshToken);
 
-    // Strings → Domain Value Objects (para Use Cases)
-    default Email toEmail(String email) {
-        return Email.of(email);
+    // String conversions para Use Cases - ACTUALIZADOS
+    default DNI toDni(String dni) {                                             // ← NUEVO
+        return DNI.of(dni);
     }
 
     default PlainPassword toPlainPassword(String password) {
@@ -47,27 +53,6 @@ public interface AuthApplicationMapper {
         return UserId.from(userId);
     }
 
-    default User createTeacherFromRequest(CreateTeacherRequest request,
-                                          PlainPassword password,
-                                          HashedPassword.PasswordEncoder encoder) {
-        Email email = Email.of(request.email()); // Usar método accessor del record
-        Set<RoleName> roles = Set.of(RoleName.teacher());
-
-        User teacher = User.create(email, password, roles, encoder);
-        teacher.deactivate(); // Los profesores inician inactivos
-
-        return teacher;
-    }
-
-    default User createStudentFromRequest(CreateStudentRequest request,
-                                          PlainPassword password,
-                                          HashedPassword.PasswordEncoder encoder) {
-        Email email = Email.of(request.email()); // Usar método accessor del record
-        Set<RoleName> roles = Set.of(RoleName.student());
-
-        return User.create(email, password, roles, encoder);
-    }
-
     // Helper methods
     @Named("rolesToStrings")
     default Set<String> rolesToStrings(Set<RoleName> roles) {
@@ -75,4 +60,28 @@ public interface AuthApplicationMapper {
                 .map(RoleName::getName)
                 .collect(Collectors.toSet());
     }
-}
+
+    // Factory methods para User - ACTUALIZADOS
+    default User createTeacherFromRequest(CreateTeacherRequest request,
+                                          PlainPassword password,
+                                          HashedPassword.PasswordEncoder encoder) {
+        DNI dni = DNI.of(request.dni());
+        Set<RoleName> roles = Set.of(RoleName.teacher());
+
+        User teacher = User.create(dni, password, roles, encoder);
+        teacher.deactivate(); // Inician inactivos hasta confirmar email
+
+        return teacher;
+    }
+
+    default User createStudentFromRequest(CreateStudentRequest request,
+                                          PlainPassword password,
+                                          HashedPassword.PasswordEncoder encoder) {
+        DNI dni = DNI.of(request.dni());
+        Set<RoleName> roles = Set.of(RoleName.student());
+
+
+        return User.create(dni, password, roles, encoder);
+
+        }
+    }
