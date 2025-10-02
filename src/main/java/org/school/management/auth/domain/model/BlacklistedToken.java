@@ -26,7 +26,7 @@ public class BlacklistedToken {
 
     private String reason; // Razón del blacklist: LOGOUT, PASSWORD_CHANGED, ACCOUNT_DISABLED, etc.
 
-    private String userEmail; // Para auditoría
+    private String userDni; // Para auditoría
 
     // ============================================
     // Factory Methods

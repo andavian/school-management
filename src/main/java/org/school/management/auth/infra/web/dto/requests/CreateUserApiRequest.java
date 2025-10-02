@@ -4,10 +4,9 @@ import jakarta.validation.constraints.*;
 import java.util.Set;
 
 public record CreateUserApiRequest(
-            @NotBlank(message = "Email is required")
-            @Email(message = "Email must be valid")
-            @Size(max = 254, message = "Email cannot exceed 254 characters")
-            String email,
+            @NotBlank(message = "DNI es requerido")
+            @Pattern(regexp = "^\\d{7,8}$", message = "DNI debe tener 7 u 8 dígitos")
+            String dni,
 
             @NotBlank(message = "Password is required")
             @Size(min = 8, max = 128, message = "Password must be between 8 and 128 characters")

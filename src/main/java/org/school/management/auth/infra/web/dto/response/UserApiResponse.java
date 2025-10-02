@@ -6,7 +6,7 @@ import java.util.Set;
 // UserApiResponse.java
 public record UserApiResponse(
         String userId,
-        String email,
+        String dni,
         Set<String> roles,
         boolean isActive,
         LocalDateTime createdAt,
