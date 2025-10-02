@@ -2,7 +2,6 @@ package org.school.management.auth.application.usecases.admin;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.school.management.auth.application.dto.*;
 import org.school.management.auth.application.dto.requests.CreateStudentRequest;
 import org.school.management.auth.application.dto.responses.CreateStudentResponse;
 import org.school.management.auth.application.mappers.AuthApplicationMapper;
@@ -10,6 +9,7 @@ import org.school.management.auth.domain.model.User;
 import org.school.management.auth.domain.repository.UserRepository;
 import org.school.management.auth.domain.valueobject.HashedPassword;
 import org.school.management.auth.domain.valueobject.PlainPassword;
+import org.school.management.shared.domain.valueobjects.DNI;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,37 +23,52 @@ public class CreateStudentUseCase {
     private final HashedPassword.PasswordEncoder passwordEncoder;
 
     @Transactional
-    public CreateStudentResponse execute(CreateStudentRequest request) { // Record como parámetro
-        // Acceso a campos del record con métodos accessor
-        var email = mapper.toEmail(request.email());
+    public CreateStudentResponse execute(CreateStudentRequest request) {
+        log.info("Creando estudiante: {} {} - DNI: {}",
+                request.firstName(), request.lastName(), request.dni());
 
-        if (userRepository.existsByEmail(email)) {
-            throw new EmailAlreadyExistsException("Ya existe un usuario con este email: " + request.email());
+        // Validar DNI único
+        DNI dni = mapper.toDni(request.dni());
+
+        if (userRepository.existsByDni(dni)) {
+            log.warn("Intento de crear estudiante con DNI existente: {}", request.dni());
+            throw new DniAlreadyExistsException("Ya existe un usuario con este DNI: " + request.dni());
         }
 
-        // Generar password inicial
-        var initialPassword = PlainPassword.of(generateStudentPassword(request.dni()));
+        // Generar password inicial: DNI + sufijo del colegio
+        String initialPasswordStr = generateStudentPassword(request.dni());
+        PlainPassword initialPassword = PlainPassword.of(initialPasswordStr);
 
-        // Crear usuario usando factory method
+        // Crear usuario estudiante usando factory method del mapper
         User student = mapper.createStudentFromRequest(request, initialPassword, passwordEncoder);
+
+        // Los estudiantes están activos desde el inicio
+        student.activate();
+
+        // Guardar
         User savedStudent = userRepository.save(student);
 
-        log.info("Estudiante creado: {} - {}", request.email(), request.firstName());
+        log.info("Estudiante creado exitosamente. DNI: {} - ID: {}",
+                request.dni(), savedStudent.getUserId().asString());
 
-        // Retornar record directamente
+        // TODO: Enviar credenciales a email del padre si está disponible
+        if (request.parentEmail() != null && !request.parentEmail().isEmpty()) {
+            log.info("Enviar credenciales a padre: {}", request.parentEmail());
+        }
+
         return new CreateStudentResponse(
                 savedStudent.getUserId().asString(),
-                savedStudent.getEmail().getValue(),
-                initialPassword.getValue()
+                savedStudent.getDni().getValue(),
+                initialPasswordStr
         );
     }
 
     private String generateStudentPassword(String dni) {
-        return dni + "Ipet132!";
+        return dni + "ipet#xyz";
     }
 
-    public static class EmailAlreadyExistsException extends RuntimeException {
-        public EmailAlreadyExistsException(String message) {
+    public static class DniAlreadyExistsException extends RuntimeException {
+        public DniAlreadyExistsException(String message) {
             super(message);
         }
     }

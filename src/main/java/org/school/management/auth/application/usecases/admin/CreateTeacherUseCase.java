@@ -7,12 +7,14 @@ import org.school.management.auth.application.dto.responses.CreateTeacherRespons
 import org.school.management.auth.application.mappers.AuthApplicationMapper;
 import org.school.management.auth.domain.model.User;
 import org.school.management.auth.domain.repository.UserRepository;
-import org.school.management.auth.domain.valueobject.*;
-import org.school.management.shared.domain.valueobjects.Email;
+import org.school.management.auth.domain.valueobject.HashedPassword;
+import org.school.management.auth.domain.valueobject.PlainPassword;
+import org.school.management.auth.infra.security.JwtTokenProvider;
+import org.school.management.shared.domain.valueobjects.DNI;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Set;
+import java.security.SecureRandom;
 
 @Service
 @RequiredArgsConstructor
@@ -22,59 +24,70 @@ public class CreateTeacherUseCase {
     private final UserRepository userRepository;
     private final AuthApplicationMapper mapper;
     private final HashedPassword.PasswordEncoder passwordEncoder;
-    private final EmailService emailService; // Para enviar invitación
+    private final JwtTokenProvider jwtTokenProvider;
 
     @Transactional
     public CreateTeacherResponse execute(CreateTeacherRequest request) {
-        Email email = Email.of(request.getEmail());
+        log.info("Creando profesor: {} {} - DNI: {}",
+                request.firstName(), request.lastName(), request.dni());
 
-        // Verificar que no exista
-        if (userRepository.existsByEmail(email)) {
-            throw new EmailAlreadyExistsException("Ya existe un usuario con este email: " + request.getEmail());
+        // Validar DNI único
+        DNI dni = mapper.toDni(request.dni());
+
+        if (userRepository.existsByDni(dni)) {
+            log.warn("Intento de crear profesor con DNI existente: {}", request.dni());
+            throw new DniAlreadyExistsException("Ya existe un usuario con este DNI: " + request.dni());
         }
 
-        // Generar password temporal
-        PlainPassword temporaryPassword = generateTemporaryPassword();
+        // Generar password temporal seguro
+        PlainPassword temporaryPassword = generateSecureTemporaryPassword();
 
-        // Crear usuario TEACHER inactivo
-        User teacher = User.create(
-                email,
-                temporaryPassword,
-                Set.of(RoleName.teacher()),
-                passwordEncoder
-        );
+        // Crear usuario profesor usando factory method del mapper
+        User teacher = mapper.createTeacherFromRequest(request, temporaryPassword, passwordEncoder);
 
-        // Desactivar hasta que confirme email
-        teacher.deactivate();
-
+        // Guardar
         User savedTeacher = userRepository.save(teacher);
 
+        // Generar token de confirmación
+        String confirmationToken = jwtTokenProvider.generateConfirmationToken(savedTeacher);
+
         // Enviar email de invitación
-        sendTeacherInvitation(savedTeacher, temporaryPassword);
+        boolean invitationSent = sendTeacherInvitation(savedTeacher, confirmationToken);
 
-        log.info("Profesor creado exitosamente: {}", email.getValue());
+        log.info("Profesor creado exitosamente. DNI: {} - Email: {} - ID: {}",
+                request.dni(), request.email(), savedTeacher.getUserId().asString());
 
-        return CreateTeacherResponse.builder()
-                .userId(savedTeacher.getUserId().asString())
-                .email(savedTeacher.getEmail().getValue())
-                .temporaryPassword(temporaryPassword.getValue()) // Solo para testing/demo
-                .invitationSent(true)
-                .build();
+        return new CreateTeacherResponse(
+                savedTeacher.getUserId().asString(),
+                savedTeacher.getDni().getValue(),
+                temporaryPassword.getValue(),
+                invitationSent
+        );
     }
 
-    private PlainPassword generateTemporaryPassword() {
-        // Generar password seguro temporal
-        String tempPassword = "TempPass123!"; // En producción usar generador seguro
-        return PlainPassword.of(tempPassword);
+    private PlainPassword generateSecureTemporaryPassword() {
+        SecureRandom random = new SecureRandom();
+        String chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%&*";
+        StringBuilder password = new StringBuilder();
+
+        for (int i = 0; i < 12; i++) {
+            password.append(chars.charAt(random.nextInt(chars.length())));
+        }
+
+        return PlainPassword.of(password.toString());
     }
 
-    private void sendTeacherInvitation(User teacher, PlainPassword temporaryPassword) {
-        // Lógica para enviar email (implementar después)
-        log.info("Enviando invitación a: {}", teacher.getEmail().getValue());
+    private boolean sendTeacherInvitation(User teacher, String confirmationToken) {
+        log.info("=== EMAIL DE INVITACIÓN ===");
+        log.info("DNI: {}", teacher.getDni().getValue());
+        log.info("Token: {}", confirmationToken);
+        log.info("Link: http://localhost:3000/activate-account?token={}", confirmationToken);
+        log.info("==========================");
+        return true;
     }
 
-    public static class EmailAlreadyExistsException extends RuntimeException {
-        public EmailAlreadyExistsException(String message) {
+    public static class DniAlreadyExistsException extends RuntimeException {
+        public DniAlreadyExistsException(String message) {
             super(message);
         }
     }
