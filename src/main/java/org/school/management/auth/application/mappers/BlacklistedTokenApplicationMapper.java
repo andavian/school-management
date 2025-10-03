@@ -15,11 +15,11 @@ public interface BlacklistedTokenApplicationMapper {
 
     default BlacklistedToken toDomain(BlacklistTokenRequest request) {
         return BlacklistedToken.create(
-                request.tokenHash(),
+                request.token(),
                 request.tokenType(),
                 request.expiresAt(),
                 request.reason(),
-                request.userEmail()
+                request.userDni()
         );
     }
 }

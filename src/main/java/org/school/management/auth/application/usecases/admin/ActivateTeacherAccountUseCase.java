@@ -1,5 +1,21 @@
 package org.school.management.auth.application.usecases.admin;
 
+import jakarta.transaction.Transactional;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.school.management.auth.application.dto.requests.ActivateAccountRequest;
+import org.school.management.auth.application.dto.responses.ActivateAccountResponse;
+import org.school.management.auth.domain.exception.InvalidOperationException;
+import org.school.management.auth.domain.exception.InvalidTokenException;
+import org.school.management.auth.domain.exception.UserNotFoundException;
+import org.school.management.auth.domain.model.User;
+import org.school.management.auth.domain.repository.UserRepository;
+import org.school.management.auth.domain.valueobject.HashedPassword;
+import org.school.management.auth.domain.valueobject.PlainPassword;
+import org.school.management.auth.infra.security.JwtTokenProvider;
+import org.school.management.shared.domain.valueobjects.DNI;
+import org.springframework.stereotype.Service;
+
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -12,13 +28,13 @@ public class ActivateTeacherAccountUseCase {
     @Transactional
     public ActivateAccountResponse execute(ActivateAccountRequest request) {
         // Validar token de confirmación
-        if (!jwtTokenProvider.isConfirmationTokenValid(request.getToken())) {
+        if (!jwtTokenProvider.isConfirmationTokenValid(request.token())) {
             throw new InvalidTokenException("Token de activación inválido o expirado");
         }
 
         // Obtener usuario del token
-        String email = jwtTokenProvider.getUsernameFromToken(request.getToken());
-        User user = userRepository.findByEmail(Email.of(email))
+        String dni = jwtTokenProvider.getUsernameFromToken(request.token());
+        User user = userRepository.findByDni(DNI.of(dni))
                 .orElseThrow(() -> new UserNotFoundException("Usuario no encontrado"));
 
         // Verificar que sea profesor
@@ -27,7 +43,7 @@ public class ActivateTeacherAccountUseCase {
         }
 
         // Cambiar password
-        PlainPassword newPassword = PlainPassword.of(request.getNewPassword());
+        PlainPassword newPassword = PlainPassword.of(request.newPassword());
         user.resetPassword(newPassword, passwordEncoder);
 
         // Activar cuenta
@@ -35,30 +51,12 @@ public class ActivateTeacherAccountUseCase {
 
         userRepository.save(user);
 
-        log.info("Cuenta de profesor activada: {}", email);
+        log.info("Cuenta de profesor activada: {}", dni);
 
-        return ActivateAccountResponse.builder()
-                .success(true)
-                .message("Cuenta activada exitosamente")
-                .build();
+        return new ActivateAccountResponse(true, "Cuenta activada exitosamente" );
+
     }
 
-    public static class InvalidTokenException extends RuntimeException {
-        public InvalidTokenException(String message) {
-            super(message);
-        }
-    }
 
-    public static class UserNotFoundException extends RuntimeException {
-        public UserNotFoundException(String message) {
-            super(message);
-        }
-    }
-
-    public static class InvalidOperationException extends RuntimeException {
-        public InvalidOperationException(String message) {
-            super(message);
-        }
-    }
 }
 

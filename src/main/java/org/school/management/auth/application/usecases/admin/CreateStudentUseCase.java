@@ -5,6 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.school.management.auth.application.dto.requests.CreateStudentRequest;
 import org.school.management.auth.application.dto.responses.CreateStudentResponse;
 import org.school.management.auth.application.mappers.AuthApplicationMapper;
+import org.school.management.auth.domain.exception.DniAlreadyExistsException;
 import org.school.management.auth.domain.model.User;
 import org.school.management.auth.domain.repository.UserRepository;
 import org.school.management.auth.domain.valueobject.HashedPassword;
@@ -67,9 +68,5 @@ public class CreateStudentUseCase {
         return dni + "ipet#xyz";
     }
 
-    public static class DniAlreadyExistsException extends RuntimeException {
-        public DniAlreadyExistsException(String message) {
-            super(message);
-        }
-    }
+
 }

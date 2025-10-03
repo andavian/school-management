@@ -3,11 +3,12 @@ package org.school.management.auth.application.dto.requests;
 import java.time.LocalDateTime;
 
 public record BlacklistTokenRequest (
-        String tokenHash,
+        String token,
         String tokenType,
         LocalDateTime expiresAt,
         String reason,
-        String userEmail
+        String userDni
+
 ){
 
-}
+   }

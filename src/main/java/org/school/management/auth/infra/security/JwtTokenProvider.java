@@ -68,6 +68,8 @@ public class JwtTokenProvider {
         claims.put("tokenType", tokenType);
         claims.put("iss", issuer);
         claims.put("iat", now.getEpochSecond());
+        claims.put("jti", UUID.randomUUID().toString());
+
 
         log.debug("Generando token {} para usuario: {}, expira en: {}", tokenType, username, expiration);
 
@@ -96,10 +98,9 @@ public class JwtTokenProvider {
 
     public String generateRefreshToken(User user) {
         Map<String, Object> claims = new HashMap<>();
-        // Refresh token con menos información por seguridad
-        claims.put("roles", user.getAuthorities().stream()
-                .map(GrantedAuthority::getAuthority)
-                .collect(Collectors.toList()));
+        // 👇 Limitar claims: solo lo básico
+        claims.put("userId", user.getUserId().getValue().toString());
+        claims.put("jti", UUID.randomUUID().toString());
 
         return buildToken(user.getUserId(), user.getUsername(), claims, refreshTokenExpirationSeconds, "REFRESH");
     }

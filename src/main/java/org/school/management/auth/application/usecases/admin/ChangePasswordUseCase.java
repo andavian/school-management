@@ -1,5 +1,20 @@
 package org.school.management.auth.application.usecases.admin;
 
+import jakarta.transaction.Transactional;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.school.management.auth.application.dto.requests.ChangePasswordRequest;
+import org.school.management.auth.application.dto.responses.ChangePasswordResponse;
+import org.school.management.auth.application.mappers.AuthApplicationMapper;
+import org.school.management.auth.application.usecases.BlacklistTokenUseCase;
+import org.school.management.auth.domain.exception.UserNotFoundException;
+import org.school.management.auth.domain.model.User;
+import org.school.management.auth.domain.repository.UserRepository;
+import org.school.management.auth.domain.valueobject.HashedPassword;
+import org.school.management.auth.domain.valueobject.PlainPassword;
+import org.school.management.auth.domain.valueobject.UserId;
+import org.springframework.stereotype.Service;
+
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -12,13 +27,13 @@ public class ChangePasswordUseCase {
 
     @Transactional
     public ChangePasswordResponse execute(ChangePasswordRequest request) {
-        UserId userId = mapper.toUserId(request.getUserId());
+        UserId userId = mapper.toUserId(request.userId());
 
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new UserNotFoundException("Usuario no encontrado"));
 
-        PlainPassword currentPassword = mapper.toPlainPassword(request.getCurrentPassword());
-        PlainPassword newPassword = mapper.toPlainPassword(request.getNewPassword());
+        PlainPassword currentPassword = mapper.toPlainPassword(request.currentPassword());
+        PlainPassword newPassword = mapper.toPlainPassword(request.newPassword());
 
         // Cambiar password (valida el actual internamente)
         user.changePassword(currentPassword, newPassword, passwordEncoder);
@@ -28,11 +43,9 @@ public class ChangePasswordUseCase {
         // Invalidar todos los tokens existentes del usuario
         // blacklistAllUserTokens(user); // Implementar si es necesario
 
-        log.info("Password cambiado para usuario: {}", user.getEmail().getValue());
+        log.info("Password cambiado para usuario: {}", user.getDni().getValue());
 
-        return ChangePasswordResponse.builder()
-                .success(true)
-                .message("Contraseña cambiada exitosamente")
-                .build();
+        return new ChangePasswordResponse(true,"Contraseña cambiada exitosamente" );
+
     }
 }

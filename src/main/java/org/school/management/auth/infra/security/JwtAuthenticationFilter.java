@@ -10,6 +10,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.school.management.auth.domain.repository.BlacklistedTokenRepository;
 import org.school.management.auth.infra.security.exception.InvalidTokenException;
 import org.school.management.auth.infra.security.exception.TokenExpiredException;
+import org.school.management.auth.infra.security.util.TokenHashUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -39,7 +40,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private final JwtTokenProvider jwtTokenProvider;
     private final UserDetailsService userDetailsService;
     private final BlacklistedTokenRepository blacklistedTokenRepository;
-    @Autowired
     private final ObjectMapper objectMapper;
 
     // ============================================
@@ -140,7 +140,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private boolean isTokenBlacklisted(String token) {
         try {
-            return blacklistedTokenRepository.findByTokenHash(token).isPresent();
+            String tokenHash = TokenHashUtil.hashToken(token);
+            return blacklistedTokenRepository.existsByTokenHash(tokenHash);
         } catch (Exception e) {
             log.error("Error verificando blacklist: {}", e.getMessage());
             return false; // En caso de error, permitir continuar
