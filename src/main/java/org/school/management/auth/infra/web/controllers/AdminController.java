@@ -4,6 +4,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.school.management.auth.application.usecases.admin.*;
+import org.school.management.auth.domain.exception.DniAlreadyExistsException;
 import org.school.management.auth.infra.web.dto.requests.*;
 import org.school.management.auth.infra.web.dto.response.*;
 import org.school.management.auth.infra.web.mappers.AuthWebMapper;
@@ -42,7 +43,7 @@ public class AdminController {
             log.info("Estudiante creado exitosamente. DNI: {}", request.dni());
             return ResponseEntity.status(HttpStatus.CREATED).body(apiResponse);
 
-        } catch (CreateStudentUseCase.DniAlreadyExistsException e) {
+        } catch (DniAlreadyExistsException e) {
             log.warn("DNI ya existe: {}", request.dni());
             throw e;
         }
@@ -68,7 +69,7 @@ public class AdminController {
                     request.dni(), request.email());
             return ResponseEntity.status(HttpStatus.CREATED).body(apiResponse);
 
-        } catch (CreateTeacherUseCase.DniAlreadyExistsException e) {
+        } catch (DniAlreadyExistsException e) {
             log.warn("DNI ya existe: {}", request.dni());
             throw e;
         }

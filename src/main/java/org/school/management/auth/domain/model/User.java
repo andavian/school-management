@@ -8,20 +8,20 @@ import org.school.management.auth.domain.valueobject.PlainPassword;
 import org.school.management.auth.domain.valueobject.RoleName;
 import org.school.management.auth.domain.valueobject.UserId;
 import org.school.management.shared.domain.valueobjects.DNI;
-import org.school.management.shared.domain.valueobjects.Email;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
+
 import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-@Getter                                    // Solo getters automáticos
+@Data
 @ToString(exclude = "password")            // toString sin password por seguridad
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)  // Solo campos específicos
-@NoArgsConstructor(access = AccessLevel.PRIVATE)   // Constructor privado para JPA
-@AllArgsConstructor(access = AccessLevel.PRIVATE)  // Constructor privado para factory methods
+@NoArgsConstructor
+@AllArgsConstructor
 public class User implements UserDetails {
 
     @EqualsAndHashCode.Include
@@ -173,6 +173,11 @@ public class User implements UserDetails {
     @Override
     public String getUsername() {
          return dni.getValue(); // Se usa email en lugar de username
+        }
+
+        @Override
+        public String getPassword(){
+        return password.getValue();
         }
 
     @Override

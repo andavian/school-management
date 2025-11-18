@@ -1,16 +1,12 @@
 package org.school.management.auth.infra.web.exceptions;
 
 import lombok.extern.slf4j.Slf4j;
-import org.school.management.auth.application.usecases.*;
-import org.school.management.auth.application.usecases.admin.*;
-import org.school.management.auth.domain.exception.InvalidPasswordException;
-import org.school.management.auth.domain.exception.UserNotActiveException;
+import org.school.management.auth.domain.exception.*;
 import org.school.management.auth.infra.web.controllers.AuthController;
 import org.school.management.auth.infra.web.dto.response.ErrorApiResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
-import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -85,8 +81,8 @@ public class GlobalExceptionHandler {
     // ============================================
 
     @ExceptionHandler({
-            CreateStudentUseCase.DniAlreadyExistsException.class,
-            CreateTeacherUseCase.DniAlreadyExistsException.class
+            DniAlreadyExistsException.class,
+            DniAlreadyExistsException.class
     })
     public ResponseEntity<ErrorApiResponse> handleDniAlreadyExists(
             RuntimeException ex, WebRequest request) {
@@ -105,9 +101,9 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
     }
 
-    @ExceptionHandler(ChangePasswordUseCase.InvalidCurrentPasswordException.class)
+    @ExceptionHandler(InvalidCurrentPasswordException.class)
     public ResponseEntity<ErrorApiResponse> handleInvalidCurrentPassword(
-            ChangePasswordUseCase.InvalidCurrentPasswordException ex, WebRequest request) {
+            InvalidCurrentPasswordException ex, WebRequest request) {
 
         var error = new ErrorApiResponse(
                 false,
@@ -122,7 +118,7 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler({
-            ActivateTeacherAccountUseCase.InvalidTokenException.class
+            InvalidTokenException.class
     })
     public ResponseEntity<ErrorApiResponse> handleInvalidToken(
             RuntimeException ex, WebRequest request) {
@@ -139,9 +135,9 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
     }
 
-    @ExceptionHandler(ActivateTeacherAccountUseCase.UserNotFoundException.class)
+    @ExceptionHandler(UserNotFoundException.class)
     public ResponseEntity<ErrorApiResponse> handleUserNotFound(
-            GetUserProfileUseCase.UserNotFoundException ex, WebRequest request) {
+            UserNotFoundException ex, WebRequest request) {
 
         var error = new ErrorApiResponse(
                 false,

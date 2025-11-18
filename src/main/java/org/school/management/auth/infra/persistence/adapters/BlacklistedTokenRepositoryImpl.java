@@ -48,8 +48,8 @@ public class BlacklistedTokenRepositoryImpl implements BlacklistedTokenRepositor
     }
 
     @Override
-    public List<BlacklistedToken> findByUserEmail(String userEmail) {
-        return jpaRepository.findByUserEmail(userEmail)
+    public List<BlacklistedToken> findByUserDni(String userDni) {
+        return jpaRepository.findByUserDni(userDni)
                 .stream()
                 .map(mapper::toDomain)
                 .collect(Collectors.toList());
@@ -63,14 +63,14 @@ public class BlacklistedTokenRepositoryImpl implements BlacklistedTokenRepositor
 
     @Override
     @Transactional
-    public void deleteByUserEmailAndTokenType(String userEmail, String tokenType) {
+    public void deleteByUserDniAndTokenType(String userEmail, String tokenType) {
         BlacklistedTokenEntity.TokenType type = BlacklistedTokenEntity.TokenType.valueOf(tokenType);
-        jpaRepository.deleteByUserEmailAndTokenType(userEmail, type);
+        jpaRepository.deleteByUserDniAndTokenType(userEmail, type);
     }
 
     @Override
-    public long countByUserEmailAndBlacklistedAtAfter(String userEmail, LocalDateTime after) {
-        return jpaRepository.countByUserEmailAndBlacklistedAtAfter(userEmail, after);
+    public long countByUserDniAndBlacklistedAtAfter(String userDni, LocalDateTime after) {
+        return jpaRepository.countByUserDniAndBlacklistedAtAfter(userDni, after);
     }
 
     @Override

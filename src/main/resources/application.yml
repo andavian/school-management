@@ -14,10 +14,13 @@ spring:
       on-profile: dev
 
   datasource:
-    url: jdbc:mysql://localhost:3306/ipet132_db?useSSL=false&serverTimezone=America/Argentina/Buenos_Aires
+    url: jdbc:mysql://localhost:3306/school132_db?useSSL=false&serverTimezone=America/Argentina/Buenos_Aires
     username: root
-    password: root
+    password: nlbmBrrt:221209
     driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 5
 
   jpa:
     hibernate:
@@ -31,7 +34,7 @@ spring:
   mail:
     host: smtp.gmail.com
     port: 587
-    username: tu_correo@gmail.com
+    username: ing.elbaum@gmail.com
     password: tu_password_app # usar app password, no el personal
     properties:
       mail:
@@ -55,7 +58,6 @@ app:
       - "http://localhost:5173"
       - "http://localhost:4321"
       - "http://localhost:8090"
-      - "http://127.0.0.1:*"
     allowed-methods:
       - GET
       - POST

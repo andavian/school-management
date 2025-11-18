@@ -5,8 +5,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.school.management.auth.application.dto.responses.UserResponse;
 import org.school.management.auth.application.usecases.admin.*;
-import org.school.management.auth.domain.exception.InvalidPasswordException;
-import org.school.management.auth.domain.exception.UserNotActiveException;
+import org.school.management.auth.domain.exception.*;
 import org.school.management.auth.infra.web.dto.response.*;
 import org.school.management.auth.infra.web.dto.requests.*;
 import org.school.management.auth.infra.web.mappers.AuthWebMapper;
@@ -26,7 +25,7 @@ public class AuthController {
     private final ActivateTeacherAccountUseCase activateTeacherAccountUseCase;
     private final ChangePasswordUseCase changePasswordUseCase;
     private final GetUserProfileUseCase getUserProfileUseCase;
-    private final LogoutUseCase logoutUseCase;
+    //ate final LogoutUseCase logoutUseCase;
     private final AuthWebMapper webMapper;
 
     // ============================================
@@ -75,10 +74,10 @@ public class AuthController {
             log.info("Cuenta activada exitosamente");
             return ResponseEntity.ok(apiResponse);
 
-        } catch (ActivateTeacherAccountUseCase.InvalidTokenException e) {
+        } catch (InvalidTokenException e) {
             log.warn("Token de activación inválido");
             throw e;
-        } catch (ActivateTeacherAccountUseCase.InvalidOperationException e) {
+        } catch (InvalidOperationException e) {
             log.warn("Operación de activación inválida: {}", e.getMessage());
             throw e;
         }
@@ -112,7 +111,7 @@ public class AuthController {
             log.info("Password cambiado exitosamente para usuario: {}", userId);
             return ResponseEntity.ok(apiResponse);
 
-        } catch (ChangePasswordUseCase.InvalidCurrentPasswordException e) {
+        } catch (InvalidCurrentPasswordException e) {
             log.warn("Password actual incorrecto para usuario: {}", userId);
             throw e;
         }
@@ -137,30 +136,30 @@ public class AuthController {
     // ============================================
     // LOGOUT - Invalidar token
     // ============================================
-    @PostMapping("/logout")
-    public ResponseEntity<SuccessApiResponse> logout(
-            @RequestHeader("Authorization") String authorizationHeader) {
-
-        log.info("POST /api/auth/logout");
-
-        try {
-            // Extraer token del header
-            String token = authorizationHeader.replace("Bearer ", "");
-
-            var logoutRequest = new org.school.management.auth.application.dto.requests.LogoutRequest(token);
-            var response = logoutUseCase.execute(logoutRequest);
-
-            var apiResponse = webMapper.createSuccessResponse(response.message());
-
-            log.info("Logout exitoso");
-            return ResponseEntity.ok(apiResponse);
-
-        } catch (Exception e) {
-            log.error("Error durante logout: {}", e.getMessage());
-            // Aún así retornar éxito
-            return ResponseEntity.ok(webMapper.createSuccessResponse("Sesión cerrada"));
-        }
-    }
+//    @PostMapping("/logout")
+//    public ResponseEntity<SuccessApiResponse> logout(
+//            @RequestHeader("Authorization") String authorizationHeader) {
+//
+//        log.info("POST /api/auth/logout");
+//
+//        try {
+//            // Extraer token del header
+//            String token = authorizationHeader.replace("Bearer ", "");
+//
+//            var logoutRequest = new org.school.management.auth.application.dto.requests.LogoutRequest(token);
+//            var response = logoutUseCase.execute(logoutRequest);
+//
+//            var apiResponse = webMapper.createSuccessResponse(response.message());
+//
+//            log.info("Logout exitoso");
+//            return ResponseEntity.ok(apiResponse);
+//
+//        } catch (Exception e) {
+//            log.error("Error durante logout: {}", e.getMessage());
+//            // Aún así retornar éxito
+//            return ResponseEntity.ok(webMapper.createSuccessResponse("Sesión cerrada"));
+//        }
+//    }
 
     // ============================================
     // REFRESH TOKEN - Para renovar token expirado

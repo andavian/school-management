@@ -6,11 +6,11 @@ import org.school.management.auth.domain.valueobject.BlacklistedTokenId;
 import java.time.LocalDateTime;
 import java.util.Objects;
 
-@Getter
+@Data
 @ToString(exclude = "token") // No mostrar token en logs por seguridad
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
-@NoArgsConstructor(access = AccessLevel.PRIVATE)
-@AllArgsConstructor(access = AccessLevel.PRIVATE)
+@NoArgsConstructor
+@AllArgsConstructor
 public class BlacklistedToken {
 
     @EqualsAndHashCode.Include

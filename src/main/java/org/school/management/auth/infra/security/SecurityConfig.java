@@ -2,6 +2,7 @@ package org.school.management.auth.infra.security;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.school.management.auth.infra.security.config.CorsProperties;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -52,20 +53,10 @@ public class SecurityConfig {
             "/actuator/info"
     };
 
-    // ============================================
-    // CORS configurable por environment
-    // ============================================
-    @Value("${app.cors.allowed-origins}")
-    private List<String> allowedOrigins;
-
-    @Value("${app.cors.allowed-methods}")
-    private List<String> allowedMethods;
-
-    @Value("${app.cors.max-age}")
-    private Long corsMaxAge;
 
     private final AuthenticationProvider authenticationProvider;
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
+    private final CorsProperties corsProperties;
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
@@ -136,36 +127,16 @@ public class SecurityConfig {
     // ============================================
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
-        log.info("Configurando CORS con orígenes: {}", allowedOrigins);
+        log.info("Configurando CORS con orígenes: {}", corsProperties.getAllowedOrigins());
 
         CorsConfiguration configuration = new CorsConfiguration();
-
-        // Orígenes permitidos (configurable por environment)
-        configuration.setAllowedOriginPatterns(allowedOrigins); // Más flexible que setAllowedOrigins
-
-        // Métodos permitidos
-        configuration.setAllowedMethods(allowedMethods);
-
-        // Headers permitidos
-        configuration.setAllowedHeaders(Arrays.asList(
-                "Content-Type",
-                "Authorization",
-                "Accept",
-                "Origin",
-                "Access-Control-Request-Method",
-                "Access-Control-Request-Headers",
-                "X-Requested-With"
-        ));
-
-        // Headers expuestos al cliente
-        configuration.setExposedHeaders(Arrays.asList(
-                "Authorization",
-                "X-Total-Count",
-                "Access-Control-Allow-Origin"
-        ));
-
+        configuration.setAllowedOriginPatterns(corsProperties.getAllowedOrigins());
+        configuration.setAllowedMethods(corsProperties.getAllowedMethods());
+        configuration.setAllowedHeaders(List.of("Content-Type", "Authorization", "Accept", "Origin",
+                "Access-Control-Request-Method", "Access-Control-Request-Headers", "X-Requested-With"));
+        configuration.setExposedHeaders(List.of("Authorization", "X-Total-Count", "Access-Control-Allow-Origin"));
         configuration.setAllowCredentials(true);
-        configuration.setMaxAge(corsMaxAge);
+        configuration.setMaxAge(corsProperties.getMaxAge());
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);

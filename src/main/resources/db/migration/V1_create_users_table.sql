@@ -12,4 +12,4 @@ CREATE TABLE IF NOT EXISTS users
     INDEX idx_user_active (is_active),
     INDEX idx_user_created (created_at),
     INDEX idx_user_roles (roles)
-);
+)ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

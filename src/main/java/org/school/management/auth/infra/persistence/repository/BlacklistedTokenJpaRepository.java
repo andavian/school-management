@@ -26,7 +26,7 @@ public interface BlacklistedTokenJpaRepository extends JpaRepository<Blacklisted
 
     boolean existsByTokenHash(String tokenHash);
 
-    List<BlacklistedTokenEntity> findByUserEmail(String userEmail);
+    List<BlacklistedTokenEntity> findByUserDni(String userDni);
 
     @Query("SELECT bt FROM BlacklistedTokenEntity bt WHERE bt.expiresAt < :now")
     List<BlacklistedTokenEntity> findExpiredTokens(@Param("now") LocalDateTime now);
@@ -36,10 +36,10 @@ public interface BlacklistedTokenJpaRepository extends JpaRepository<Blacklisted
     void deleteExpiredTokens(@Param("now") LocalDateTime now);
 
     @Modifying
-    @Query("DELETE FROM BlacklistedTokenEntity bt WHERE bt.userEmail = :userEmail AND bt.tokenType = :tokenType")
-    void deleteByUserEmailAndTokenType(@Param("userEmail") String userEmail,
+    @Query("DELETE FROM BlacklistedTokenEntity bt WHERE bt.userDni = :userDni AND bt.tokenType = :tokenType")
+    void deleteByUserDniAndTokenType(@Param("userDni") String userEmail,
                                        @Param("tokenType") BlacklistedTokenEntity.TokenType tokenType);
 
-    long countByUserEmailAndBlacklistedAtAfter(String userEmail, LocalDateTime after);
+    long countByUserDniAndBlacklistedAtAfter(String userDni, LocalDateTime after);
 }
 

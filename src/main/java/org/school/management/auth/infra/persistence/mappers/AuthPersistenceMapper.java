@@ -16,7 +16,7 @@ public interface AuthPersistenceMapper {
     // Domain → Entity
     @Mapping(source = "userId.value", target = "userId")
     @Mapping(source = "dni.value", target = "dni")
-    @Mapping(source = "password.value", target = "password")
+    @Mapping(source = "password", target = "password")
     @Mapping(source = "roles", target = "roles", qualifiedByName = "rolesToString")
     UserEntity toEntity(User user);
 

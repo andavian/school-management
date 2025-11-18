@@ -16,13 +16,13 @@ public interface BlacklistedTokenRepository {
 
     boolean existsByTokenHash(String tokenHash);
 
-    List<BlacklistedToken> findByUserEmail(String userEmail);
+    List<BlacklistedToken> findByUserDni(String userDni);
 
     void deleteExpiredTokens();
 
-    void deleteByUserEmailAndTokenType(String userEmail, String tokenType);
+    void deleteByUserDniAndTokenType(String userDni, String tokenType);
 
-    long countByUserEmailAndBlacklistedAtAfter(String userEmail, LocalDateTime after);
+    long countByUserDniAndBlacklistedAtAfter(String userDni, LocalDateTime after);
 
     // Para limpieza automática
     List<BlacklistedToken> findExpiredTokens();
