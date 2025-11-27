@@ -29,8 +29,6 @@ import java.util.UUID;
 public class ProvinceEntity {
 
     @Id
-    @GeneratedValue(generator = "UUID")
-    @GenericGenerator(name = "UUID", strategy = "org.hibernate.id.UUIDGenerator")
     @Column(name = "province_id", updatable = false, nullable = false, columnDefinition = "BINARY(16)")
     private UUID provinceId;
 

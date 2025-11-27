@@ -12,6 +12,7 @@ import org.school.management.auth.domain.model.User;
 import org.school.management.auth.domain.repository.UserRepository;
 import org.school.management.auth.domain.valueobject.HashedPassword;
 import org.school.management.auth.domain.valueobject.PlainPassword;
+import org.school.management.auth.domain.valueobject.RoleName;
 import org.school.management.auth.infra.security.JwtTokenProvider;
 import org.school.management.shared.domain.valueobjects.DNI;
 import org.springframework.stereotype.Service;
@@ -38,7 +39,7 @@ public class ActivateTeacherAccountUseCase {
                 .orElseThrow(() -> new UserNotFoundException("Usuario no encontrado"));
 
         // Verificar que sea profesor
-        if (!user.isTeacher()) {
+        if (!user.hasRole(RoleName.teacher())) {
             throw new InvalidOperationException("Solo los profesores pueden usar este enlace de activación");
         }
 

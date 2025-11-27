@@ -11,11 +11,11 @@ import java.util.UUID;
 public class CountryId {
     UUID value;
 
-    private CountryId(UUID value) {
+    public static CountryId of(UUID value) {
         if (value == null) {
             throw new IllegalArgumentException("UserId cannot be null");
         }
-        this.value = value;
+        return new CountryId(value);
     }
 
     public static CountryId generate() {

@@ -91,7 +91,7 @@ public class JwtTokenProvider {
         claims.put("roles", user.getAuthorities().stream()
                 .map(GrantedAuthority::getAuthority)
                 .collect(Collectors.toList()));
-        claims.put("isActive", user.isActive());
+        claims.put("isActive", user.getActive());
 
         return buildToken(user.getUserId(), user.getUsername(), claims, accessTokenExpirationSeconds, "ACCESS");
     }

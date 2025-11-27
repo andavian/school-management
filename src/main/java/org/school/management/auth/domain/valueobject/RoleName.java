@@ -67,13 +67,11 @@ public class RoleName implements GrantedAuthority {
     }
 
     public SimpleGrantedAuthority toAuthority() {
-        return new SimpleGrantedAuthority(this.getName());
+        return new SimpleGrantedAuthority("ROLE_" + this.getName());
     }
 
            @Override
-        public String getAuthority() {
-            return "ROLE_" + name;  // convención de Spring Security
-        }
+        public String getAuthority() { return "ROLE_" + name; }
 
         @Override
         public String toString() {

@@ -7,6 +7,7 @@ import org.school.management.auth.application.dto.responses.CreateTeacherRespons
 import org.school.management.auth.application.mappers.AuthApplicationMapper;
 import org.school.management.auth.domain.exception.DniAlreadyExistsException;
 import org.school.management.auth.domain.model.User;
+import org.school.management.auth.domain.repository.RoleRepository;
 import org.school.management.auth.domain.repository.UserRepository;
 import org.school.management.auth.domain.valueobject.HashedPassword;
 import org.school.management.auth.domain.valueobject.PlainPassword;
@@ -23,6 +24,7 @@ import java.security.SecureRandom;
 public class CreateTeacherUseCase {
 
     private final UserRepository userRepository;
+    private final RoleRepository roleRepository;
     private final AuthApplicationMapper mapper;
     private final HashedPassword.PasswordEncoder passwordEncoder;
     private final JwtTokenProvider jwtTokenProvider;
@@ -44,7 +46,7 @@ public class CreateTeacherUseCase {
         PlainPassword temporaryPassword = generateSecureTemporaryPassword();
 
         // Crear usuario profesor usando factory method del mapper
-        User teacher = mapper.createTeacherFromRequest(request, temporaryPassword, passwordEncoder);
+        User teacher = mapper.createTeacherFromRequest(request, temporaryPassword, passwordEncoder, roleRepository);
 
         // Guardar
         User savedTeacher = userRepository.save(teacher);

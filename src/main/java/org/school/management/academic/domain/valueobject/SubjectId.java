@@ -6,32 +6,32 @@ import lombok.Value;
 
 import java.util.UUID;
 
-@Value                                     // Inmutable automáticamente
-@Builder(access = AccessLevel.PRIVATE)     // Builder privado
-public class StudentId {
+@Value
+@Builder(access = AccessLevel.PRIVATE)
+public class SubjectId {
     UUID value;
 
-    private StudentId(UUID value) {
+    private SubjectId(UUID value) {
         if (value == null) {
             throw new IllegalArgumentException("UserId cannot be null");
         }
         this.value = value;
     }
 
-    public static StudentId generate() {
-        return new StudentId(UUID.randomUUID());
+    public static SubjectId generate() {
+        return new SubjectId(UUID.randomUUID());
     }
 
-    public static StudentId from(String id) {
+    public static SubjectId from(String id) {
         try {
-            return new StudentId(UUID.fromString(id));
+            return new SubjectId(UUID.fromString(id));
         } catch (IllegalArgumentException e) {
             throw new IllegalArgumentException("Invalid UserId format: " + id);
         }
     }
 
-    public static StudentId from(UUID uuid) {
-        return new StudentId(uuid);
+    public static SubjectId from(UUID uuid) {
+        return new SubjectId(uuid);
     }
 
     public String asString() {

@@ -7,6 +7,7 @@ import org.school.management.auth.application.dto.responses.CreateStudentRespons
 import org.school.management.auth.application.mappers.AuthApplicationMapper;
 import org.school.management.auth.domain.exception.DniAlreadyExistsException;
 import org.school.management.auth.domain.model.User;
+import org.school.management.auth.domain.repository.RoleRepository;
 import org.school.management.auth.domain.repository.UserRepository;
 import org.school.management.auth.domain.valueobject.HashedPassword;
 import org.school.management.auth.domain.valueobject.PlainPassword;
@@ -20,6 +21,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class CreateStudentUseCase {
 
     private final UserRepository userRepository;
+    private final RoleRepository roleRepository;
     private final AuthApplicationMapper mapper;
     private final HashedPassword.PasswordEncoder passwordEncoder;
 
@@ -41,7 +43,7 @@ public class CreateStudentUseCase {
         PlainPassword initialPassword = PlainPassword.of(initialPasswordStr);
 
         // Crear usuario estudiante usando factory method del mapper
-        User student = mapper.createStudentFromRequest(request, initialPassword, passwordEncoder);
+        User student = mapper.createStudentFromRequest(request, initialPassword, passwordEncoder, roleRepository);
 
         // Los estudiantes están activos desde el inicio
         student.activate();

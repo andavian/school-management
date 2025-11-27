@@ -11,11 +11,11 @@ import java.util.UUID;
 public class ProvinceId {
     UUID value;
 
-    private ProvinceId(UUID value) {
+    public static ProvinceId of (UUID value) {
         if (value == null) {
             throw new IllegalArgumentException("UserId cannot be null");
         }
-        this.value = value;
+        return new ProvinceId(value);
     }
 
     public static ProvinceId generate() {

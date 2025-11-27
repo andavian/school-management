@@ -18,24 +18,24 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 @Data
-@ToString(exclude = "password")            // toString sin password por seguridad
-@EqualsAndHashCode(onlyExplicitlyIncluded = true)  // Solo campos específicos
-@NoArgsConstructor
-@AllArgsConstructor
+@ToString(exclude = "password")
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@Builder
 public class User implements UserDetails {
 
     @EqualsAndHashCode.Include
     private UserId userId;
-
     private DNI dni;
-
     private HashedPassword password;
 
-    @Setter(AccessLevel.PRIVATE)           // Setter privado para control interno
-    private Set<RoleName> roles = new HashSet<>();
-
     @Setter(AccessLevel.PRIVATE)
-    private boolean isActive = true;
+    private Set<Role> roles = new HashSet<>();
+
+    // ✅ CAMPO "active"
+    @Builder.Default
+    @Setter(AccessLevel.PRIVATE)
+    private Boolean active = true;
 
     private LocalDateTime createdAt;
 
@@ -45,17 +45,26 @@ public class User implements UserDetails {
     @Setter(AccessLevel.PRIVATE)
     private LocalDateTime updatedAt;
 
-    // ============================================
-    // Factory Methods
-    // ============================================
+    private User(UserId userId, DNI dni, HashedPassword password, Set<Role> roles,
+                 boolean active, LocalDateTime createdAt, LocalDateTime lastLoginAt,
+                 LocalDateTime updatedAt) {
+        this.userId = userId;
+        this.dni = dni;
+        this.password = password;
+        this.roles = new HashSet<>(roles);
+        this.active = active;
+        this.createdAt = createdAt;
+        this.lastLoginAt = lastLoginAt;
+        this.updatedAt = updatedAt;
+    }
 
     public static User create(DNI dni, PlainPassword plainPassword,
-                              Set<RoleName> roles, HashedPassword.PasswordEncoder encoder) {
+                              Set<Role> roles, HashedPassword.PasswordEncoder encoder) {
         return new User(
                 UserId.generate(),
                 dni,
                 plainPassword.hash(encoder),
-                new HashSet<>(roles),
+                roles,
                 true,
                 LocalDateTime.now(),
                 null,
@@ -64,19 +73,15 @@ public class User implements UserDetails {
     }
 
     public static User reconstruct(UserId id, DNI dni, HashedPassword hashedPassword,
-                                   Set<RoleName> roles, boolean isActive,
+                                   Set<Role> roles, boolean active,
                                    LocalDateTime createdAt, LocalDateTime lastLoginAt,
                                    LocalDateTime updatedAt) {
-        return new User(id, dni, hashedPassword, new HashSet<>(roles),
-                isActive, createdAt, lastLoginAt, updatedAt);
+        return new User(id, dni, hashedPassword, roles, active, createdAt, lastLoginAt, updatedAt);
     }
 
-    // ============================================
-    // Domain Methods (Business Logic)
-    // ============================================
-
+    // ✅ AUTHENTICATE CORREGIDO
     public boolean authenticate(PlainPassword plainPassword, HashedPassword.PasswordEncoder encoder) {
-        if (!isActive) {
+        if (!active) { // Usa "active"
             throw new UserNotActiveException("User is not active");
         }
 
@@ -87,67 +92,36 @@ public class User implements UserDetails {
         return matches;
     }
 
+    // ✅ CHANGE PASSWORD CORREGIDO
     public void changePassword(PlainPassword currentPassword, PlainPassword newPassword,
                                HashedPassword.PasswordEncoder encoder) {
         if (!this.password.matches(currentPassword.getValue(), encoder)) {
             throw new InvalidPasswordException("Current password is incorrect");
         }
 
+        // ✅ Asigna el password hasheado directamente
         this.password = newPassword.hash(encoder);
         this.updatedAt = LocalDateTime.now();
     }
 
+    // ✅ RESET PASSWORD CORREGIDO
     public void resetPassword(PlainPassword newPassword, HashedPassword.PasswordEncoder encoder) {
         this.password = newPassword.hash(encoder);
         this.updatedAt = LocalDateTime.now();
     }
 
     public void activate() {
-        this.isActive = true;
+        this.active = true;
         this.updatedAt = LocalDateTime.now();
     }
 
     public void deactivate() {
-        this.isActive = false;
+        this.active = false;
         this.updatedAt = LocalDateTime.now();
     }
 
-    public void addRole(RoleName role) {
-        this.roles.add(role);
-        this.updatedAt = LocalDateTime.now();
-    }
-
-    public void removeRole(RoleName role) {
-        this.roles.remove(role);
-        this.updatedAt = LocalDateTime.now();
-    }
-
-    // ============================================
-    // Role Methods
-    // ============================================
-
-    public boolean hasRole(RoleName role) {
-        return this.roles.contains(role);
-    }
-
-    public boolean hasAnyRole(Set<RoleName> roles) {
-        return this.roles.stream().anyMatch(roles::contains);
-    }
-
-    public boolean isAdmin() {
-        return hasRole(RoleName.admin());
-    }
-
-    public boolean isTeacher() {
-        return hasRole(RoleName.teacher());
-    }
-
-    public boolean isStudent() {
-        return hasRole(RoleName.student());
-    }
-
-    public boolean isParent() {
-        return hasRole(RoleName.parent());
+    public boolean hasRole(RoleName roleName) {
+        return this.roles.stream().anyMatch(role -> role.getName().equals(roleName));
     }
 
     private void recordLogin() {
@@ -155,41 +129,36 @@ public class User implements UserDetails {
         this.updatedAt = LocalDateTime.now();
     }
 
-    // ============================================
-    // Getter con copia defensiva (override del @Getter)
-    // ============================================
-
-    public Set<RoleName> getRoles() {
-        return new HashSet<>(roles);  // Copia defensiva
+    public Set<Role> getRoles() {
+        return new HashSet<>(roles);
     }
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         return roles.stream()
-                .map(RoleName::toAuthority)
+                .map(role -> role.getName().toAuthority())
                 .collect(Collectors.toList());
     }
 
     @Override
     public String getUsername() {
-         return dni.getValue(); // Se usa email en lugar de username
-        }
+        return dni.getValue();
+    }
 
-        @Override
-        public String getPassword(){
+    @Override
+    public String getPassword() {
         return password.getValue();
-        }
+    }
 
     @Override
     public boolean isAccountNonExpired() { return true; }
 
     @Override
-    public boolean isAccountNonLocked() { return isActive; }
+    public boolean isAccountNonLocked() { return active; } // Usa "active"
 
     @Override
     public boolean isCredentialsNonExpired() { return true; }
 
     @Override
-    public boolean isEnabled() { return isActive; }
-
+    public boolean isEnabled() { return active; } // Usa "active"
 }

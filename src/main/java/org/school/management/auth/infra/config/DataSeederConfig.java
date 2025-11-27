@@ -2,7 +2,9 @@ package org.school.management.auth.infra.config;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.school.management.auth.domain.model.Role;
 import org.school.management.auth.domain.model.User;
+import org.school.management.auth.domain.repository.RoleRepository;
 import org.school.management.auth.domain.repository.UserRepository;
 import org.school.management.auth.domain.valueobject.HashedPassword;
 import org.school.management.auth.domain.valueobject.PlainPassword;
@@ -21,6 +23,7 @@ import java.util.Set;
 @Slf4j
 public class DataSeederConfig {
 
+    private final RoleRepository roleRepository;
     private final UserRepository userRepository;
     private final HashedPassword.PasswordEncoder passwordEncoder;
 
@@ -37,16 +40,16 @@ public class DataSeederConfig {
 
             // Profesores de ejemplo
             if (!userRepository.existsByDni(DNI.of("12345678"))) {
-                createTeacher("12345678", "juan.perez@ipet132.edu.ar", "Juan", "Pérez");
+                createTeacher("12345678",  "Juan", "Pérez");
             }
 
             // Estudiantes de ejemplo
             if (!userRepository.existsByDni(DNI.of("87654321"))) {
-                createStudent("87654321", null, "María", "González");
+                createStudent("87654321", "María", "González");
             }
 
             if (!userRepository.existsByDni(DNI.of("11223344"))) {
-                createStudent("11223344", "pedro.rodriguez@student.com", "Pedro", "Rodríguez");
+                createStudent("11223344", "Pedro", "Rodríguez");
             }
 
             log.info("✅ Seed de datos completado");
@@ -75,21 +78,35 @@ public class DataSeederConfig {
     }
 
     private void createAdmin() {
-        User admin = User.create(
+
+        Role adminRole = roleRepository.findByName(RoleName.admin())
+                .orElseGet(() -> roleRepository.save(Role.create(RoleName.admin())));
+
+
+        Set<Role> adminRoles = Set.of(adminRole);
+
+        User adminUser = User.create(
                 DNI.of("00000001"),
-                PlainPassword.of("Admin123!"),
-                Set.of(RoleName.admin()),
+                PlainPassword.of("aStrongPassword123!"),
+                adminRoles, // <-- Pasa el Set<Role>
                 passwordEncoder
         );
-        userRepository.save(admin);
-        log.info("✓ Admin creado: DNI 00000001");
+        adminUser.activate();
+        userRepository.save(adminUser);
+        log.info("✓ Admin user created with DNI: {}", adminUser.getDni().getValue());
     }
 
-    private void createTeacher(String dni, String email, String firstName, String lastName) {
+    private void createTeacher(String dni, String firstName, String lastName) {
+
+        Role teacherRole = roleRepository.findByName(RoleName.teacher())
+                .orElseGet(() -> roleRepository.save(Role.create(RoleName.teacher())));
+
+        Set<Role> teacherRoles = Set.of(teacherRole);
+
         User teacher = User.create(
                 DNI.of(dni),
                 PlainPassword.of("Teacher123!"),
-                Set.of(RoleName.teacher()),
+                teacherRoles,
                 passwordEncoder
         );
         teacher.activate(); // Profesores de prueba ya activos
@@ -97,13 +114,18 @@ public class DataSeederConfig {
         log.info("✓ Profesor creado: {} {} - DNI {}", firstName, lastName, dni);
     }
 
-    private void createStudent(String dni, String email, String firstName, String lastName) {
+    private void createStudent(String dni, String firstName, String lastName) {
+        Role StudentRole = roleRepository.findByName(RoleName.student())
+                .orElseGet(() -> roleRepository.save(Role.create(RoleName.student())));
+
+        Set<Role> studentRoles = Set.of(StudentRole);
         User student = User.create(
                     DNI.of(dni),
                     PlainPassword.of(dni + "Ipet132!"),
-                    Set.of(RoleName.student()),
+                    studentRoles,
                     passwordEncoder
             );
+        student.activate();
         userRepository.save(student);
         log.info("✓ Estudiante creado: {} {} - DNI {}", firstName, lastName, dni);
     }

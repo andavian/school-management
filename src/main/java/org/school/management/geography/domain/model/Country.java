@@ -11,6 +11,7 @@ import org.school.management.geography.domain.valueobject.IsoCode;
 import org.school.management.geography.domain.valueobject.PhoneCode;
 
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Value
 @Builder(toBuilder = true)
@@ -35,6 +36,16 @@ public class Country {
                 .build();
     }
 
+
+    public static Country withId(UUID countryId, String name, String isoCode, String phoneCode) {
+        return Country.builder()
+                .countryId(CountryId.of(countryId))
+                .name(GeographicName.of(name))
+                .isoCode(IsoCode.of(isoCode))
+                .phoneCode(phoneCode != null ? PhoneCode.of(phoneCode) : null)
+                .createdAt(LocalDateTime.now())
+                .build();
+    }
     /**
      * Actualizar código telefónico
      */

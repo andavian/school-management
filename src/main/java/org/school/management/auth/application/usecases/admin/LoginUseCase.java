@@ -17,6 +17,8 @@ import org.school.management.shared.domain.valueobjects.DNI;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.stream.Collectors;
+
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -42,6 +44,7 @@ public class LoginUseCase {
                     return new InvalidPasswordException("Credenciales inválidas");
                 });
 
+
         // Verificar password y autenticar
         try {
             boolean authenticated = user.authenticate(plainPassword, passwordEncoder);
@@ -63,7 +66,8 @@ public class LoginUseCase {
 
         log.info("Login exitoso para DNI: {} con roles: {}",
                 request.dni(),
-                updatedUser.getRoles().stream().map(RoleName::getName).toList());
+                user.getRoles().stream().map(role -> role.getName().getName()).toList());
+
 
         return mapper.toLoginResponse(updatedUser, accessToken, refreshToken);
     }

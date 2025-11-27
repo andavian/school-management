@@ -31,8 +31,6 @@ import java.util.UUID;
 public class PlaceEntity {
 
     @Id
-    @GeneratedValue(generator = "UUID")
-    @GenericGenerator(name = "UUID", strategy = "org.hibernate.id.UUIDGenerator")
     @Column(name = "place_id", updatable = false, nullable = false, columnDefinition = "BINARY(16)")
     private UUID placeId;
 

@@ -8,7 +8,7 @@ public record UserApiResponse(
         String userId,
         String dni,
         Set<String> roles,
-        boolean isActive,
+        Boolean isActive,
         LocalDateTime createdAt,
         LocalDateTime lastLoginAt,
         LocalDateTime updatedAt

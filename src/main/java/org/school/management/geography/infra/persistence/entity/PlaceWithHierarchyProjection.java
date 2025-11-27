@@ -1,6 +1,6 @@
 package org.school.management.geography.infra.persistence.entity;
 
-import lombok.AllArgsConstructor;
+import org.school.management.geography.infra.persistence.entity.PlaceEntity.PlaceTypeEnum;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -10,8 +10,6 @@ import java.util.UUID;
 
 @Data
 @NoArgsConstructor
-@AllArgsConstructor
-@Builder
 public class PlaceWithHierarchyProjection {
 
     // Place data
@@ -35,14 +33,15 @@ public class PlaceWithHierarchyProjection {
     /**
      * Constructor para queries JPQL
      */
+    @Builder
     public PlaceWithHierarchyProjection(
-            UUID placeId, String placeName, String placeType, String postalCode,
+            UUID placeId, String placeName, PlaceTypeEnum placeType, String postalCode,
             UUID provinceId, String provinceName, String provinceCode,
             UUID countryId, String countryName, String countryIsoCode
     ) {
         this.placeId = placeId;
         this.placeName = placeName;
-        this.placeType = placeType;
+        this.placeType = placeType != null ? placeType.name() : null;
         this.postalCode = postalCode;
         this.provinceId = provinceId;
         this.provinceName = provinceName;

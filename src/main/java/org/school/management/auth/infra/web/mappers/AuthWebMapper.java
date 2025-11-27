@@ -26,6 +26,7 @@ public interface AuthWebMapper {
     @Mapping(target = "userId", ignore = true)
     ChangePasswordRequest toApplicationDto(ChangePasswordApiRequest apiRequest);
 
+    @Mapping(target = "isActive", source = "active")
     UserApiResponse toApiResponse(UserResponse userResponse);
 
     @Mapping(source = "token", target = "accessToken")

@@ -1,5 +1,6 @@
 package org.school.management.auth.application.mappers;
 
+import org.mapstruct.Context;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.Named;
@@ -7,7 +8,9 @@ import org.school.management.auth.application.dto.requests.CreateStudentRequest;
 import org.school.management.auth.application.dto.requests.CreateTeacherRequest;
 import org.school.management.auth.application.dto.responses.LoginResponse;
 import org.school.management.auth.application.dto.responses.UserResponse;
+import org.school.management.auth.domain.model.Role;
 import org.school.management.auth.domain.model.User;
+import org.school.management.auth.domain.repository.RoleRepository;
 import org.school.management.auth.domain.valueobject.HashedPassword;
 import org.school.management.auth.domain.valueobject.PlainPassword;
 import org.school.management.auth.domain.valueobject.RoleName;
@@ -20,13 +23,13 @@ import java.util.stream.Collectors;
 @Mapper(componentModel = "spring")
 public interface AuthApplicationMapper {
 
-    // User → UserResponse - ACTUALIZADO
+    // --- User -> UserResponse (ACTUALIZADO) ---
     @Mapping(source = "userId.value", target = "userId")
-    @Mapping(source = "dni.value", target = "dni")                              // ← NUEVO
+    @Mapping(source = "dni.value", target = "dni")
     @Mapping(source = "roles", target = "roles", qualifiedByName = "rolesToStrings")
     UserResponse toUserResponse(User user);
 
-    // User + Token → LoginResponse
+    // --- LoginResponse (Sin cambios, pero revisa tu DTO) ---
     @Mapping(source = "user", target = "user")
     @Mapping(source = "token", target = "token")
     @Mapping(source = "refreshToken", target = "refreshToken")
@@ -34,8 +37,8 @@ public interface AuthApplicationMapper {
     @Mapping(constant = "Bearer", target = "tokenType")
     LoginResponse toLoginResponse(User user, String token, String refreshToken);
 
-    // String conversions para Use Cases - ACTUALIZADOS
-    default DNI toDni(String dni) {                                             // ← NUEVO
+    // --- Helpers para Value Objects (Sin cambios) ---
+    default DNI toDni(String dni) {
         return DNI.of(dni);
     }
 
@@ -43,45 +46,52 @@ public interface AuthApplicationMapper {
         return PlainPassword.of(password);
     }
 
-    default Set<RoleName> toRoleNames(Set<String> roles) {
-        return roles.stream()
-                .map(RoleName::of)
-                .collect(Collectors.toSet());
-    }
-
     default UserId toUserId(String userId) {
         return UserId.from(userId);
     }
 
-    // Helper methods
+    // --- Helper para Roles (ACTUALIZADO) ---
     @Named("rolesToStrings")
-    default Set<String> rolesToStrings(Set<RoleName> roles) {
+    default Set<String> rolesToStrings(Set<Role> roles) {
+        if (roles == null || roles.isEmpty()) {
+            return Set.of();
+        }
         return roles.stream()
-                .map(RoleName::getName)
+                .map(role -> role.getName().getName()) // Extrae el String del RoleName dentro de Role
                 .collect(Collectors.toSet());
     }
 
-    // Factory methods para User - ACTUALIZADOS
+    // --- Factory Methods para User (¡LA MAGIA ESTÁ AQUÍ!) ---
+
     default User createTeacherFromRequest(CreateTeacherRequest request,
                                           PlainPassword password,
-                                          HashedPassword.PasswordEncoder encoder) {
+                                          HashedPassword.PasswordEncoder encoder,
+                                          @Context RoleRepository roleRepository) { // <-- ¡Inyección con @Context!
         DNI dni = DNI.of(request.dni());
-        Set<RoleName> roles = Set.of(RoleName.teacher());
+
+        // Busca el rol de dominio completo usando el repositorio
+        Role teacherRole = roleRepository.findByName(RoleName.teacher())
+                .orElseThrow(() -> new IllegalStateException("TEACHER role not found in the database."));
+
+        Set<Role> roles = Set.of(teacherRole);
 
         User teacher = User.create(dni, password, roles, encoder);
-        teacher.deactivate(); // Inician inactivos hasta confirmar email
-
+        teacher.deactivate(); // Los profesores inician inactivos
         return teacher;
     }
 
     default User createStudentFromRequest(CreateStudentRequest request,
                                           PlainPassword password,
-                                          HashedPassword.PasswordEncoder encoder) {
+                                          HashedPassword.PasswordEncoder encoder,
+                                          @Context RoleRepository roleRepository) { // <-- ¡Inyección con @Context!
         DNI dni = DNI.of(request.dni());
-        Set<RoleName> roles = Set.of(RoleName.student());
 
+        // Busca el rol de dominio completo usando el repositorio
+        Role studentRole = roleRepository.findByName(RoleName.student())
+                .orElseThrow(() -> new IllegalStateException("STUDENT role not found in la base de datos."));
+
+        Set<Role> roles = Set.of(studentRole);
 
         return User.create(dni, password, roles, encoder);
-
-        }
     }
+}

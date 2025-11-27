@@ -53,6 +53,9 @@ public class SecurityConfig {
             "/actuator/info"
     };
 
+    private static final String[] PUBLIC_API_ENDPOINTS = {
+            "/api/geography/**"
+    };
 
     private final AuthenticationProvider authenticationProvider;
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
@@ -94,6 +97,7 @@ public class SecurityConfig {
                         .requestMatchers(PUBLIC_AUTH_ENDPOINTS).permitAll()
                         .requestMatchers(PUBLIC_DOCS_ENDPOINTS).permitAll()
                         .requestMatchers(PUBLIC_HEALTH_ENDPOINTS).permitAll()
+                        .requestMatchers(HttpMethod.GET, PUBLIC_API_ENDPOINTS).permitAll()
 
                         // Endpoints de administración
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")

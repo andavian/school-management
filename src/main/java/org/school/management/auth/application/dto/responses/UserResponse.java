@@ -8,7 +8,7 @@ public record UserResponse (
         String userId,
         String dni,
         Set<String> roles,
-        boolean isActive,
+        Boolean active,
         LocalDateTime createdAt,
         LocalDateTime lastLoginAt,
         LocalDateTime updatedAt) {

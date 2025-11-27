@@ -11,11 +11,11 @@ import java.util.UUID;
 public class PlaceId {
     UUID value;
 
-    private PlaceId(UUID value) {
+    public static PlaceId of (UUID value) {
         if (value == null) {
             throw new IllegalArgumentException("UserId cannot be null");
         }
-        this.value = value;
+        return new PlaceId(value);
     }
 
     public static PlaceId generate() {
