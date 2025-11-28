@@ -8,30 +8,30 @@ import java.util.UUID;
 
 @Value
 @Builder(access = AccessLevel.PRIVATE)
-public class AcademicYearId {
+public class RegistryId {
     UUID value;
 
-    private AcademicYearId(UUID value) {
+    private RegistryId(UUID value) {
         if (value == null) {
             throw new IllegalArgumentException("UserId cannot be null");
         }
         this.value = value;
     }
 
-    public static AcademicYearId generate() {
-        return new AcademicYearId(UUID.randomUUID());
+    public static RegistryId generate() {
+        return new RegistryId(UUID.randomUUID());
     }
 
-    public static AcademicYearId from(String id) {
+    public static RegistryId from(String id) {
         try {
-            return new AcademicYearId(UUID.fromString(id));
+            return new RegistryId(UUID.fromString(id));
         } catch (IllegalArgumentException e) {
             throw new IllegalArgumentException("Invalid UserId format: " + id);
         }
     }
 
-    public static AcademicYearId from(UUID uuid) {
-        return new AcademicYearId(uuid);
+    public static RegistryId from(UUID uuid) {
+        return new RegistryId(uuid);
     }
 
     public String asString() {

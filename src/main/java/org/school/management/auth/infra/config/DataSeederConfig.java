@@ -1,3 +1,4 @@
+/*
 package org.school.management.auth.infra.config;
 
 import lombok.RequiredArgsConstructor;
@@ -10,7 +11,6 @@ import org.school.management.auth.domain.valueobject.HashedPassword;
 import org.school.management.auth.domain.valueobject.PlainPassword;
 import org.school.management.auth.domain.valueobject.RoleName;
 import org.school.management.shared.domain.valueobjects.DNI;
-import org.school.management.shared.domain.valueobjects.Email;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -131,3 +131,4 @@ public class DataSeederConfig {
     }
 }
 
+*/

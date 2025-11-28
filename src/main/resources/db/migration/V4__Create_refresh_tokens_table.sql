@@ -6,7 +6,11 @@ CREATE TABLE IF NOT EXISTS refresh_tokens (
     expires_at DATETIME NOT NULL,
     revoked_at DATETIME DEFAULT NULL,
     device_info VARCHAR(200),
-    FOREIGN KEY (user_dni) REFERENCES users(dni) ON DELETE CASCADE,
     INDEX idx_user_dni (user_dni),
-    INDEX idx_expires_at (expires_at)
-);
+    INDEX idx_expires_at (expires_at),
+    CONSTRAINT fk_refresh_tokens_user
+                FOREIGN KEY (user_dni)
+                REFERENCES users (dni)
+                ON DELETE CASCADE
+    )ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+

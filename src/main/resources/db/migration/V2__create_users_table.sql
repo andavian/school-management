@@ -13,3 +13,12 @@ CREATE TABLE IF NOT EXISTS users
     INDEX idx_user_created (created_at),
     INDEX idx_user_roles (roles)
 )ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE user_roles (
+    user_id     BINARY(16) NOT NULL,
+    role_id     BINARY(16) NOT NULL,
+    PRIMARY KEY (user_id, role_id),
+
+    CONSTRAINT fk_user_roles_user_id FOREIGN KEY (user_id) REFERENCES users (user_id) ON DELETE CASCADE,
+    CONSTRAINT fk_user_roles_role_id FOREIGN KEY (role_id) REFERENCES roles (role_id) ON DELETE CASCADE
+);

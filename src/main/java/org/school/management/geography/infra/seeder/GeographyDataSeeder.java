@@ -1,3 +1,4 @@
+/*
 package org.school.management.geography.infra.seeder;
 
 
@@ -22,12 +23,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+*/
 /**
  * Data Seeder para Geography Module
  * Puebla la base de datos con datos geográficos de Argentina
  *
  * @Order(1) para ejecutar antes que otros seeders que dependan de Geography
- */
+ *//*
+
 @Component
 @Order(1)
 @RequiredArgsConstructor
@@ -276,12 +279,14 @@ public class GeographyDataSeeder implements ApplicationRunner {
         log.info("    - Localities: {}", localitiesCount);
     }
 
-    /**
+    */
+/**
      * Record helper para datos de lugares
-     */
+     *//*
+
     private record PlaceData(
             String name,
             PlaceType type,
             String postalCode
     ) {}
-}
+}*/

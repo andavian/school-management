@@ -1,3 +1,4 @@
+/*
 package org.school.management.auth.infra.config;
 
 import lombok.RequiredArgsConstructor;
@@ -51,3 +52,4 @@ public class RoleSeederConfig {
     }
 }
 
+*/

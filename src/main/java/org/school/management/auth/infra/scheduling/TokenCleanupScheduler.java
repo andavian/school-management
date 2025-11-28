@@ -1,3 +1,4 @@
+/*
 package org.school.management.auth.infra.scheduling;
 
 import lombok.RequiredArgsConstructor;
@@ -25,4 +26,4 @@ public class TokenCleanupScheduler {
             log.error("Error durante la limpieza de tokens: {}", e.getMessage(), e);
         }
     }
-}
+}*/
