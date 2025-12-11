@@ -6,12 +6,14 @@ import org.school.management.auth.infra.security.config.CorsProperties;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.annotation.web.configuration.WebSecurityCustomizer;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
@@ -41,7 +43,6 @@ public class SecurityConfig {
     };
 
     private static final String[] PUBLIC_DOCS_ENDPOINTS = {
-            "/v3/api-docs/**",
             "/swagger-ui.html",
             "/swagger-ui/**",
             "/swagger-resources/**",
@@ -60,6 +61,21 @@ public class SecurityConfig {
     private final AuthenticationProvider authenticationProvider;
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
     private final CorsProperties corsProperties;
+
+    @Bean
+    public WebSecurityCustomizer webSecurityCustomizer() {
+        return (web) -> web.ignoring().requestMatchers(
+                "/v3/api-docs.yaml",  // 🔥 ESTE ES EL CLAVE PARA INSOMNIA
+                "/v3/api-docs",
+                "/v3/api-docs/**",
+                "/swagger-ui.html",
+                "/swagger-ui/**",
+                "/swagger-resources/**",
+                "/webjars/**",
+                "/actuator/health",
+                "/actuator/info"
+        );
+    }
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
@@ -95,8 +111,8 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         // Endpoints públicos
                         .requestMatchers(PUBLIC_AUTH_ENDPOINTS).permitAll()
-                        .requestMatchers(PUBLIC_DOCS_ENDPOINTS).permitAll()
-                        .requestMatchers(PUBLIC_HEALTH_ENDPOINTS).permitAll()
+                        //.requestMatchers(PUBLIC_DOCS_ENDPOINTS).permitAll()
+                        //.requestMatchers(PUBLIC_HEALTH_ENDPOINTS).permitAll()
                         .requestMatchers(HttpMethod.GET, PUBLIC_API_ENDPOINTS).permitAll()
 
                         // Endpoints de administración

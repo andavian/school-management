@@ -9,17 +9,24 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
+
 import java.util.List;
 import java.util.UUID;
 
-/**
- * REST Controller para Geography Module
- * Endpoints públicos para consulta de lugares geográficos
- */
 @RestController
 @RequestMapping("/api/geography")
 @RequiredArgsConstructor
 @Slf4j
+@Tag(
+        name = "Geography",
+        description = "Endpoints públicos para consulta de países, provincias y localidades"
+)
 public class GeographyController {
 
     private final GetPlaceByIdUseCase getPlaceByIdUseCase;
@@ -32,175 +39,162 @@ public class GeographyController {
     private final GlobalSearchUseCase globalSearchUseCase;
     private final GetGeographyStatisticsUseCase getStatisticsUseCase;
 
-    // ========================================================================
+    // ============================================================
     // COUNTRIES
-    // ========================================================================
+    // ============================================================
 
-    /**
-     * Listar todos los países
-     * GET /api/geography/countries
-     */
+    @Operation(
+            summary = "Listar países",
+            description = "Retorna todos los países registrados en el sistema."
+    )
+    @ApiResponse(
+            responseCode = "200",
+            description = "Lista de países",
+            content = @Content(schema = @Schema(implementation = CountryResponse.class))
+    )
     @GetMapping("/countries")
     public ResponseEntity<List<CountryResponse>> listCountries() {
         log.info("GET /api/geography/countries");
-
-        List<CountryResponse> countries = listCountriesUseCase.execute();
-
-        return ResponseEntity.ok(countries);
+        return ResponseEntity.ok(listCountriesUseCase.execute());
     }
 
-    /**
-     * Obtener país por código ISO
-     * GET /api/geography/countries/ARG
-     */
+    @Operation(
+            summary = "Obtener país por código ISO",
+            description = "Retorna la información del país correspondiente al código ISO proporcionado."
+    )
     @GetMapping("/countries/{isoCode}")
     public ResponseEntity<CountryResponse> getCountryByIsoCode(
+            @Parameter(description = "Código ISO del país", example = "ARG")
             @PathVariable String isoCode
     ) {
         log.info("GET /api/geography/countries/{}", isoCode);
-
-        CountryResponse country = getCountryByIsoCodeUseCase.execute(
-                new GetCountryByIsoCodeRequest(isoCode)
+        return ResponseEntity.ok(
+                getCountryByIsoCodeUseCase.execute(new GetCountryByIsoCodeRequest(isoCode))
         );
-
-        return ResponseEntity.ok(country);
     }
 
-    // ========================================================================
+    // ============================================================
     // PROVINCES
-    // ========================================================================
+    // ============================================================
 
-    /**
-     * Listar provincias de un país
-     * GET /api/geography/countries/{countryId}/provinces
-     */
+    @Operation(
+            summary = "Listar provincias de un país",
+            description = "Retorna todas las provincias pertenecientes al país especificado."
+    )
     @GetMapping("/countries/{countryId}/provinces")
     public ResponseEntity<List<ProvinceResponse>> listProvinces(
+            @Parameter(description = "ID del país", example = "uuid")
             @PathVariable UUID countryId
     ) {
         log.info("GET /api/geography/countries/{}/provinces", countryId);
-
-        List<ProvinceResponse> provinces = listProvincesByCountryUseCase.execute(
-                new ListProvincesByCountryRequest(countryId)
+        return ResponseEntity.ok(
+                listProvincesByCountryUseCase.execute(new ListProvincesByCountryRequest(countryId))
         );
-
-        return ResponseEntity.ok(provinces);
     }
 
-    /**
-     * Buscar provincias por nombre
-     * GET /api/geography/provinces/search?q=Cordoba
-     */
+    @Operation(
+            summary = "Buscar provincias por nombre",
+            description = "Permite buscar provincias por coincidencia parcial del nombre."
+    )
     @GetMapping("/provinces/search")
     public ResponseEntity<List<ProvinceResponse>> searchProvinces(
+            @Parameter(description = "Texto de búsqueda", example = "Córdoba")
             @RequestParam String q
     ) {
         log.info("GET /api/geography/provinces/search?q={}", q);
-
-        List<ProvinceResponse> provinces = searchProvincesUseCase.execute(
-                new SearchProvincesRequest(q)
+        return ResponseEntity.ok(
+                searchProvincesUseCase.execute(new SearchProvincesRequest(q))
         );
-
-        return ResponseEntity.ok(provinces);
     }
 
-    // ========================================================================
+    // ============================================================
     // PLACES
-    // ========================================================================
+    // ============================================================
 
-    /**
-     * Obtener lugar por ID con jerarquía completa
-     * GET /api/geography/places/{placeId}
-     */
+    @Operation(
+            summary = "Obtener localidad por ID",
+            description = "Retorna la localidad y su jerarquía completa (provincia y país)."
+    )
     @GetMapping("/places/{placeId}")
     public ResponseEntity<PlaceResponse> getPlaceById(
+            @Parameter(description = "ID de la localidad", example = "uuid")
             @PathVariable UUID placeId
     ) {
         log.info("GET /api/geography/places/{}", placeId);
-
-        PlaceResponse place = getPlaceByIdUseCase.execute(
-                new GetPlaceByIdRequest(placeId)
+        return ResponseEntity.ok(
+                getPlaceByIdUseCase.execute(new GetPlaceByIdRequest(placeId))
         );
-
-        return ResponseEntity.ok(place);
     }
 
-    /**
-     * Listar lugares de una provincia
-     * GET /api/geography/provinces/{provinceId}/places
-     * GET /api/geography/provinces/{provinceId}/places?type=CIUDAD
-     */
+    @Operation(
+            summary = "Listar localidades de una provincia",
+            description = "Retorna todas las localidades pertenecientes a una provincia. Se puede filtrar por tipo."
+    )
     @GetMapping("/provinces/{provinceId}/places")
     public ResponseEntity<List<PlaceSummaryResponse>> listPlaces(
+            @Parameter(description = "ID de la provincia", example = "uuid")
             @PathVariable UUID provinceId,
+            @Parameter(description = "Tipo opcional de localidad", example = "CIUDAD")
             @RequestParam(required = false) String type
     ) {
         log.info("GET /api/geography/provinces/{}/places?type={}", provinceId, type);
-
-        List<PlaceSummaryResponse> places = listPlacesByProvinceUseCase.execute(
-                new ListPlacesByProvinceRequest(provinceId, type)
+        return ResponseEntity.ok(
+                listPlacesByProvinceUseCase.execute(
+                        new ListPlacesByProvinceRequest(provinceId, type)
+                )
         );
-
-        return ResponseEntity.ok(places);
     }
 
-    /**
-     * Buscar lugares por nombre
-     * GET /api/geography/places/search?q=Alta Gracia
-     * GET /api/geography/places/search?q=Cordoba&provinceId={uuid}
-     */
+    @Operation(
+            summary = "Buscar localidades",
+            description = "Permite buscar localidades por nombre, con filtro opcional por provincia."
+    )
     @GetMapping("/places/search")
     public ResponseEntity<List<PlaceResponse>> searchPlaces(
+            @Parameter(description = "Texto de búsqueda", example = "Alta Gracia")
             @RequestParam String q,
+            @Parameter(description = "ID opcional de provincia para filtrar", example = "uuid")
             @RequestParam(required = false) UUID provinceId
     ) {
         log.info("GET /api/geography/places/search?q={}&provinceId={}", q, provinceId);
-
-        List<PlaceResponse> places = searchPlacesUseCase.execute(
-                new SearchPlacesRequest(q, provinceId)
+        return ResponseEntity.ok(
+                searchPlacesUseCase.execute(new SearchPlacesRequest(q, provinceId))
         );
-
-        return ResponseEntity.ok(places);
     }
 
-    // ========================================================================
+    // ============================================================
     // GLOBAL SEARCH
-    // ========================================================================
+    // ============================================================
 
-    /**
-     * Búsqueda global en toda la jerarquía
-     * GET /api/geography/search?q=Alta&limit=10
-     */
+    @Operation(
+            summary = "Búsqueda global",
+            description = "Realiza una búsqueda en toda la jerarquía geográfica: países, provincias y localidades."
+    )
     @GetMapping("/search")
     public ResponseEntity<List<PlaceResponse>> globalSearch(
+            @Parameter(description = "Texto de búsqueda general")
             @RequestParam String q,
+            @Parameter(description = "Límite de resultados", example = "50")
             @RequestParam(required = false, defaultValue = "50") Integer limit
     ) {
         log.info("GET /api/geography/search?q={}&limit={}", q, limit);
-
-        List<PlaceResponse> results = globalSearchUseCase.execute(
-                new GlobalSearchRequest(q, limit)
+        return ResponseEntity.ok(
+                globalSearchUseCase.execute(new GlobalSearchRequest(q, limit))
         );
-
-        return ResponseEntity.ok(results);
     }
 
-    // ========================================================================
-    // STATISTICS
-    // ========================================================================
+    // ============================================================
+    // STATISTICS (ADMIN)
+    // ============================================================
 
-    /**
-     * Obtener estadísticas geográficas
-     * GET /api/geography/statistics
-     */
-    @GetMapping("/statistics")
+    @Operation(
+            summary = "Obtener estadísticas geográficas",
+            description = "Solo para administradores. Retorna conteos y métricas generales del módulo de geografía."
+    )
     @PreAuthorize("hasRole('ADMIN')")
+    @GetMapping("/statistics")
     public ResponseEntity<GeographyStatisticsResponse> getStatistics() {
         log.info("GET /api/geography/statistics");
-
-        GeographyStatisticsResponse stats = getStatisticsUseCase.execute();
-
-        return ResponseEntity.ok(stats);
+        return ResponseEntity.ok(getStatisticsUseCase.execute());
     }
 }
-

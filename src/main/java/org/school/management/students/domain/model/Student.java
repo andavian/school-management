@@ -1,60 +1,122 @@
 package org.school.management.students.domain.model;
 
-import lombok.AccessLevel;
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
-import org.school.management.shared.domain.valueobjects.DNI;
+import lombok.Builder;
+import lombok.Value;
+import org.school.management.academic.domain.valueobject.ids.RegistryId;
 import org.school.management.auth.domain.valueobject.UserId;
-import org.school.management.students.domain.valueobject.StudentId;
-import org.school.management.students.domain.valueobject.GradeLevel;
-import org.school.management.students.domain.valueobject.Division;
+import org.school.management.geography.domain.valueobject.PlaceId;
+import org.school.management.parents.domain.valueobject.StudentId;
+import org.school.management.students.enrollment.domain.valueobject.EnrollmentStatus;
+import org.school.management.students.enrollment.domain.valueobject.FolioNumber;
+import org.school.management.shared.person.domain.valueobject.FullName;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
-@Getter
-@RequiredArgsConstructor(access = AccessLevel.PRIVATE)
+@Value
+@Builder
 public class Student {
+    StudentId studentId;
+    UserId userId;
 
-    private final StudentId studentId;
-    private final UserId userId;
-    private final DNI dni;
-    private final String firstName;
-    private final String lastName;
-    private final GradeLevel grade;
-    private final Division division;
-    private final String parentEmail;
-    private final LocalDateTime createdAt;
+    // Datos personales
+    FullName fullName;
+    LocalDate birthDate;
+    PlaceId birthPlaceId;
+    Gender gender;
+    String nationality;
 
-    public static Student create(
-            StudentId studentId,
+    // Documentación
+    String dniFrontImage;
+    String dniBackImage;
+    String profilePhoto;
+
+    // Contacto
+    String phone;
+    Address address;
+
+    // Salud
+    BloodType bloodType;
+    HealthInsurance healthInsurance;
+    String allergies;
+    String medicalObservations;
+
+    // Registro de calificaciones
+    RegistryId registryId;
+    FolioNumber folioNumber;
+
+    // Estado
+    EnrollmentStatus enrollmentStatus;
+    LocalDate enrollmentDate;
+    LocalDate withdrawalDate;
+    String withdrawalReason;
+
+    // Auditoría
+    LocalDateTime createdAt;
+    LocalDateTime updatedAt;
+    UserId createdBy;
+
+    // Factory method
+    public static Student createNew(
             UserId userId,
-            DNI dni,
-            String firstName,
-            String lastName,
-            GradeLevel grade,
-            Division division,
-            String parentEmail,
-            LocalDateTime createdAt
+            FullName fullName,
+            LocalDate birthDate,
+            PlaceId birthPlaceId,
+            Gender gender,
+            Address address,
+            RegistryId registryId,
+            FolioNumber folioNumber,
+            UserId createdBy
     ) {
-        if (studentId == null || userId == null || dni == null) {
-            throw new IllegalArgumentException("StudentId, UserId y DNI son obligatorios");
+        return Student.builder()
+                .studentId(StudentId.generate())
+                .userId(userId)
+                .fullName(fullName)
+                .birthDate(birthDate)
+                .birthPlaceId(birthPlaceId)
+                .gender(gender)
+                .nationality("Argentina")
+                .address(address)
+                .registryId(registryId)
+                .folioNumber(folioNumber)
+                .enrollmentStatus(EnrollmentStatus.ACTIVE)
+                .enrollmentDate(LocalDate.now())
+                .createdAt(LocalDateTime.now())
+                .updatedAt(LocalDateTime.now())
+                .createdBy(createdBy)
+                .build();
+    }
+
+    public Student updateProfile(
+            String phone,
+            Address address,
+            BloodType bloodType,
+            HealthInsurance healthInsurance
+    ) {
+        return this.toBuilder()
+                .phone(phone)
+                .address(address)
+                .bloodType(bloodType)
+                .healthInsurance(healthInsurance)
+                .updatedAt(LocalDateTime.now())
+                .build();
+    }
+
+    public Student withdraw(String reason, UserId withdrawnBy) {
+        if (this.enrollmentStatus != EnrollmentStatus.ACTIVE) {
+            throw new IllegalStateException("Student is not active");
         }
-        if (firstName == null || firstName.isBlank()) {
-            throw new IllegalArgumentException("FirstName es obligatorio");
-        }
-        if (lastName == null || lastName.isBlank()) {
-            throw new IllegalArgumentException("LastName es obligatorio");
-        }
-        return new Student(
-                studentId,
-                userId,
-                dni,
-                firstName.trim(),
-                lastName.trim(),
-                grade,
-                division,
-                parentEmail,
-                createdAt != null ? createdAt : LocalDateTime.now()
-        );
+
+        return this.toBuilder()
+                .enrollmentStatus(EnrollmentStatus.WITHDRAWN)
+                .withdrawalDate(LocalDate.now())
+                .withdrawalReason(reason)
+                .updatedAt(LocalDateTime.now())
+                .build();
+    }
+
+    public boolean canEnrollInGradeLevel(int yearLevel) {
+        // Lógica de validación de inscripción
+        return this.enrollmentStatus == EnrollmentStatus.ACTIVE;
     }
 }

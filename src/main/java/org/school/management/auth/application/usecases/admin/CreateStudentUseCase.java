@@ -11,7 +11,7 @@ import org.school.management.auth.domain.repository.RoleRepository;
 import org.school.management.auth.domain.repository.UserRepository;
 import org.school.management.auth.domain.valueobject.HashedPassword;
 import org.school.management.auth.domain.valueobject.PlainPassword;
-import org.school.management.shared.domain.valueobjects.DNI;
+import org.school.management.shared.person.domain.valueobject.DNI;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 

@@ -1,27 +1,22 @@
 package org.school.management.academic.domain.valueobject;
 
-import java.util.Set;
+import lombok.Value;
 
-public record Division(String value) {
-
-    private static final Set<String> ALLOWED = Set.of("A", "B", "C", "D", "E");
-
-    public Division {
-
-
-        if (value == null || value.isBlank()) {
-            throw new IllegalArgumentException("Division no puede ser nulo ni vacío");
-        }
-        String normalized = value.trim().toUpperCase();
-
-        if (!ALLOWED.contains(normalized)) {
-            throw new IllegalArgumentException("Division inválida: " + value);
-        }
-
-        value = normalized;
-    }
+@Value
+public class Division {
+    String value;
 
     public static Division of(String value) {
-        return new Division(value);
+        if (value == null || value.isBlank()) {
+            throw new IllegalArgumentException("Division cannot be null or empty");
+        }
+
+        String normalized = value.trim().toUpperCase();
+
+        if (!normalized.matches("^[A-Z]{1,2}$")) {
+            throw new IllegalArgumentException("Division must be 1-2 uppercase letters");
+        }
+
+        return new Division(normalized);
     }
 }

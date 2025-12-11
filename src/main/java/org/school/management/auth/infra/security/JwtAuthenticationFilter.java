@@ -45,17 +45,39 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     // ============================================
     // Endpoints que no requieren autenticación
     // ============================================
-    private static final List<String> PUBLIC_ENDPOINTS = Arrays.asList(
-            "/api/auth/login",
-            "/api/auth/register",
-            "/api/auth/refresh-token",
-            "/v3/api-docs/**",
-            "/swagger-ui/**",
+    private static final String[] IGNORE_PATHS = {
+            // **RUTAS EXACTAS** (archivos)
+            "/v3/api-docs.yaml",  // PARA INSOMNIA
+            "/v3/api-docs",
+            "/swagger-ui.html",
             "/actuator/health",
-            "/actuator/info"
-    );
+            "/actuator/info",
 
-    private final AntPathMatcher pathMatcher = new AntPathMatcher();
+            // **RUTAS CON WILDCARD** (directorios)
+            "/v3/api-docs/**",    // Para /v3/api-docs/swagger-config, etc.
+            "/swagger-ui/**",
+            "/swagger-resources/**",
+            "/webjars/**",
+            "/actuator/**"
+    };
+
+    private final AntPathMatcher antPathMatcher = new AntPathMatcher();
+
+    @Override
+    protected boolean shouldNotFilter(HttpServletRequest request) {
+        String path = request.getRequestURI().toLowerCase(); // 🔥 Case-insensitive
+
+        boolean shouldIgnore = Arrays.stream(IGNORE_PATHS)
+                .anyMatch(pattern -> antPathMatcher.match(pattern, path));
+
+        if (shouldIgnore) {
+            log.info("✅ IGNORANDO COMPLETAMENTE JWT PARA: {}", path);
+        } else {
+            log.debug("🔐 PROCESANDO JWT PARA: {}", path);
+        }
+
+        return shouldIgnore;
+    }
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
@@ -65,11 +87,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         // Skip filtro para endpoints públicos
         // ============================================
         String requestPath = request.getRequestURI();
-        if (isPublicEndpoint(requestPath)) {
-            log.debug("Saltando autenticación JWT para endpoint público: {}", requestPath);
-            filterChain.doFilter(request, response);
-            return;
-        }
 
         try {
             final String token = getTokenFromRequest(request);
@@ -133,10 +150,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     // ============================================
     // Utilidades mejoradas
     // ============================================
-    private boolean isPublicEndpoint(String requestPath) {
-        return PUBLIC_ENDPOINTS.stream()
-                .anyMatch(pattern -> pathMatcher.match(pattern, requestPath));
-    }
+
 
     private boolean isTokenBlacklisted(String token) {
         try {

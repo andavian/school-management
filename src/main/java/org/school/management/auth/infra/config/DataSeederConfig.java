@@ -10,7 +10,7 @@ import org.school.management.auth.domain.repository.UserRepository;
 import org.school.management.auth.domain.valueobject.HashedPassword;
 import org.school.management.auth.domain.valueobject.PlainPassword;
 import org.school.management.auth.domain.valueobject.RoleName;
-import org.school.management.shared.domain.valueobjects.DNI;
+import org.school.management.shared.person.domain.valueobject.DNI;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -87,7 +87,7 @@ public class DataSeederConfig {
 
         User adminUser = User.create(
                 DNI.of("00000001"),
-                PlainPassword.of("aStrongPassword123!"),
+                PlainPassword.of("Admin123!"),
                 adminRoles, // <-- Pasa el Set<Role>
                 passwordEncoder
         );

@@ -11,7 +11,7 @@ import org.school.management.auth.domain.valueobject.RoleName;
 import org.school.management.auth.domain.valueobject.UserId;
 import org.school.management.auth.infra.persistence.entity.RoleEntity;
 import org.school.management.auth.infra.persistence.entity.UserEntity;
-import org.school.management.shared.domain.valueobjects.DNI;
+import org.school.management.shared.person.domain.valueobject.DNI;
 
 import java.util.Set;
 import java.util.UUID;

@@ -2,7 +2,7 @@ package org.school.management.auth.domain.repository;
 
 import org.school.management.auth.domain.model.User;
 import org.school.management.auth.domain.valueobject.UserId;
-import org.school.management.shared.domain.valueobjects.DNI;
+import org.school.management.shared.person.domain.valueobject.DNI;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;

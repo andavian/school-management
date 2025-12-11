@@ -11,13 +11,10 @@ import org.school.management.auth.domain.model.User;
 import org.school.management.auth.domain.repository.UserRepository;
 import org.school.management.auth.domain.valueobject.PlainPassword;
 import org.school.management.auth.domain.valueobject.HashedPassword;
-import org.school.management.auth.domain.valueobject.RoleName;
 import org.school.management.auth.infra.security.JwtTokenProvider;
-import org.school.management.shared.domain.valueobjects.DNI;
+import org.school.management.shared.person.domain.valueobject.DNI;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor

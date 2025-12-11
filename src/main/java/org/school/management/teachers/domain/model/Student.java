@@ -3,7 +3,7 @@ package org.school.management.teachers.domain.model;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
-import org.school.management.shared.domain.valueobjects.DNI;
+import org.school.management.shared.person.domain.valueobject.DNI;
 import org.school.management.auth.domain.valueobject.UserId;
 import org.school.management.students.domain.valueobject.StudentId;
 import org.school.management.students.domain.valueobject.GradeLevel;

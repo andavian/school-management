@@ -3,25 +3,23 @@
 -- ============================================================================
 
 -- Insert current academic year (2024)
-INSERT INTO academic_years (academic_year_id, year, start_date, end_date, is_current, status, created_at)
+INSERT INTO academic_years (academic_year_id, year, start_date, end_date, status, created_at)
 VALUES (
     UNHEX(REPLACE(UUID(), '-', '')),
     2024,
     '2024-03-01',
     '2024-12-15',
-    TRUE,
     'ACTIVE',
     CURRENT_TIMESTAMP
 );
 
 -- Insert academic year 2025
-INSERT INTO academic_years (academic_year_id, year, start_date, end_date, is_current, status, created_at)
+INSERT INTO academic_years (academic_year_id, year, start_date, end_date, status, created_at)
 VALUES (
     UNHEX(REPLACE(UUID(), '-', '')),
     2025,
     '2025-03-01',
     '2025-12-15',
-    FALSE,
     'PENDING',
     CURRENT_TIMESTAMP
 );

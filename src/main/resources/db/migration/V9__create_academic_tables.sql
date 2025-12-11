@@ -9,7 +9,6 @@ CREATE TABLE academic_years (
     year                INT NOT NULL UNIQUE,
     start_date          DATE NOT NULL,
     end_date            DATE NOT NULL,
-    is_current          BOOLEAN NOT NULL DEFAULT FALSE,
     status              VARCHAR(20) NOT NULL DEFAULT 'PENDING',
     created_at          TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at          TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -19,7 +18,6 @@ CREATE TABLE academic_years (
     CONSTRAINT chk_status CHECK (status IN ('PENDING', 'ACTIVE', 'CLOSED')),
     
     INDEX idx_academic_years_year (year),
-    INDEX idx_academic_years_current (is_current),
     INDEX idx_academic_years_status (status)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 

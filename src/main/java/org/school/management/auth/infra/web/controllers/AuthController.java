@@ -1,5 +1,7 @@
 package org.school.management.auth.infra.web.controllers;
 
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -15,171 +17,164 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
+import io.swagger.v3.oas.annotations.tags.Tag;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.*;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+
 @RestController
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
 @Slf4j
+@Tag(name = "Authentication", description = "Endpoints de autenticación y gestión de cuentas")
 public class AuthController {
 
     private final LoginUseCase loginUseCase;
     private final ActivateTeacherAccountUseCase activateTeacherAccountUseCase;
     private final ChangePasswordUseCase changePasswordUseCase;
     private final GetUserProfileUseCase getUserProfileUseCase;
-    //ate final LogoutUseCase logoutUseCase;
     private final AuthWebMapper webMapper;
 
-    // ============================================
-    // LOGIN - Endpoint público
-    // ============================================
+    // ============================================================
+    // LOGIN  (PUBLIC)
+    // ============================================================
+    @Operation(
+            summary = "Iniciar sesión",
+            description = "Permite autenticar un usuario por DNI y contraseña. Devuelve un JWT si las credenciales son válidas."
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Login exitoso",
+                    content = @Content(schema = @Schema(implementation = LoginApiResponse.class))),
+            @ApiResponse(responseCode = "400", description = "Credenciales inválidas",
+                    content = @Content(schema = @Schema(implementation = ErrorApiResponse.class))),
+            @ApiResponse(responseCode = "403", description = "Usuario inactivo",
+                    content = @Content(schema = @Schema(implementation = ErrorApiResponse.class)))
+    })
     @PostMapping("/login")
-    public ResponseEntity<LoginApiResponse> login(@Valid @RequestBody LoginApiRequest request) {
-        log.info("POST /api/auth/login - DNI: {}", request.dni());
+    public ResponseEntity<LoginApiResponse> login(
+            @Valid @RequestBody LoginApiRequest request) {
 
-        try {
-            var applicationRequest = webMapper.toApplicationDto(request);
-            var loginResponse = loginUseCase.execute(applicationRequest);
-            var apiResponse = webMapper.toApiResponse(loginResponse);
+        log.info("POST /api/auth/login - DNI {}", request.dni());
 
-            log.info("Login exitoso para DNI: {}", request.dni());
-            return ResponseEntity.ok(apiResponse);
+        var applicationRequest = webMapper.toApplicationDto(request);
+        var loginResponse = loginUseCase.execute(applicationRequest);
+        var apiResponse = webMapper.toApiResponse(loginResponse);
 
-        } catch (InvalidPasswordException e) {
-            log.warn("Credenciales inválidas para DNI: {}", request.dni());
-            throw e;
-        } catch (UserNotActiveException e) {
-            log.warn("Usuario inactivo intentó login. DNI: {}", request.dni());
-            throw e;
-        }
+        return ResponseEntity.ok(apiResponse);
     }
 
-    // ============================================
-    // ACTIVATE ACCOUNT - Para profesores (endpoint público con token)
-    // ============================================
+    // ============================================================
+    // ACTIVATE ACCOUNT (PUBLIC con token)
+    // ============================================================
+    @Operation(
+            summary = "Activar cuenta de profesor",
+            description = "Activa la cuenta de un profesor utilizando el token enviado por email."
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Cuenta activada correctamente",
+                    content = @Content(schema = @Schema(implementation = SuccessApiResponse.class))),
+            @ApiResponse(responseCode = "400", description = "Token inválido o expirado",
+                    content = @Content(schema = @Schema(implementation = ErrorApiResponse.class)))
+    })
     @PostMapping("/activate-account")
     public ResponseEntity<SuccessApiResponse> activateAccount(
             @Valid @RequestBody ActivateAccountApiRequest request) {
 
         log.info("POST /api/auth/activate-account");
 
-        try {
-            var applicationRequest = new org.school.management.auth.application.dto.requests.ActivateAccountRequest(
-                    request.token(),
-                    request.newPassword()
-            );
+        var applicationRequest = new org.school.management.auth.application.dto.requests.ActivateAccountRequest(
+                request.token(),
+                request.newPassword()
+        );
 
-            var response = activateTeacherAccountUseCase.execute(applicationRequest);
+        var response = activateTeacherAccountUseCase.execute(applicationRequest);
 
-            var apiResponse = webMapper.createSuccessResponse(response.message());
-
-            log.info("Cuenta activada exitosamente");
-            return ResponseEntity.ok(apiResponse);
-
-        } catch (InvalidTokenException e) {
-            log.warn("Token de activación inválido");
-            throw e;
-        } catch (InvalidOperationException e) {
-            log.warn("Operación de activación inválida: {}", e.getMessage());
-            throw e;
-        }
+        return ResponseEntity.ok(webMapper.createSuccessResponse(response.message()));
     }
 
-    // ============================================
-    // CHANGE PASSWORD - Requiere autenticación
-    // ============================================
+    // ============================================================
+    // CHANGE PASSWORD (PRIVATE - requiere JWT)
+    // ============================================================
+    @Operation(
+            summary = "Cambiar contraseña",
+            description = "Permite a un usuario autenticado cambiar su contraseña actual.",
+            security = @SecurityRequirement(name = "bearer-jwt")
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Contraseña cambiada exitosamente",
+                    content = @Content(schema = @Schema(implementation = SuccessApiResponse.class))),
+            @ApiResponse(responseCode = "400", description = "Contraseña actual incorrecta",
+                    content = @Content(schema = @Schema(implementation = ErrorApiResponse.class))),
+            @ApiResponse(responseCode = "401", description = "Usuario no autenticado")
+    })
     @PutMapping("/change-password")
     public ResponseEntity<SuccessApiResponse> changePassword(
             @Valid @RequestBody ChangePasswordApiRequest request) {
 
         log.info("PUT /api/auth/change-password");
 
-        // Obtener userId del usuario autenticado
         String userId = getCurrentUserId();
 
-        try {
-            var applicationRequest = webMapper.toApplicationDto(request);
-            // Setear el userId desde el token JWT
-            var requestWithUserId = new org.school.management.auth.application.dto.requests.ChangePasswordRequest(
-                    userId,
-                    applicationRequest.currentPassword(),
-                    applicationRequest.newPassword()
-            );
+        var appRequest = webMapper.toApplicationDto(request);
+        var requestWithUserId = new org.school.management.auth.application.dto.requests.ChangePasswordRequest(
+                userId,
+                appRequest.currentPassword(),
+                appRequest.newPassword()
+        );
 
-            var response = changePasswordUseCase.execute(requestWithUserId);
+        var response = changePasswordUseCase.execute(requestWithUserId);
 
-            var apiResponse = webMapper.createSuccessResponse(response.message());
-
-            log.info("Password cambiado exitosamente para usuario: {}", userId);
-            return ResponseEntity.ok(apiResponse);
-
-        } catch (InvalidCurrentPasswordException e) {
-            log.warn("Password actual incorrecto para usuario: {}", userId);
-            throw e;
-        }
+        return ResponseEntity.ok(webMapper.createSuccessResponse(response.message()));
     }
 
-    // ============================================
-    // GET PROFILE - Usuario autenticado obtiene su perfil
-    // ============================================
+    // ============================================================
+    // PROFILE (PRIVATE)
+    // ============================================================
+    @Operation(
+            summary = "Obtener perfil",
+            description = "Devuelve la información del usuario autenticado.",
+            security = @SecurityRequirement(name = "bearer-jwt")
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Perfil del usuario",
+                    content = @Content(schema = @Schema(implementation = UserApiResponse.class))),
+            @ApiResponse(responseCode = "401", description = "Usuario no autenticado")
+    })
     @GetMapping("/profile")
     public ResponseEntity<UserApiResponse> getProfile() {
         log.info("GET /api/auth/profile");
 
         String userId = getCurrentUserId();
+        var user = getUserProfileUseCase.execute(userId);
 
-        var userResponse = getUserProfileUseCase.execute(userId);
-        var apiResponse = webMapper.toApiResponse(userResponse);
-
-        log.debug("Perfil obtenido para usuario: {}", userId);
-        return ResponseEntity.ok(apiResponse);
+        return ResponseEntity.ok(webMapper.toApiResponse(user));
     }
 
-    // ============================================
-    // LOGOUT - Invalidar token
-    // ============================================
-//    @PostMapping("/logout")
-//    public ResponseEntity<SuccessApiResponse> logout(
-//            @RequestHeader("Authorization") String authorizationHeader) {
-//
-//        log.info("POST /api/auth/logout");
-//
-//        try {
-//            // Extraer token del header
-//            String token = authorizationHeader.replace("Bearer ", "");
-//
-//            var logoutRequest = new org.school.management.auth.application.dto.requests.LogoutRequest(token);
-//            var response = logoutUseCase.execute(logoutRequest);
-//
-//            var apiResponse = webMapper.createSuccessResponse(response.message());
-//
-//            log.info("Logout exitoso");
-//            return ResponseEntity.ok(apiResponse);
-//
-//        } catch (Exception e) {
-//            log.error("Error durante logout: {}", e.getMessage());
-//            // Aún así retornar éxito
-//            return ResponseEntity.ok(webMapper.createSuccessResponse("Sesión cerrada"));
-//        }
-//    }
-
-    // ============================================
-    // REFRESH TOKEN - Para renovar token expirado
-    // ============================================
+    // ============================================================
+    // REFRESH TOKEN (PUBLIC)
+    // ============================================================
+    @Operation(
+            summary = "Renovar token JWT",
+            description = "Renueva un token JWT expirado utilizando un refresh token válido."
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "501", description = "Aún no implementado")
+    })
     @PostMapping("/refresh-token")
     public ResponseEntity<RefreshTokenApiResponse> refreshToken(
             @Valid @RequestBody RefreshTokenApiRequest request) {
 
         log.info("POST /api/auth/refresh-token");
-
-        // TODO: Implementar RefreshTokenUseCase
         throw new UnsupportedOperationException("Refresh token no implementado aún");
     }
 
-    // ============================================
-    // Helper methods
-    // ============================================
-
+    // ============================================================
+    // Helper
+    // ============================================================
     private String getCurrentUserId() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+
         if (authentication == null || !authentication.isAuthenticated()) {
             throw new UnauthorizedException("Usuario no autenticado");
         }

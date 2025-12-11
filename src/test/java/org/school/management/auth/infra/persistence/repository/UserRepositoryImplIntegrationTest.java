@@ -7,7 +7,7 @@
 //import org.school.management.auth.domain.valueobject.RoleName;
 //import org.school.management.auth.infra.persistence.adapters.UserRepositoryImpl;
 //import org.school.management.auth.infra.persistence.mappers.AuthPersistenceMapperImpl;
-//import org.school.management.shared.domain.valueobjects.DNI;
+//import org.school.management.shared.person.domain.valueobject.DNI;
 //import org.springframework.beans.factory.annotation.Autowired;
 //import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 //import org.springframework.context.annotation.Import;

@@ -10,7 +10,7 @@ import org.school.management.auth.infra.persistence.entity.UserEntity;
 import org.school.management.auth.infra.persistence.mappers.AuthPersistenceMapper;
 import org.school.management.auth.infra.persistence.repository.RoleJpaRepository;
 import org.school.management.auth.infra.persistence.repository.UserJpaRepository;
-import org.school.management.shared.domain.valueobjects.DNI;
+import org.school.management.shared.person.domain.valueobject.DNI;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 

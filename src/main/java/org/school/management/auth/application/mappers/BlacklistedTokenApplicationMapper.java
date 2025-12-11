@@ -10,7 +10,7 @@ public interface BlacklistedTokenApplicationMapper {
 
     @Mapping(source = "id.value", target = "id")
     @Mapping(expression = "java(token.isExpired())", target = "isExpired")
-    @Mapping(expression = "java(token.isActive())", target = "isActive")
+    @Mapping(expression = "java(token.isCurrent())", target = "isCurrent")
     BlacklistedTokenResponse toResponse(BlacklistedToken token);
 
     default BlacklistedToken toDomain(BlacklistTokenRequest request) {
