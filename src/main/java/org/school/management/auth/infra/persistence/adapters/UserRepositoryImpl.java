@@ -10,7 +10,7 @@ import org.school.management.auth.infra.persistence.entity.UserEntity;
 import org.school.management.auth.infra.persistence.mappers.AuthPersistenceMapper;
 import org.school.management.auth.infra.persistence.repository.RoleJpaRepository;
 import org.school.management.auth.infra.persistence.repository.UserJpaRepository;
-import org.school.management.shared.person.domain.valueobject.DNI;
+import org.school.management.shared.person.domain.valueobject.Dni;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -30,7 +30,7 @@ public class UserRepositoryImpl implements UserRepository {
     @Override
     @Transactional
     public User save(User user) {
-        log.debug("Guardando usuario con DNI: {}", user.getDni().getValue());
+        log.debug("Guardando usuario con DNI: {}", user.getDni().value());
 
         try {
             // 1. Convertir User → UserEntity
@@ -51,7 +51,7 @@ public class UserRepositoryImpl implements UserRepository {
 
             log.debug("Usuario guardado exitosamente. ID: {}, DNI: {}, Roles: {}",
                     savedUser.getUserId().asString(),
-                    savedUser.getDni().getValue(),
+                    savedUser.getDni().value(),
                     savedUser.getRoles().stream()
                             .map(r->r.getName().getName())
                             .collect(Collectors.joining(",")));
@@ -60,7 +60,7 @@ public class UserRepositoryImpl implements UserRepository {
 
         } catch (Exception e) {
             log.error("Error guardando usuario con DNI {}: {}",
-                    user.getDni().getValue(), e.getMessage(), e);
+                    user.getDni().value(), e.getMessage(), e);
             throw new UserRepositoryException("Error guardando usuario", e);
         }
     }
@@ -103,8 +103,8 @@ public class UserRepositoryImpl implements UserRepository {
     }
 
     @Override
-    public Optional<User> findByDni(DNI dni) {
-        return userJpaRepository.findByDniWithRoles(dni.getValue())
+    public Optional<User> findByDni(Dni dni) {
+        return userJpaRepository.findByDniWithRoles(dni.value())
                 .map(entity -> {
                     // ✅ LOG DE VERDAD
                     System.err.println("=== ENTITY ROLES SIZE: " + entity.getRoles().size());
@@ -170,33 +170,33 @@ public class UserRepositoryImpl implements UserRepository {
     // ============================================
 
        @Override
-    public boolean existsByDni(DNI dni) {
-        log.debug("Verificando existencia de usuario con DNI: {}", dni.getValue());
+    public boolean existsByDni(Dni dni) {
+        log.debug("Verificando existencia de usuario con DNI: {}", dni.value());
 
         try {
-            boolean exists = userJpaRepository.existsByDni(dni.getValue());
-            log.debug("Usuario con DNI {} existe: {}", dni.getValue(), exists);
+            boolean exists = userJpaRepository.existsByDni(dni.value());
+            log.debug("Usuario con DNI {} existe: {}", dni.value(), exists);
             return exists;
 
         } catch (Exception e) {
             log.error("Error verificando existencia de DNI {}: {}",
-                    dni.getValue(), e.getMessage());
+                    dni.value(), e.getMessage());
             return false;
         }
     }
 
     @Override
     @Transactional
-    public void deleteByDni(DNI dni) {
-        log.info("Eliminando usuario por DNI: {}", dni.getValue());
+    public void deleteByDni(Dni dni) {
+        log.info("Eliminando usuario por DNI: {}", dni.value());
 
         try {
-            userJpaRepository.deleteByDni(dni.getValue());
-            log.info("Usuario con DNI {} eliminado exitosamente", dni.getValue());
+            userJpaRepository.deleteByDni(dni.value());
+            log.info("Usuario con DNI {} eliminado exitosamente", dni.value());
 
         } catch (Exception e) {
             log.error("Error eliminando usuario con DNI {}: {}",
-                    dni.getValue(), e.getMessage(), e);
+                    dni.value(), e.getMessage(), e);
             throw new UserRepositoryException("Error eliminando usuario", e);
         }
     }

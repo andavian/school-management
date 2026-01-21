@@ -11,7 +11,7 @@ import org.school.management.auth.domain.valueobject.RoleName;
 import org.school.management.auth.domain.valueobject.UserId;
 import org.school.management.auth.infra.persistence.entity.RoleEntity;
 import org.school.management.auth.infra.persistence.entity.UserEntity;
-import org.school.management.shared.person.domain.valueobject.DNI;
+import org.school.management.shared.person.domain.valueobject.Dni;
 
 import java.util.Set;
 import java.util.UUID;
@@ -27,8 +27,8 @@ public abstract class AuthPersistenceMapper {
     }
 
     @Named("dniToString")
-    protected String dniToString(DNI dni) {
-        return dni != null ? dni.getValue() : null;
+    protected String dniToString(Dni dni) {
+        return dni != null ? dni.value() : null;
     }
 
     @Named("hashedPasswordToString")
@@ -104,8 +104,8 @@ public abstract class AuthPersistenceMapper {
         return uuid != null ? UserId.from(uuid) : null;
     }
 
-    protected DNI stringToDni(String dni) {
-        return dni != null ? DNI.of(dni) : null;
+    protected Dni stringToDni(String dni) {
+        return dni != null ? Dni.of(dni) : null;
     }
 
     protected HashedPassword stringToHashedPassword(String hashedPassword) {

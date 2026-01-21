@@ -15,7 +15,7 @@ import org.school.management.auth.domain.valueobject.HashedPassword;
 import org.school.management.auth.domain.valueobject.PlainPassword;
 import org.school.management.auth.domain.valueobject.RoleName;
 import org.school.management.auth.domain.valueobject.UserId;
-import org.school.management.shared.person.domain.valueobject.DNI;
+import org.school.management.shared.person.domain.valueobject.Dni;
 
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -38,8 +38,8 @@ public interface AuthApplicationMapper {
     LoginResponse toLoginResponse(User user, String token, String refreshToken);
 
     // --- Helpers para Value Objects (Sin cambios) ---
-    default DNI toDni(String dni) {
-        return DNI.of(dni);
+    default Dni toDni(String dni) {
+        return Dni.of(dni);
     }
 
     default PlainPassword toPlainPassword(String password) {
@@ -67,7 +67,7 @@ public interface AuthApplicationMapper {
                                           PlainPassword password,
                                           HashedPassword.PasswordEncoder encoder,
                                           @Context RoleRepository roleRepository) { // <-- ¡Inyección con @Context!
-        DNI dni = DNI.of(request.dni());
+        Dni dni = Dni.of(request.dni());
 
         // Busca el rol de dominio completo usando el repositorio
         Role teacherRole = roleRepository.findByName(RoleName.teacher())
@@ -84,7 +84,7 @@ public interface AuthApplicationMapper {
                                           PlainPassword password,
                                           HashedPassword.PasswordEncoder encoder,
                                           @Context RoleRepository roleRepository) { // <-- ¡Inyección con @Context!
-        DNI dni = DNI.of(request.dni());
+        Dni dni = Dni.of(request.dni());
 
         // Busca el rol de dominio completo usando el repositorio
         Role studentRole = roleRepository.findByName(RoleName.student())

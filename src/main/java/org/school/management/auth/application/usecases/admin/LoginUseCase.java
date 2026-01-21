@@ -12,7 +12,7 @@ import org.school.management.auth.domain.repository.UserRepository;
 import org.school.management.auth.domain.valueobject.PlainPassword;
 import org.school.management.auth.domain.valueobject.HashedPassword;
 import org.school.management.auth.infra.security.JwtTokenProvider;
-import org.school.management.shared.person.domain.valueobject.DNI;
+import org.school.management.shared.person.domain.valueobject.Dni;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -31,7 +31,7 @@ public class LoginUseCase {
         log.info("Intento de login con DNI: {}", request.dni());
 
         // Convertir DNI del record a Value Object
-        DNI dni = mapper.toDni(request.dni());
+        Dni dni = mapper.toDni(request.dni());
         PlainPassword plainPassword = mapper.toPlainPassword(request.password());
 
         // Buscar usuario por DNI

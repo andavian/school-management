@@ -12,7 +12,7 @@ import org.school.management.auth.domain.repository.UserRepository;
 import org.school.management.auth.domain.valueobject.HashedPassword;
 import org.school.management.auth.domain.valueobject.PlainPassword;
 import org.school.management.auth.infra.security.JwtTokenProvider;
-import org.school.management.shared.person.domain.valueobject.DNI;
+import org.school.management.shared.person.domain.valueobject.Dni;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -35,7 +35,7 @@ public class CreateTeacherUseCase {
                 request.firstName(), request.lastName(), request.dni());
 
         // Validar DNI único
-        DNI dni = mapper.toDni(request.dni());
+        Dni dni = mapper.toDni(request.dni());
 
         if (userRepository.existsByDni(dni)) {
             log.warn("Intento de crear profesor con DNI existente: {}", request.dni());
@@ -62,7 +62,7 @@ public class CreateTeacherUseCase {
 
         return new CreateTeacherResponse(
                 savedTeacher.getUserId().asString(),
-                savedTeacher.getDni().getValue(),
+                savedTeacher.getDni().value(),
                 temporaryPassword.getValue(),
                 invitationSent
         );
@@ -82,7 +82,7 @@ public class CreateTeacherUseCase {
 
     private boolean sendTeacherInvitation(User teacher, String confirmationToken) {
         log.info("=== EMAIL DE INVITACIÓN ===");
-        log.info("DNI: {}", teacher.getDni().getValue());
+        log.info("DNI: {}", teacher.getDni().value());
         log.info("Token: {}", confirmationToken);
         log.info("Link: http://localhost:3000/activate-account?token={}", confirmationToken);
         log.info("==========================");

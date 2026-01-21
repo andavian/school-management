@@ -1,112 +1,206 @@
-// src/main/java/org/school/management/students/enrollment/domain/model/StudentEnrollment.java
 package org.school.management.students.enrollment.domain.model;
 
+import lombok.Builder;
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.AccessLevel;
-
-import org.school.management.auth.domain.valueobject.UserId;
-import org.school.management.academic.domain.valueobject.ids.RegistryId;
-import org.school.management.shared.person.domain.valueobject.*;
+import lombok.ToString;
+import org.school.management.academic.domain.valueobject.ids.AcademicYearId;
+import org.school.management.academic.domain.valueobject.ids.GradeLevelId;
 import org.school.management.students.enrollment.domain.exception.*;
-import org.school.management.students.enrollment.domain.valueobject.*;
+import org.school.management.students.enrollment.domain.valueobject.EnrollmentId;
+import org.school.management.students.enrollment.domain.valueobject.EnrollmentStatus;
+import org.school.management.students.enrollment.domain.valueobject.EnrollmentType;
+import org.school.management.academic.domain.valueobject.ids.WithdrawalReasonId;
+import org.school.management.students.personal.domain.valueobject.StudentPersonalDataId;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.Objects;
 
+/**
+ * Agregado Root: Inscripción del Estudiante
+ *
+ * Responsabilidad: Gestionar la matrícula del estudiante en un ciclo lectivo específico
+ * Un estudiante puede tener múltiples enrollments (uno por año, o varios si repite)
+ *
+ * Reglas de negocio críticas:
+ * - Solo puede haber UNA inscripción ACTIVE por estudiante por año académico
+ * - Una vez COMPLETED o WITHDRAWN, no se puede reactivar (estados terminales)
+ * - El promedio final solo se registra al completar el año
+ */
 @Getter
-@NoArgsConstructor(access = AccessLevel.PRIVATE)
+@Builder
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
+@ToString
 public class StudentEnrollment {
 
-    // Identidad propia del contexto students
-    private EnrollmentId enrollmentId;
+    // Identidad
+    @EqualsAndHashCode.Include
+    private final EnrollmentId enrollmentId;
+    private final StudentPersonalDataId studentId;
+    private final AcademicYearId academicYearId;
+    private final GradeLevelId gradeLevelId;
 
-    // Referencia externa al usuario (anti-corruption layer)
-    private UserId userId;
+    // Datos de inscripción
+    private final LocalDate enrollmentDate;
+    private final EnrollmentType enrollmentType;
+    @Builder.Default
+    private EnrollmentStatus status = EnrollmentStatus.ACTIVE;
 
-    // Datos de persona (shared kernel – acoplamiento permitido y deseado)
-    private DNI dni;
-    private FullName fullName;
-    private LocalDate birthDate;
-    private Gender gender;
-    private BirthPlaceId birthPlaceId;
+    // Información de origen
+    private final boolean isRepeating;
+    private final String previousSchool;
+    private final LocalDate transferDate;
 
-    // Datos específicos de matrícula
-    private EnrollmentStatus status;
-    private LocalDate enrollmentDate;
+    // Cierre del ciclo lectivo
+    private BigDecimal finalAverage;
+    private Boolean passed;
+    private LocalDate completionDate;
+
+    // Baja (withdrawal)
     private LocalDate withdrawalDate;
-    private String withdrawalReason;
-
-    private FolioNumber folioNumber;
-    private RegistryId registryId; // referencia al libro matriz
+    private WithdrawalReasonId withdrawalReasonId;
+    private String withdrawalObservations;
 
     // Auditoría
-    private LocalDateTime createdAt;
-    private LocalDateTime updatedAt;
-    private UserId createdBy;
+    @Builder.Default
+    private LocalDateTime createdAt = LocalDateTime.now();
+    @Builder.Default
+    private LocalDateTime updatedAt = LocalDateTime.now();
 
-    // ==================== FACTORY ====================
+    // ============ Domain Logic ============
 
-    public static StudentEnrollment enrollNewStudent(
-            UserId userId,
-            DNI dni,
-            FullName fullName,
-            LocalDate birthDate,
-            Gender gender,
-            BirthPlaceId birthPlaceId,
-            FolioNumber folioNumber,
-            RegistryId registryId,
-            UserId createdBy) {
+    /**
+     * Completa el año académico con promedio final
+     */
+    public void complete(BigDecimal finalAverage, boolean passed) {
+        validateCanComplete();
+        validateFinalAverage(finalAverage);
 
-        if (dni == null) throw new IllegalArgumentException("DNI es obligatorio");
-
-        var enrollment = new StudentEnrollment();
-        enrollment.enrollmentId = EnrollmentId.generate();
-        enrollment.userId = userId;
-        enrollment.dni = dni;
-        enrollment.fullName = fullName;
-        enrollment.birthDate = birthDate;
-        enrollment.gender = gender;
-        enrollment.birthPlaceId = birthPlaceId != null ? birthPlaceId : BirthPlaceId.of("argentina-default-id");
-        enrollment.folioNumber = folioNumber;
-        enrollment.registryId = registryId;
-
-        enrollment.status = EnrollmentStatus.ACTIVE;
-        enrollment.enrollmentDate = LocalDate.now();
-        enrollment.createdAt = LocalDateTime.now();
-        enrollment.updatedAt = LocalDateTime.now();
-        enrollment.createdBy = createdBy;
-
-        return enrollment;
+        this.finalAverage = finalAverage;
+        this.passed = passed;
+        this.completionDate = LocalDate.now();
+        this.status = EnrollmentStatus.COMPLETED;
+        this.updatedAt = LocalDateTime.now();
     }
 
-    // ==================== COMPORTAMIENTO RICO ====================
-
-    public StudentEnrollment withdraw(String reason, UserId withdrawnBy) {
-        if (this.status != EnrollmentStatus.ACTIVE) {
-            throw new StudentNotActiveException(this.enrollmentId);
-        }
-        if (reason == null || reason.trim().isEmpty()) {
-            throw new IllegalArgumentException("El motivo de baja es obligatorio");
+    /**
+     * Se gradua de la secundaria
+     */
+    public void graduate() {
+        if (status != EnrollmentStatus.COMPLETED) {
+            throw new IllegalStateException("Cannot graduate a student who hasn't completed their studies.");
         }
 
-        this.status = EnrollmentStatus.WITHDRAWN;
-        this.withdrawalDate = LocalDate.now();
-        this.withdrawalReason = reason.trim();
+        this.status = EnrollmentStatus.GRADUATED;
         this.updatedAt = LocalDateTime.now();
+    }
 
-        // Aquí lanzarías un Domain Event → StudentWithdrawnEvent
-        return this;
+    /**
+     * Registra la baja del estudiante
+     */
+    public void withdraw(WithdrawalReasonId reasonId, String observations) {
+        Objects.requireNonNull(reasonId, "Withdrawal reason cannot be null");
+
+        if (status == EnrollmentStatus.WITHDRAWN) {
+            throw new EnrollmentAlreadyWithdrawnException(
+                    "Enrollment is already withdrawn: " + enrollmentId
+            );
+        }
+
+        if (status == EnrollmentStatus.COMPLETED) {
+            throw new EnrollmentAlreadyCompletedException(
+                    "Cannot withdraw a completed enrollment: " + enrollmentId
+            );
+        }
+
+        this.withdrawalDate = LocalDate.now();
+        this.withdrawalReasonId = reasonId;
+        this.withdrawalObservations = observations;
+        this.status = EnrollmentStatus.WITHDRAWN;
+        this.updatedAt = LocalDateTime.now();
+    }
+
+    private void validateCanComplete() {
+        if (status == EnrollmentStatus.COMPLETED) {
+            throw new EnrollmentAlreadyCompletedException(
+                    "Enrollment is already completed: " + enrollmentId
+            );
+        }
+
+        if (status == EnrollmentStatus.WITHDRAWN) {
+            throw new EnrollmentAlreadyWithdrawnException(
+                    "Cannot complete a withdrawn enrollment: " + enrollmentId
+            );
+        }
+    }
+
+    private void validateFinalAverage(BigDecimal average) {
+        if (average == null) {
+            throw new InvalidEnrollmentCompletionException(
+                    "Final average cannot be null"
+            );
+        }
+
+        if (average.compareTo(BigDecimal.ONE) < 0 ||
+                average.compareTo(BigDecimal.TEN) > 0) {
+            throw new InvalidEnrollmentCompletionException(
+                    "Final average must be between 1 and 10, got: " + average
+            );
+        }
     }
 
     public boolean isActive() {
-        return this.status == EnrollmentStatus.ACTIVE;
+        return status == EnrollmentStatus.ACTIVE;
     }
 
-    public boolean hasSameIdentityAs(StudentEnrollment other) {
-        return this.dni.equals(other.dni);
+    public boolean canReceiveGrades() {
+        return status.canReceiveGrades();
     }
 
-    // Solo para uso interno de infraestructura (JPA)
-    void setEnrollmentId(EnrollmentId id) { this.enrollmentId = id; }
+    public boolean isTransfer() {
+        return enrollmentType == EnrollmentType.TRANSFER;
+    }
+
+    public Boolean hasPassed() {
+        return passed;
+    }
+
+    public long getDurationInDays() {
+        LocalDate endDate = switch (status) {
+            case ACTIVE, INACTIVE, SUSPENDED, TRANSFERRED -> LocalDate.now();
+            case COMPLETED, GRADUATED -> completionDate != null ? completionDate : LocalDate.now();
+            case WITHDRAWN -> withdrawalDate != null ? withdrawalDate : LocalDate.now();
+
+        };
+
+        return java.time.temporal.ChronoUnit.DAYS.between(enrollmentDate, endDate);
+    }
+
+    // Factory method para encapsular lógica de creación
+    public static StudentEnrollment create(StudentEnrollmentBuilder builder) {
+        Objects.requireNonNull(builder.enrollmentId, "EnrollmentId cannot be null");
+        Objects.requireNonNull(builder.studentId, "StudentId cannot be null");
+        Objects.requireNonNull(builder.academicYearId, "AcademicYearId cannot be null");
+        Objects.requireNonNull(builder.gradeLevelId, "GradeLevelId cannot be null");
+        Objects.requireNonNull(builder.enrollmentDate, "Enrollment date cannot be null");
+        Objects.requireNonNull(builder.enrollmentType, "Enrollment type cannot be null");
+
+        if (builder.enrollmentType == EnrollmentType.TRANSFER) {
+            if (builder.previousSchool == null || builder.previousSchool.isBlank()) {
+                throw new InvalidEnrollmentException(
+                        "Previous school is required for TRANSFER enrollment"
+                );
+            }
+        }
+
+        if (builder.enrollmentDate.isAfter(LocalDate.now())) {
+            throw new InvalidEnrollmentException(
+                    "Enrollment date cannot be in the future"
+            );
+        }
+
+        return builder.build();
+    }
 }

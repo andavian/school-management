@@ -43,7 +43,7 @@ public class StudyPlan {
                 .build();
     }
 
-    public boolean isGenerlPlan() {
+    public boolean isGeneralPlan() {
         return orientationId == null;
     }
 

@@ -23,7 +23,7 @@ public interface SubjectJpaRepository extends JpaRepository<SubjectEntity, UUID>
             SELECT s FROM SubjectEntity s
             WHERE s.yearLevel = :yearLevel
             AND s.orientationId IS NULL
-            AND s.isCurrent = true
+            AND s.isActive = true
             ORDER BY s.name
             """)
     List<SubjectEntity> findCommonSubjects(@Param("yearLevel") Integer yearLevel);
@@ -36,7 +36,7 @@ public interface SubjectJpaRepository extends JpaRepository<SubjectEntity, UUID>
             SELECT s FROM SubjectEntity s
             WHERE s.yearLevel = :yearLevel
             AND (s.orientationId = :orientationId OR s.orientationId IS NULL)
-            AND s.isCurrent = true
+            AND s.isActive = true
             ORDER BY s.isMandatory DESC, s.name
             """)
     List<SubjectEntity> findByYearLevelAndOrientation(
@@ -46,7 +46,7 @@ public interface SubjectJpaRepository extends JpaRepository<SubjectEntity, UUID>
 
     @Query("SELECT s FROM SubjectEntity s WHERE s.yearLevel = :yearLevel " +
             "AND (s.orientationId = :orientationId OR s.orientationId IS NULL) " +
-            "AND s.isCurrent = true")
+            "AND s.isActive = true")
     List<SubjectEntity> findAvailableForGradeLevel(
             @Param("yearLevel") Integer yearLevel,
             @Param("orientationId") UUID orientationId
@@ -64,7 +64,7 @@ public interface SubjectJpaRepository extends JpaRepository<SubjectEntity, UUID>
 
     // Query con orientación
     @Query("SELECT new org.school.management.academic.infra.persistence.entity.SubjectWithOrientationProjection(" +
-            "s.subjectId, s.name, s.code, s.yearLevel, s.weeklyHours, s.isCurrent, " +
+            "s.subjectId, s.name, s.code, s.yearLevel, s.weeklyHours, s.isActive, " +
             "o.orientationId, o.name, o.code) " +
             "FROM SubjectEntity s " +
             "LEFT JOIN OrientationEntity o ON s.orientationId = o.orientationId " +
@@ -72,11 +72,11 @@ public interface SubjectJpaRepository extends JpaRepository<SubjectEntity, UUID>
     Optional<SubjectWithOrientationProjection> findByIdWithOrientation(@Param("id") UUID id);
 
     @Query("SELECT new org.school.management.academic.infra.persistence.entity.SubjectWithOrientationProjection(" +
-            "s.subjectId, s.name, s.code, s.yearLevel, s.weeklyHours, s.isCurrent, " +
+            "s.subjectId, s.name, s.code, s.yearLevel, s.weeklyHours, s.isActive, " +
             "o.orientationId, o.name, o.code) " +
             "FROM SubjectEntity s " +
             "LEFT JOIN OrientationEntity o ON s.orientationId = o.orientationId " +
-            "WHERE s.yearLevel = :yearLevel AND s.isCurrent = true " +
+            "WHERE s.yearLevel = :yearLevel AND s.isActive = true " +
             "ORDER BY s.name")
     List<SubjectWithOrientationProjection> findByYearLevelWithOrientation(@Param("yearLevel") Integer yearLevel);
 }

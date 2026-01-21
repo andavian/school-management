@@ -29,7 +29,7 @@ public interface StudyPlanJpaRepository extends JpaRepository<StudyPlanEntity, U
 
     @Query("SELECT sp FROM StudyPlanEntity sp WHERE sp.yearLevel = :yearLevel " +
             "AND (sp.orientationId = :orientationId OR sp.orientationId IS NULL) " +
-            "AND sp.isCurrent = true")
+            "AND sp.isActive = true")
     List<StudyPlanEntity> findApplicableForGradeLevel(
             @Param("yearLevel") Integer yearLevel,
             @Param("orientationId") UUID orientationId

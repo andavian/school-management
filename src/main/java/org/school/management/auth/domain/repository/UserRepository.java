@@ -2,7 +2,7 @@ package org.school.management.auth.domain.repository;
 
 import org.school.management.auth.domain.model.User;
 import org.school.management.auth.domain.valueobject.UserId;
-import org.school.management.shared.person.domain.valueobject.DNI;
+import org.school.management.shared.person.domain.valueobject.Dni;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -16,9 +16,9 @@ public interface UserRepository {
     // ============================================
     // NUEVOS MÉTODOS CON DNI
     // ============================================
-    Optional<User> findByDni(DNI dni);
-    boolean existsByDni(DNI dni);
-    void deleteByDni(DNI dni);
+    Optional<User> findByDni(Dni dni);
+    boolean existsByDni(Dni dni);
+    void deleteByDni(Dni dni);
 
     // Consultas específicas del dominio
     List<User> findByRole(String roleName);

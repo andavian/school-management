@@ -11,7 +11,7 @@ import org.school.management.auth.domain.repository.RoleRepository;
 import org.school.management.auth.domain.repository.UserRepository;
 import org.school.management.auth.domain.valueobject.HashedPassword;
 import org.school.management.auth.domain.valueobject.PlainPassword;
-import org.school.management.shared.person.domain.valueobject.DNI;
+import org.school.management.shared.person.domain.valueobject.Dni;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -31,7 +31,7 @@ public class CreateStudentUseCase {
                 request.firstName(), request.lastName(), request.dni());
 
         // Validar DNI único
-        DNI dni = mapper.toDni(request.dni());
+        Dni dni = mapper.toDni(request.dni());
 
         if (userRepository.existsByDni(dni)) {
             log.warn("Intento de crear estudiante con DNI existente: {}", request.dni());
@@ -61,7 +61,7 @@ public class CreateStudentUseCase {
 
         return new CreateStudentResponse(
                 savedStudent.getUserId().asString(),
-                savedStudent.getDni().getValue(),
+                savedStudent.getDni().value(),
                 initialPasswordStr
         );
     }

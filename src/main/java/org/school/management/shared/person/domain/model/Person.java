@@ -8,10 +8,13 @@ import java.time.LocalDate;
 public record Person(
         PersonId personId,
         FullName fullName,
-        DNI dni,
+        Dni dni,
         LocalDate birthDate,
         Gender gender,
+        BirthPlaceId birthPlaceId,
         Nationality nationality,
+        Address address,
+        ResidencePlaceId residencePlaceId,
         PhoneNumber phoneNumber,
         Email email
 ) {}

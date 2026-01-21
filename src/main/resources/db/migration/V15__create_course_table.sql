@@ -99,7 +99,7 @@ CREATE TABLE student_course_subjects (
     updated_at          TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 
     CONSTRAINT fk_scs_enrollment
-        FOREIGN KEY (enrollment_id) REFERENCES enrollments(enrollment_id)
+        FOREIGN KEY (enrollment_id) REFERENCES student_enrollments(enrollment_id)
         ON DELETE CASCADE,
 
     CONSTRAINT fk_scs_course_subject

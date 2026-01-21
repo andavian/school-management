@@ -42,7 +42,7 @@ public class AcademicYearActivationService {
                 ));
 
         // Verificar que no esté ya activo
-        if (yearToActivate.isActive()) {
+        if (yearToActivate.isCurrent()) {
             throw new AcademicYearAlreadyActiveException(
                     "Academic year " + yearToActivate.getYearValue() + " is already active"
             );
@@ -102,7 +102,7 @@ public class AcademicYearActivationService {
      */
     public boolean canActivateYear(AcademicYearId academicYearId) {
         Optional<AcademicYear> yearOpt = academicYearRepository.findById(academicYearId);
-        return yearOpt.isPresent() && !yearOpt.get().isActive();
+        return yearOpt.isPresent() && !yearOpt.get().isCurrent();
     }
 
     /**

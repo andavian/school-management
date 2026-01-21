@@ -20,7 +20,7 @@ public interface OrientationJpaRepository extends JpaRepository<OrientationEntit
 
     List<OrientationEntity> findByAvailableFromYear(Integer yearLevel);
 
-    @Query("SELECT o FROM OrientationEntity o WHERE o.availableFromYear <= :yearLevel AND o.isCurrent = true")
+    @Query("SELECT o FROM OrientationEntity o WHERE o.availableFromYear <= :yearLevel AND o.isActive = true")
     List<OrientationEntity> findAvailableForYearLevel(@Param("yearLevel") Integer yearLevel);
 
     boolean existsByCode(String code);

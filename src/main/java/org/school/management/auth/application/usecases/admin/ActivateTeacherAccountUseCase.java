@@ -14,7 +14,7 @@ import org.school.management.auth.domain.valueobject.HashedPassword;
 import org.school.management.auth.domain.valueobject.PlainPassword;
 import org.school.management.auth.domain.valueobject.RoleName;
 import org.school.management.auth.infra.security.JwtTokenProvider;
-import org.school.management.shared.person.domain.valueobject.DNI;
+import org.school.management.shared.person.domain.valueobject.Dni;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -35,7 +35,7 @@ public class ActivateTeacherAccountUseCase {
 
         // Obtener usuario del token
         String dni = jwtTokenProvider.getUsernameFromToken(request.token());
-        User user = userRepository.findByDni(DNI.of(dni))
+        User user = userRepository.findByDni(Dni.of(dni))
                 .orElseThrow(() -> new UserNotFoundException("Usuario no encontrado"));
 
         // Verificar que sea profesor

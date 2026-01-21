@@ -7,7 +7,7 @@ import java.time.LocalDateTime;
 import java.util.Objects;
 
 @Data
-@ToString(exclude = "token") // No mostrar token en logs por seguridad
+@ToString(exclude = "tokenHash") // No mostrar token en logs por seguridad
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
 @NoArgsConstructor
 @AllArgsConstructor

@@ -7,7 +7,7 @@ import org.school.management.auth.domain.valueobject.HashedPassword;
 import org.school.management.auth.domain.valueobject.PlainPassword;
 import org.school.management.auth.domain.valueobject.RoleName;
 import org.school.management.auth.domain.valueobject.UserId;
-import org.school.management.shared.person.domain.valueobject.DNI;
+import org.school.management.shared.person.domain.valueobject.Dni;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
@@ -26,7 +26,7 @@ public class User implements UserDetails {
 
     @EqualsAndHashCode.Include
     private UserId userId;
-    private DNI dni;
+    private Dni dni;
     private HashedPassword password;
 
     @Setter(AccessLevel.PRIVATE)
@@ -45,7 +45,7 @@ public class User implements UserDetails {
     @Setter(AccessLevel.PRIVATE)
     private LocalDateTime updatedAt;
 
-    private User(UserId userId, DNI dni, HashedPassword password, Set<Role> roles,
+    private User(UserId userId, Dni dni, HashedPassword password, Set<Role> roles,
                  boolean active, LocalDateTime createdAt, LocalDateTime lastLoginAt,
                  LocalDateTime updatedAt) {
         this.userId = userId;
@@ -58,7 +58,7 @@ public class User implements UserDetails {
         this.updatedAt = updatedAt;
     }
 
-    public static User create(DNI dni, PlainPassword plainPassword,
+    public static User create(Dni dni, PlainPassword plainPassword,
                               Set<Role> roles, HashedPassword.PasswordEncoder encoder) {
         return new User(
                 UserId.generate(),
@@ -72,14 +72,14 @@ public class User implements UserDetails {
         );
     }
 
-    public static User reconstruct(UserId id, DNI dni, HashedPassword hashedPassword,
+    public static User reconstruct(UserId id, Dni dni, HashedPassword hashedPassword,
                                    Set<Role> roles, boolean active,
                                    LocalDateTime createdAt, LocalDateTime lastLoginAt,
                                    LocalDateTime updatedAt) {
         return new User(id, dni, hashedPassword, roles, active, createdAt, lastLoginAt, updatedAt);
     }
 
-    // ✅ AUTHENTICATE CORREGIDO
+
     public boolean authenticate(PlainPassword plainPassword, HashedPassword.PasswordEncoder encoder) {
         if (!active) { // Usa "active"
             throw new UserNotActiveException("User is not active");
@@ -92,19 +92,19 @@ public class User implements UserDetails {
         return matches;
     }
 
-    // ✅ CHANGE PASSWORD CORREGIDO
+
     public void changePassword(PlainPassword currentPassword, PlainPassword newPassword,
                                HashedPassword.PasswordEncoder encoder) {
         if (!this.password.matches(currentPassword.getValue(), encoder)) {
             throw new InvalidPasswordException("Current password is incorrect");
         }
 
-        // ✅ Asigna el password hasheado directamente
+
         this.password = newPassword.hash(encoder);
         this.updatedAt = LocalDateTime.now();
     }
 
-    // ✅ RESET PASSWORD CORREGIDO
+
     public void resetPassword(PlainPassword newPassword, HashedPassword.PasswordEncoder encoder) {
         this.password = newPassword.hash(encoder);
         this.updatedAt = LocalDateTime.now();
@@ -142,7 +142,7 @@ public class User implements UserDetails {
 
     @Override
     public String getUsername() {
-        return dni.getValue();
+        return dni.value();
     }
 
     @Override

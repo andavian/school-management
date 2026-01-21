@@ -1,0 +1,9 @@
+package org.school.management.students.enrollment.domain.exception;
+
+import org.school.management.shared.domain.exception.DomainException;
+
+public class EnrollmentAlreadyCompletedException extends DomainException {
+    public EnrollmentAlreadyCompletedException(String message) {
+        super(message);
+    }
+}

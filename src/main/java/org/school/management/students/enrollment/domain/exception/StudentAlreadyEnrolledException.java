@@ -2,11 +2,11 @@
 package org.school.management.students.enrollment.domain.exception;
 
 import org.school.management.shared.domain.exception.DomainException;
-import org.school.management.shared.person.domain.valueobject.DNI;
+import org.school.management.shared.person.domain.valueobject.Dni;
 
 
 public class StudentAlreadyEnrolledException extends DomainException {
-    public StudentAlreadyEnrolledException(DNI dni) {
+    public StudentAlreadyEnrolledException(Dni dni) {
         super("El alumno con DNI " + dni + " ya se encuentra matriculado en el establecimiento");
     }
 }

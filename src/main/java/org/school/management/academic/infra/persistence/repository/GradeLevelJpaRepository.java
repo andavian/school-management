@@ -55,7 +55,7 @@ public interface GradeLevelJpaRepository extends JpaRepository<GradeLevelEntity,
     );
 
     @Query("SELECT gl FROM GradeLevelEntity gl WHERE gl.academicYearId = :academicYearId " +
-            "AND gl.yearLevel = :yearLevel AND gl.orientationId = :orientationId AND gl.isCurrent = true")
+            "AND gl.yearLevel = :yearLevel AND gl.orientationId = :orientationId AND gl.isActive = true")
     List<GradeLevelEntity> findByYearLevelAndOrientation(
             @Param("academicYearId") UUID academicYearId,
             @Param("yearLevel") Integer yearLevel,
@@ -78,13 +78,13 @@ public interface GradeLevelJpaRepository extends JpaRepository<GradeLevelEntity,
 
     long countByAcademicYearIdAndIsActiveTrue(UUID academicYearId);
 
-    @Query("SELECT COUNT(gl) FROM GradeLevelEntity gl WHERE gl.homeroomTeacherId = :teacherId AND gl.isCurrent = true")
+    @Query("SELECT COUNT(gl) FROM GradeLevelEntity gl WHERE gl.homeroomTeacherId = :teacherId AND gl.isActive = true")
     long countActiveClassesByTeacher(@Param("teacherId") UUID teacherId);
 
     // Query con jerarquía completa (GradeLevel + AcademicYear + Orientation)
     @Query("SELECT new org.school.management.academic.infra.persistence.entity.GradeLevelWithDetailsProjection(" +
             "gl.gradeLevelId, gl.yearLevel, gl.division, gl.shift, gl.maxStudents, gl.homeroomTeacherId, " +
-            "ay.academicYearId, ay.year, ay.status, " + // <-- 1. CAMBIAR 'isCurrent' por 'status'
+            "ay.academicYearId, ay.year, ay.status, " +
             "o.orientationId, o.name, o.code) " +
             "FROM GradeLevelEntity gl JOIN AcademicYearEntity ay ON gl.academicYearId = ay.academicYearId " +
             "LEFT JOIN OrientationEntity o ON gl.orientationId = o.orientationId " +

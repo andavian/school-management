@@ -3,7 +3,7 @@ package org.school.management.auth.infra.security;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.school.management.auth.domain.repository.UserRepository;
-import org.school.management.shared.person.domain.valueobject.DNI;
+import org.school.management.shared.person.domain.valueobject.Dni;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -22,7 +22,7 @@ public class CustomUserDetailsService implements UserDetailsService {
 
         try {
             // Username ahora es el DNI
-            DNI dni = DNI.of(username);
+            Dni dni = Dni.of(username);
 
             return userRepository.findByDni(dni)
                     .orElseThrow(() -> {

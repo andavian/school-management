@@ -43,7 +43,7 @@ public class ChangePasswordUseCase {
         // Invalidar todos los tokens existentes del usuario
         // blacklistAllUserTokens(user); // Implementar si es necesario
 
-        log.info("Password cambiado para usuario: {}", user.getDni().getValue());
+        log.info("Password cambiado para usuario: {}", user.getDni().value());
 
         return new ChangePasswordResponse(true,"Contraseña cambiada exitosamente" );
 
