@@ -11,7 +11,7 @@ public record FullName (
         String lastName){
 
 
-    public FullName of(String firstName, String lastName) {
+    public static FullName of(String firstName, String lastName) {
         if (firstName == null || firstName.isBlank()) {
             throw new IllegalArgumentException("First name is required");
         }

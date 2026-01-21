@@ -48,6 +48,7 @@ public record Address(
         }
     }
 
+
     private static String normalizeStreet(String str) {
         if (str == null || str.isBlank()) throw new IllegalArgumentException("Calle no puede ser vacía");
 

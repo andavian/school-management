@@ -92,6 +92,8 @@ public record Email(String value) {
         return isFromSchool();
     }
 
+
+
     @Override
     public String toString() {
         return value;

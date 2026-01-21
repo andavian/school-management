@@ -6,8 +6,8 @@ import lombok.Value;
 
 import java.util.UUID;
 
-@Value                                     // Inmutable automáticamente
-@Builder(access = AccessLevel.PRIVATE)     // Builder privado
+@Value
+@Builder(access = AccessLevel.PRIVATE)
 public class StudentPersonalDataId {
     UUID value;
 

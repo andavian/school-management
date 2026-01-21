@@ -1,12 +1,15 @@
 // src/main/java/org/school/management/shared/person/domain/valueobject/PhoneNumber.java
 package org.school.management.shared.person.domain.valueobject;
 
+import lombok.ToString;
+
 import java.util.regex.Pattern;
 
 /**
  * Value Object inmutable que representa un número telefónico argentino válido.
  * Soporta todos los formatos reales del país (2025).
  */
+
 public record PhoneNumber(String value) {
 
     private static final Pattern ARGENTINE_PHONE_PATTERN = Pattern.compile(
@@ -85,6 +88,10 @@ public record PhoneNumber(String value) {
 
     public String whatsappLink() {
         return "https://wa.me/" + value.replaceAll("\\D", "");
+    }
+
+    public static PhoneNumber of(String value) {
+        return new PhoneNumber(value);
     }
 
     @Override

@@ -1,11 +1,13 @@
 // src/main/java/org/school/management/shared/person/domain/valueobject/Gender.java
 package org.school.management.shared.person.domain.valueobject;
 
+import lombok.Getter;
+
+@Getter
 public enum Gender {
-    MASCULINE("Masculino"),
-    FEMININE("Femenino"),
-    OTHER("Otro"),
-    NO_BINARY("No Binario");
+    MALE("Masculino"),
+    FEMALE("Femenino"),
+    OTHER("Otro");
 
     private final String displayName;
 
@@ -13,7 +15,4 @@ public enum Gender {
         this.displayName = displayName;
     }
 
-    public String getDisplayName() {
-        return displayName;
-    }
 }
