@@ -34,7 +34,7 @@ public class StudentPersonalData {
 
     // Geografía
     private final PlaceId birthPlaceId;
-    private final PlaceId residencePlaceId; // domicilio actual
+    private final ResidencePlaceId residencePlaceId; // domicilio actual
 
     // Contacto y documentación
     private final PhoneNumber phone;
