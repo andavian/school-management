@@ -2,7 +2,7 @@ package org.school.management.geography.domain.repository;
 
 import org.school.management.geography.domain.model.Place;
 import org.school.management.geography.domain.model.PlaceWithHierarchy;
-import org.school.management.geography.domain.valueobject.PlaceId;
+import org.school.management.shared.geography.domain.valueobject.PlaceId;
 import org.school.management.geography.domain.valueobject.PlaceType;
 import org.school.management.geography.domain.valueobject.ProvinceId;
 

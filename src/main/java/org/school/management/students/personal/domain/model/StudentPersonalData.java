@@ -5,7 +5,7 @@ import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.ToString;
 import org.school.management.auth.domain.valueobject.UserId;
-import org.school.management.geography.domain.valueobject.PlaceId;
+import org.school.management.shared.geography.domain.valueobject.PlaceId;
 import org.school.management.shared.person.domain.valueobject.*;
 import org.school.management.students.personal.domain.valueobject.StudentPersonalDataId;
 
@@ -24,7 +24,7 @@ public class StudentPersonalData {
     private final StudentPersonalDataId studentId;
     private final UserId userId;
 
-    // Shared kernel – persona
+    // Shared Kernel — identidad civil
     private final Dni dni;
     private final Cuil cuil;
     private final FullName fullName;
@@ -32,66 +32,23 @@ public class StudentPersonalData {
     private final Gender gender;
     private final Nationality nationality;
 
-    // Geografía
+    // Geografía — PlaceId del Shared Kernel geography
     private final PlaceId birthPlaceId;
-    private final ResidencePlaceId residencePlaceId; // domicilio actual
+    private final PlaceId residencePlaceId;
 
-    // Contacto y documentación
-    private final PhoneNumber phone;
-    private final Email email;
-    private final Address address;
+    // Contacto (mutables — pueden actualizarse)
+    private PhoneNumber phone;
+    private Email email;
+    private Address address;
 
     // Auditoría
     @Builder.Default
     private final LocalDateTime createdAt = LocalDateTime.now();
-    @Builder.Default
-    private final LocalDateTime updatedAt = LocalDateTime.now();
+    private LocalDateTime updatedAt;
     private final UserId createdBy;
 
-    // ============ Domain Logic ============
+    // ============ Factory method con validaciones de dominio ============
 
-    /**
-     * Calcula la edad actual del estudiante
-     */
-    public int calculateAge() {
-        assert birthDate != null;
-        return Period.between(birthDate, LocalDate.now()).getYears();
-    }
-
-    /**
-     * Valida si el estudiante es mayor de edad (18 años en Argentina)
-     */
-    public boolean isAdult() {
-        return calculateAge() >= 18;
-    }
-
-    /**
-     * Valida si el estudiante puede inscribirse en nivel secundario
-     * (edad mínima 12 años, máxima 21 años aprox)
-     */
-    public boolean isEligibleForSecondarySchool() {
-        int age = calculateAge();
-        return age >= 11 && age <= 21;
-    }
-
-    /**
-     * Actualiza datos personales (mutación controlada)
-     */
-    public void updatePersonalData(
-            FullName fullName,
-            PhoneNumber phone,
-            Email email,
-            Address address,
-            UserId updatedBy) {
-
-        Objects.requireNonNull(fullName, "FullName cannot be null");
-        Objects.requireNonNull(address, "Address cannot be null");
-        Objects.requireNonNull(updatedBy, "UpdatedBy cannot be null");
-
-
-    }
-
-    // Validaciones de dominio en el constructor
     public static StudentPersonalData create(StudentPersonalDataBuilder builder) {
         Objects.requireNonNull(builder.studentId, "StudentId cannot be null");
         Objects.requireNonNull(builder.userId, "UserId cannot be null");
@@ -100,28 +57,69 @@ public class StudentPersonalData {
         Objects.requireNonNull(builder.fullName, "FullName cannot be null");
         Objects.requireNonNull(builder.birthDate, "BirthDate cannot be null");
         Objects.requireNonNull(builder.birthPlaceId, "BirthPlaceId cannot be null");
+        Objects.requireNonNull(builder.residencePlaceId, "ResidencePlaceId cannot be null");
         Objects.requireNonNull(builder.gender, "Gender cannot be null");
         Objects.requireNonNull(builder.nationality, "Nationality cannot be null");
         Objects.requireNonNull(builder.address, "Address cannot be null");
         Objects.requireNonNull(builder.createdBy, "CreatedBy cannot be null");
 
+        // Validar que birthDate no sea en el futuro
+        if (builder.birthDate.isAfter(LocalDate.now())) {
+            throw new IllegalArgumentException("BirthDate cannot be in the future");
+        }
+
         // Validar que CUIL corresponda al DNI
         Dni extractedDni = builder.cuil.extractDni();
         if (!extractedDni.equals(builder.dni)) {
             throw new IllegalArgumentException(
-                    "CUIL does not match DNI: CUIL=" + builder.cuil + ", DNI=" + builder.dni
+                    "CUIL does not match DNI: CUIL=" + builder.cuil.formatted()
+                            + ", DNI=" + builder.dni.value()
             );
         }
 
-        // Validar edad mínima (11 años para secundaria)
-        LocalDate minBirthDate = LocalDate.now().minusYears(21);
-        LocalDate maxBirthDate = LocalDate.now().minusYears(11);
-        if (builder.birthDate.isBefore(minBirthDate) || builder.birthDate.isAfter(maxBirthDate)) {
-            throw new IllegalArgumentException(
-                    "Student age must be between 12 and 21 years"
-            );
-        }
-
+        builder.updatedAt = LocalDateTime.now();
         return builder.build();
+    }
+
+    // ============ Domain Logic ============
+
+    public int calculateAge() {
+        return Period.between(birthDate, LocalDate.now()).getYears();
+    }
+
+    public boolean isAdult() {
+        return calculateAge() >= 18;
+    }
+
+    public boolean isEligibleForSecondarySchool() {
+        int age = calculateAge();
+        return age >= 11 && age <= 21;
+    }
+
+    // ============ Mutación controlada via métodos de negocio ============
+
+    public void updateContactInfo(PhoneNumber phone, Email email) {
+        this.phone = phone;
+        this.email = email;
+        this.updatedAt = LocalDateTime.now();
+    }
+
+    public void updateAddress(Address address) {
+        Objects.requireNonNull(address, "Address cannot be null");
+        this.address = address;
+        this.updatedAt = LocalDateTime.now();
+    }
+
+    public void updatePersonalData(FullName fullName, PhoneNumber phone,
+                                   Email email, Address address) {
+        // fullName y address son obligatorios; phone y email opcionales
+        Objects.requireNonNull(fullName, "FullName cannot be null");
+        Objects.requireNonNull(address, "Address cannot be null");
+        // fullName es final — no se puede cambiar post-creación por diseño legal
+        // (el nombre civil no cambia; si cambia, es un proceso formal aparte)
+        this.phone = phone;
+        this.email = email;
+        this.address = address;
+        this.updatedAt = LocalDateTime.now();
     }
 }

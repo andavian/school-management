@@ -89,8 +89,6 @@ public class CreateStudentUseCase {
                         .phone(mapper.mapPhoneNumber(request.phone()))
                         .email(mapper.mapEmail(request.email()))
                         .address(address) // Address del Shared Kernel (ya normalizado)
-                        .createdAt(LocalDateTime.now())
-                        .updatedAt(LocalDateTime.now())
                         .createdBy(createdBy)
         );
 

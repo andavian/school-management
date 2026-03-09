@@ -4,7 +4,7 @@ import org.mapstruct.*;
 import org.school.management.students.personal.application.dto.*;
 import org.school.management.students.personal.domain.model.StudentPersonalData;
 import org.school.management.shared.person.domain.valueobject.*;
-import org.school.management.geography.domain.valueobject.PlaceId;
+import org.school.management.shared.geography.domain.valueobject.PlaceId;
 
 /**
  * MapStruct Mapper: Domain (StudentPersonalData) ↔ Application DTOs

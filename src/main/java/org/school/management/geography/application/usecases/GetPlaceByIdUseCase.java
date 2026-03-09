@@ -8,7 +8,7 @@ import org.school.management.geography.application.mappers.GeographyApplicationM
 import org.school.management.geography.domain.exception.PlaceNotFoundException;
 import org.school.management.geography.domain.model.PlaceWithHierarchy;
 import org.school.management.geography.domain.repository.PlaceRepository;
-import org.school.management.geography.domain.valueobject.PlaceId;
+import org.school.management.shared.geography.domain.valueobject.PlaceId;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 

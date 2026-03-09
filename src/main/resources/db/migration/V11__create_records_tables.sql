@@ -68,9 +68,10 @@ CREATE TABLE record_documents (
     issuing_authority   VARCHAR(200),
 
     -- Auditoría
+    status              VARCHAR(20) NOT NULL DEFAULT 'PENDING',
     uploaded_at         TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     uploaded_by         BINARY(16) NOT NULL,
-    updated_at          TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at          TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 
     FOREIGN KEY (record_id) REFERENCES student_records(record_id) ON DELETE CASCADE,
     FOREIGN KEY (document_type_id) REFERENCES document_types(document_type_id) ON DELETE RESTRICT,

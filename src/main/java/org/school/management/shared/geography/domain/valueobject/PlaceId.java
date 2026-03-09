@@ -1,4 +1,4 @@
-package org.school.management.geography.domain.valueobject;
+package org.school.management.shared.geography.domain.valueobject;
 
 import lombok.AccessLevel;
 import lombok.Builder;

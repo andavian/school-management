@@ -2,7 +2,9 @@ CREATE TABLE withdrawal_reasons (
     reason_id       BINARY(16) PRIMARY KEY,
     code            VARCHAR(50) NOT NULL UNIQUE,
     description     VARCHAR(200) NOT NULL,
-    is_active       BOOLEAN NOT NULL DEFAULT TRUE
+    is_active       BOOLEAN NOT NULL DEFAULT TRUE,
+    requires_documentation BOOLEAN NOT NULL DEFAULT FALSE
+
 );
 
 -- ================================================
@@ -42,7 +44,7 @@ CREATE TABLE student_enrollments (
     FOREIGN KEY (grade_level_id) REFERENCES grade_levels(grade_level_id) ON DELETE RESTRICT,
     FOREIGN KEY (withdrawal_reason_id) REFERENCES withdrawal_reasons(reason_id) ON DELETE RESTRICT,
 
-    UNIQUE KEY unique_student_year_grade (student_id, academic_year_id, grade_level_id),
+    UNIQUE KEY unique_student_year_grade (student_id, academic_year_id),
     INDEX idx_student_id (student_id),
     INDEX idx_status (status)
 );

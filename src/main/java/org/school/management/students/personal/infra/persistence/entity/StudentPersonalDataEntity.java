@@ -3,8 +3,6 @@ package org.school.management.students.personal.infra.persistence.entity;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
-import org.school.management.auth.infra.persistence.entity.UserEntity;
-import org.school.management.geography.infra.persistence.entity.PlaceEntity;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;

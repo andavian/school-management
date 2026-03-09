@@ -5,7 +5,7 @@ import org.school.management.students.personal.infra.persistence.entity.StudentP
 import org.school.management.students.personal.domain.valueobject.StudentPersonalDataId;
 import org.school.management.auth.domain.valueobject.UserId;
 import org.school.management.shared.person.domain.valueobject.*;
-import org.school.management.geography.domain.valueobject.PlaceId;
+import org.school.management.shared.geography.domain.valueobject.PlaceId;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;

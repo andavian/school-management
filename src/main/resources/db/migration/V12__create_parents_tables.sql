@@ -29,7 +29,7 @@ CREATE TABLE parents (
     -- Estado
     is_active           BOOLEAN NOT NULL DEFAULT TRUE,
     created_at          TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at          TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at          TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     created_by          BINARY(16) NOT NULL,
 
     FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE RESTRICT,

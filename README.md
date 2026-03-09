@@ -28,6 +28,10 @@ Sistema de gestión escolar para el **IPET 132** (Argentina) que permite:
 - ✅ Gestión de sesiones y tokens de refresco
 - ✅ Sistema de roles y permisos
 - ✅ Control de sesiones activas por dispositivo
+- ✅ Gestión de geografía argentina (países, provincias, localidades)
+- ✅ Gestión académica completa (años, orientaciones, cursos, materias)
+- ✅ Registro de calificaciones con asignación automática de folios
+- ✅ Documentación interactiva con Swagger/OpenAPI
 
 ### 🎯 Características Principales
 
@@ -36,6 +40,9 @@ Sistema de gestión escolar para el **IPET 132** (Argentina) que permite:
 - **Token Rotation**: Máxima seguridad en refresh tokens
 - **Multi-dispositivo**: Control de sesiones activas
 - **Roles específicos**: ADMIN, TEACHER, STUDENT, PARENT, STAFF
+- **Arquitectura escalable**: Preparada para migrar a microservicios
+- **Folios automáticos**: Asignación automática desde el Registro de Calificaciones
+- **Shared Kernel**: Value Objects reutilizados entre bounded contexts (DNI, Email, PhoneNumber)
 
 ---
 
@@ -61,30 +68,25 @@ Sistema de gestión escolar para el **IPET 132** (Argentina) que permite:
 │            └────────────┬───────────────────┘│          │
 │                         │                               │
 ├─────────────────────────┼───────────────────────────────┤
-│         DOMAIN LAYER (Core Business)        │          │
+│         DOMAIN LAYER (Core Business)                    │
 │  ┌──────────────────────┴──────────────────────────┐   │
-│  │  Entities: User, RefreshToken, BlacklistedToken │   │
-│  │  Value Objects: DNI, Email, Password, UserId    │   │
-│  │  Domain Services, Domain Events                 │   │
+│  │  Entities, Value Objects, Domain Services       │   │
 │  │  Repository Interfaces (Ports)                  │   │
 │  └─────────────────────────────────────────────────┘   │
 └─────────────────────────────────────────────────────────┘
 ```
 
-### Vertical Slicing
+### Vertical Slicing (Bounded Contexts)
 
 Cada bounded context es un slice vertical completo:
 
 ```
-auth/           → Autenticación y autorización
-├── domain/
-├── application/
-└── infrastructure/
-
-students/       → Gestión de estudiantes (futuro)
-teachers/       → Gestión de profesores (futuro)
-courses/        → Gestión de cursos (futuro)
-grades/         → Gestión de calificaciones (futuro)
+shared/         → Shared Kernel (DNI, Email, PhoneNumber, IDs geográficos)
+auth/           → Autenticación y autorización ✅
+geography/      → Lugares geográficos (País, Provincia, Localidad) ✅
+academic/       → Estructura académica (Años, Cursos, Materias) ✅
+students/       → Gestión de estudiantes ⏳
+teachers/       → Gestión de profesores ⏳
 ```
 
 ---
@@ -98,19 +100,21 @@ grades/         → Gestión de calificaciones (futuro)
 - **Spring Data JPA**
 - **MySQL 8**
 - **JWT (jjwt 0.12.x)**
-- **MapStruct 1.5.5** - Mapeo de objetos
+- **MapStruct 1.5.5** - Mapeo de objetos entre capas
 - **Lombok** - Reducción de boilerplate
+- **SpringDoc OpenAPI 3** - Documentación Swagger/OpenAPI
 
 ### Testing
 - **JUnit 5**
 - **Mockito**
 - **Spring Boot Test**
 - **H2 Database** (para tests)
+- **AssertJ**
 
 ### Tools
 - **Maven**
 - **Flyway** (migraciones de BD)
-- **Postman** (testing de API)
+- **Postman / Swagger UI** (testing de API)
 
 ---
 
@@ -119,472 +123,233 @@ grades/         → Gestión de calificaciones (futuro)
 ```
 src/main/java/org/school/management/
 │
-├── auth/                                    # BOUNDED CONTEXT: Autenticación
-│   ├── domain/                             # Capa de Dominio (Core)
+├── shared/                                  # Shared Kernel
+│   ├── person/domain/valueobject/
+│   │   ├── Dni.java                         # ✅ DNI argentino (8 dígitos)
+│   │   ├── FullName.java
+│   │   ├── Gender.java
+│   │   ├── Nationality.java
+│   │   ├── PhoneNumber.java
+│   │   └── Email.java
+│   ├── geography/domain/valueobject/
+│   │   ├── CountryId.java
+│   │   ├── ProvinceId.java
+│   │   └── PlaceId.java
+│   └── domain/exception/
+│       └── DomainException.java             # Base abstracta de excepciones
+│
+├── auth/                                    # BOUNDED CONTEXT: Autenticación ✅
+│   ├── domain/
 │   │   ├── model/
-│   │   │   ├── User.java                   # Entidad principal (implements UserDetails)
-│   │   │   ├── RefreshToken.java           # Entidad para refresh tokens
-│   │   │   └── BlacklistedToken.java       # Tokens revocados
+│   │   │   ├── User.java
+│   │   │   ├── RefreshToken.java
+│   │   │   └── BlacklistedToken.java
 │   │   ├── valueobject/
-│   │   │   ├── UserId.java                 # Value Object
-│   │   │   ├── HashedPassword.java
-│   │   │   ├── PlainPassword.java
-│   │   │   ├── RoleName.java
-│   │   │   ├── RefreshTokenId.java
-│   │   │   └── BlacklistedTokenId.java
-│   │   ├── repository/                     # Puertos (Interfaces)
-│   │   │   ├── UserRepository.java
-│   │   │   ├── RefreshTokenRepository.java
-│   │   │   └── BlacklistedTokenRepository.java
+│   │   │   └── UserId.java, HashedPassword.java, PlainPassword.java, RoleName.java...
+│   │   ├── repository/
+│   │   │   └── UserRepository.java, RefreshTokenRepository.java, BlacklistedTokenRepository.java
 │   │   └── exception/
-│   │       ├── InvalidPasswordException.java
-│   │       └── UserNotActiveException.java
-│   │
-│   ├── application/                        # Casos de Uso
+│   │       └── InvalidPasswordException.java, UserNotActiveException.java
+│   ├── application/
 │   │   ├── usecases/
-│   │   │   ├── LoginUseCase.java           # ✅ Implementado
-│   │   │   ├── RefreshTokenUseCase.java    # ✅ Implementado
-│   │   │   ├── LogoutUseCase.java          # ✅ Implementado
-│   │   │   ├── ChangePasswordUseCase.java  # ✅ Implementado
-│   │   │   ├── GetUserProfileUseCase.java  # ✅ Implementado
-│   │   │   ├── ActivateTeacherAccountUseCase.java
+│   │   │   ├── LoginUseCase.java
+│   │   │   ├── RefreshTokenUseCase.java
+│   │   │   ├── LogoutUseCase.java
+│   │   │   ├── ChangePasswordUseCase.java
+│   │   │   ├── GetUserProfileUseCase.java
 │   │   │   ├── GetActiveSessionsUseCase.java
 │   │   │   ├── RevokeSessionUseCase.java
-│   │   │   ├── RevokeAllUserTokensUseCase.java
-│   │   │   ├── StoreRefreshTokenUseCase.java
-│   │   │   ├── BlacklistTokenUseCase.java
 │   │   │   └── admin/
-│   │   │       ├── CreateStudentUseCase.java   # ✅ Implementado
-│   │   │       └── CreateTeacherUseCase.java   # ✅ Implementado
-│   │   ├── dto/                            # Application DTOs (Records)
-│   │   │   ├── LoginRequest.java
-│   │   │   ├── LoginResponse.java
-│   │   │   ├── UserResponse.java
-│   │   │   ├── CreateStudentRequest.java
-│   │   │   ├── CreateTeacherRequest.java
-│   │   │   ├── RefreshTokenRequest.java
-│   │   │   ├── RefreshTokenResponse.java
-│   │   │   └── ...
+│   │   │       ├── CreateStudentUseCase.java
+│   │   │       └── CreateTeacherUseCase.java
+│   │   ├── dto/
 │   │   └── mappers/
-│   │       └── AuthApplicationMapper.java  # MapStruct mapper
-│   │
-│   └── infrastructure/                     # Adaptadores
-│       ├── web/                           # Adaptador REST
-│       │   ├── controller/
-│       │   │   ├── AuthController.java     # ✅ Implementado
-│       │   │   ├── AdminController.java    # ✅ Implementado
-│       │   │   └── UsersController.java
-│       │   ├── dto/                       # API DTOs (con validaciones)
-│       │   │   ├── LoginApiRequest.java
-│       │   │   ├── LoginApiResponse.java
-│       │   │   ├── CreateStudentApiRequest.java
-│       │   │   └── ...
-│       │   ├── mappers/
-│       │   │   └── AuthWebMapper.java     # MapStruct mapper
-│       │   └── exception/
-│       │       └── GlobalExceptionHandler.java  # ✅ Implementado
-│       │
-│       ├── persistence/                   # Adaptador de Persistencia
+│   │       └── AuthApplicationMapper.java
+│   └── infrastructure/
+│       ├── web/controller/
+│       │   ├── AuthController.java
+│       │   ├── AdminController.java
+│       │   └── UsersController.java
+│       ├── persistence/
 │       │   ├── entity/
-│       │   │   ├── UserEntity.java
-│       │   │   ├── RefreshTokenEntity.java
-│       │   │   └── BlacklistedTokenEntity.java
 │       │   ├── repository/
-│       │   │   ├── UserJpaRepository.java
-│       │   │   ├── UserRepositoryImpl.java     # ✅ Implementado
-│       │   │   ├── RefreshTokenJpaRepository.java
-│       │   │   ├── RefreshTokenRepositoryImpl.java
-│       │   │   └── ...
 │       │   └── mappers/
-│       │       └── AuthPersistenceMapper.java  # MapStruct mapper
-│       │
-│       ├── security/                      # Configuración de Seguridad
-│       │   ├── SecurityConfig.java        # ✅ Configurado
-│       │   ├── JwtTokenProvider.java      # ✅ Implementado
-│       │   ├── JwtAuthenticationFilter.java  # ✅ Implementado
-│       │   ├── CustomUserDetailsService.java # ✅ Implementado
-│       │   └── config/
-│       │       ├── AuthenticationConfig.java
-│       │       └── PasswordEncoderConfig.java
-│       │
-│       ├── scheduling/                    # Tareas programadas
-│       │   ├── RefreshTokenCleanupScheduler.java
-│       │   └── TokenBlacklistCleanupScheduler.java
-│       │
-│       └── config/
-│           └── DataSeederConfig.java      # Seed de datos para DEV
+│       └── security/
+│           ├── SecurityConfig.java
+│           ├── JwtTokenProvider.java
+│           ├── JwtAuthenticationFilter.java
+│           └── CustomUserDetailsService.java
 │
-├── shared/                                # Shared Kernel
-│   └── domain/
-│       └── valueobjects/
-│           ├── Email.java                 # ✅ Implementado
-│           ├── DNI.java                   # ✅ Implementado
-│           └── PhoneNumber.java           # ✅ Implementado
+├── geography/                               # BOUNDED CONTEXT: Geografía ✅
+│   ├── domain/
+│   │   ├── model/
+│   │   │   ├── Country.java
+│   │   │   ├── Province.java
+│   │   │   ├── Place.java
+│   │   │   └── PlaceWithHierarchy.java
+│   │   ├── valueobject/
+│   │   │   ├── IsoCode.java, PhoneCode.java, ProvinceCode.java
+│   │   │   ├── PostalCode.java, GeographicName.java, PlaceType.java
+│   │   │   └── ids/ (CountryId, ProvinceId, PlaceId)
+│   │   └── repository/
+│   │       ├── CountryRepository.java
+│   │       ├── ProvinceRepository.java
+│   │       ├── PlaceRepository.java
+│   │       └── GeographyQueryRepository.java
+│   ├── application/
+│   │   ├── usecases/                        # 10 use cases
+│   │   ├── dto/
+│   │   └── mappers/
+│   └── infrastructure/
+│       ├── persistence/ (entity, repository, adapter, mapper)
+│       ├── web/controller/
+│       │   ├── GeographyController.java
+│       │   └── GeographyAdminController.java
+│       └── seeder/
+│           └── GeographyDataSeeder.java
 │
-└── SchoolManagementApplication.java       # Main class
+├── academic/                                # BOUNDED CONTEXT: Académico ✅
+│   ├── domain/
+│   │   ├── model/
+│   │   │   ├── AcademicYear.java
+│   │   │   ├── Orientation.java
+│   │   │   ├── GradeLevel.java
+│   │   │   ├── Subject.java
+│   │   │   ├── StudyPlan.java
+│   │   │   ├── EvaluationPeriod.java
+│   │   │   └── QualificationRegistry.java
+│   │   ├── valueobject/
+│   │   │   ├── Year.java, YearLevel.java, Division.java
+│   │   │   ├── enums/ (AcademicYearStatus, Shift, RegistryStatus)
+│   │   │   └── ids/ (AcademicYearId, OrientationId, GradeLevelId, SubjectId...)
+│   │   ├── repository/                      # 7 interfaces (puertos)
+│   │   ├── service/
+│   │   │   ├── FolioAssignmentService.java  # ← CRÍTICO para Students
+│   │   │   ├── RegistryNumberGenerator.java
+│   │   │   ├── AcademicYearActivationService.java
+│   │   │   ├── GradeLevelValidationService.java
+│   │   │   └── StudyPlanManagementService.java
+│   │   └── exception/                       # 20+ excepciones de dominio
+│   ├── application/
+│   │   ├── usecases/                        # 22 use cases
+│   │   ├── dto/ (request/ + response/)
+│   │   └── mapper/
+│   │       └── AcademicApplicationMapper.java
+│   └── infrastructure/
+│       ├── persistence/ (entity, repository, adapter, mapper)
+│       ├── web/
+│       │   ├── controller/
+│       │   │   ├── AcademicYearController.java
+│       │   │   ├── OrientationController.java
+│       │   │   ├── GradeLevelController.java
+│       │   │   └── SubjectController.java
+│       │   └── exception/
+│       │       └── AcademicExceptionHandler.java
+│       └── seeder/
+│           └── AcademicDataSeeder.java
+│
+├── students/                                # BOUNDED CONTEXT: Estudiantes ⏳
+│   ├── personal/                            # Agregado: StudentPersonalData
+│   ├── health/                              # Agregado: StudentHealthRecord
+│   ├── enrollment/                          # Agregado: StudentEnrollment
+│   └── records/                             # Agregado: StudentRecord + RecordDocuments
+│
+└── SchoolManagementApplication.java
 
 src/main/resources/
-├── application.yml                        # ✅ Configurado
+├── application.yml
 ├── application-dev.yml
 ├── application-prod.yml
-└── db/migration/                          # Flyway migrations
+└── db/migration/
     ├── V1__Create_users_table.sql
     ├── V2__Create_blacklisted_tokens_table.sql
     ├── V3__Insert_default_admin.sql
-    └── V4__Create_refresh_tokens_table.sql
+    ├── V4__Create_refresh_tokens_table.sql
+    ├── V5__create_geography_tables.sql
+    ├── V6__create_academic_tables.sql
+    └── V7__extend_academic_module.sql
 ```
+
+---
+
+## 🗂️ Módulos Implementados
+
+### ✅ Auth — Autenticación y Autorización
+
+- Login con DNI + password
+- Logout con blacklist de access token
+- Refresh token con rotación automática
+- Cambio de contraseña
+- Gestión de sesiones activas por dispositivo
+- Creación de estudiantes y profesores (Admin)
+- Activación de cuenta de profesores
+
+### ✅ Geography — Geografía Argentina
+
+- Países, provincias y localidades con jerarquía completa
+- Búsqueda con autocompletado
+- Datos precargados: Argentina completa (1 país, 24 provincias, ~45 localidades)
+- Endpoints públicos para autocompletado en formularios (sin auth requerida)
+
+### ✅ Academic — Estructura Académica
+
+**Gestión de Años Académicos**
+- Crear, activar y cerrar años académicos
+- Solo un año puede estar activo a la vez
+- Al activar uno nuevo, el anterior se cierra automáticamente
+
+**Gestión de Orientaciones**
+- Técnico Electricista (ELEC) y Técnico Electromecánico (ELMEC)
+- Solo disponibles desde 4° año (ciclo superior)
+- Obligatorias para años 4°–7°
+
+**Gestión de Cursos (GradeLevel)**
+- Ciclo básico (1°–3°): sin orientación
+- Ciclo superior (4°–7°): con orientación obligatoria
+- 37 cursos activos precargados para 2024
+
+**Gestión de Materias (Subject)**
+- Materias comunes (todos los cursos)
+- Materias específicas por orientación
+- ~60 materias precargadas
+
+**Registro de Calificaciones (QualificationRegistry)**
+- Instrumento legal obligatorio por año académico
+- Asignación automática de folios via `FolioAssignmentService`
+- REG-2024-001 activo con 500 folios disponibles
+- Limpieza automática de tokens vencidos (Schedulers)
 
 ---
 
 ## 🗄️ Base de Datos
 
-### Diagrama ER (Implementado)
+### Migraciones Flyway
 
-```
-┌─────────────────────────────┐
-│          users              │
-├─────────────────────────────┤
-│ PK user_id (UUID)           │
-│ UK dni (VARCHAR)            │◄────┐
-│    email (VARCHAR) NULL     │     │
-│    password (VARCHAR)       │     │
-│    roles (VARCHAR)          │     │
-│    is_active (BOOLEAN)      │     │
-│    created_at (DATETIME)    │     │
-│    last_login_at (DATETIME) │     │
-│    updated_at (DATETIME)    │     │
-└─────────────────────────────┘     │
-                                    │ FK
-┌─────────────────────────────┐     │
-│    refresh_tokens           │     │
-├─────────────────────────────┤     │
-│ PK id (UUID)                │     │
-│ FK user_id (UUID)           │─────┘
-│ UK token_hash (VARCHAR)     │
-│    created_at (DATETIME)    │
-│    expires_at (DATETIME)    │
-│    is_revoked (BOOLEAN)     │
-│    revoked_at (DATETIME)    │
-│    user_agent (VARCHAR)     │
-│    ip_address (VARCHAR)     │
-└─────────────────────────────┘
+| Migración | Descripción |
+|-----------|-------------|
+| `V1` | Tabla `users` con UUID PK, DNI unique |
+| `V2` | Tabla `blacklisted_tokens` |
+| `V3` | Admin por defecto (solo dev) |
+| `V4` | Tabla `refresh_tokens` |
+| `V5` | Tablas geography (`countries`, `provinces`, `places`) |
+| `V6` | Tablas academic core (`academic_years`, `orientations`, `grade_levels`, `subjects`, `qualification_registries`) |
+| `V7` | Tablas academic extendidas (`study_plans`, `evaluation_periods`, `grades`) |
 
-┌─────────────────────────────┐
-│   blacklisted_tokens        │
-├─────────────────────────────┤
-│ PK id (UUID)                │
-│ UK token_hash (VARCHAR)     │
-│    token_type (VARCHAR)     │
-│    blacklisted_at (DATETIME)│
-│    expires_at (DATETIME)    │
-│    reason (VARCHAR)         │
-│    user_email (VARCHAR)     │
-└─────────────────────────────┘
-```
-
-### Scripts SQL Disponibles
-
-```sql
--- V1: Tabla de usuarios
-CREATE TABLE users (
-    user_id VARCHAR(36) PRIMARY KEY,
-    dni VARCHAR(8) UNIQUE NOT NULL,
-    email VARCHAR(254) NULL,
-    password VARCHAR(255) NOT NULL,
-    roles VARCHAR(500) NOT NULL,
-    is_active BOOLEAN DEFAULT TRUE,
-    created_at DATETIME NOT NULL,
-    last_login_at DATETIME,
-    updated_at DATETIME NOT NULL
-);
-
--- V2: Tabla de tokens en blacklist
--- V3: Usuario admin por defecto
--- V4: Tabla de refresh tokens
-```
+### Convenciones de BD
+- **PK**: UUID (VARCHAR 36)
+- **Timestamps**: `created_at`, `updated_at`, `expires_at` tipo DATETIME
+- **Flags**: `is_active`, `is_current`, `is_revoked` tipo BOOLEAN
+- **Nunca** modificar migraciones ya ejecutadas — siempre crear `V{n+1}`
 
 ---
 
 ## ⚙️ Configuración
-
-### application.yml
-
-```yaml
-spring:
-  application:
-    name: school-management
-  profiles:
-    active: dev
-
-app:
-  cors:
-    allowed-origins:
-      - "http://localhost:3000"
-      - "http://localhost:5173"
-    allowed-methods:
-      - GET
-      - POST
-      - PUT
-      - PATCH
-      - DELETE
-      - OPTIONS
-    allow-credentials: true
-
-  security:
-    jwt:
-      secret-key: "my-super-secret-key-must-be-256-bits"
-      access-token-expiration: 3600      # 1 hora
-      refresh-token-expiration: 604800   # 7 días
-      issuer: "ipet132-school-system"
-    refresh-token:
-      max-active-per-user: 5  # Máximo 5 dispositivos
-
-  school:
-    name: "IPET 132"
-    institutional-email-domain: "ipet132.edu.ar"
-
-logging:
-  level:
-    org.school.management: DEBUG
-```
-
-### Variables de Entorno (Producción)
-
-```bash
-JWT_SECRET_KEY=<secret-256-bits>
-DB_HOST=<database-host>
-DB_USER=<database-user>
-DB_PASSWORD=<database-password>
-FRONTEND_DOMAIN=<frontend-domain>
-```
-
----
-
-## 🔌 Endpoints API
-
-### Auth Endpoints (Públicos)
-
-```http
-POST   /api/auth/login              # Login con DNI
-POST   /api/auth/refresh-token      # Renovar tokens
-POST   /api/auth/activate-account   # Activar cuenta de profesor
-```
-
-### Auth Endpoints (Autenticados)
-
-```http
-GET    /api/auth/profile            # Obtener mi perfil
-PUT    /api/auth/change-password    # Cambiar contraseña
-POST   /api/auth/logout             # Cerrar sesión
-GET    /api/auth/sessions           # Ver sesiones activas
-DELETE /api/auth/sessions/{id}      # Cerrar sesión específica
-DELETE /api/auth/sessions           # Cerrar todas las sesiones
-```
-
-### Admin Endpoints (Solo ADMIN)
-
-```http
-POST   /api/admin/students          # Crear estudiante
-POST   /api/admin/teachers          # Crear profesor
-GET    /api/admin/students          # Listar estudiantes (TODO)
-GET    /api/admin/teachers          # Listar profesores (TODO)
-PUT    /api/admin/users/{id}/activate    # Activar usuario (TODO)
-PUT    /api/admin/users/{id}/deactivate  # Desactivar usuario (TODO)
-```
-
-### Ejemplos de Requests
-
-#### Login
-```bash
-POST /api/auth/login
-Content-Type: application/json
-
-{
-  "dni": "12345678",
-  "password": "12345678Ipet132!",
-  "rememberMe": false
-}
-
-# Response 200 OK
-{
-  "accessToken": "eyJhbGc...",
-  "refreshToken": "eyJhbGc...",
-  "tokenType": "Bearer",
-  "expiresIn": 3600,
-  "user": {
-    "userId": "uuid-123",
-    "dni": "12345678",
-    "email": "student@mail.com",
-    "roles": ["STUDENT"],
-    "isActive": true
-  }
-}
-```
-
-#### Crear Estudiante (Admin)
-```bash
-POST /api/admin/students
-Authorization: Bearer <admin-token>
-Content-Type: application/json
-
-{
-  "dni": "87654321",
-  "firstName": "Juan",
-  "lastName": "Pérez",
-  "email": null,
-  "phoneNumber": "+5492612345678",
-  "parentEmail": "padre@mail.com",
-  "grade": "3",
-  "division": "A"
-}
-
-# Response 201 Created
-{
-  "userId": "uuid-456",
-  "dni": "87654321",
-  "email": null,
-  "initialPassword": "87654321Ipet132!"
-}
-```
-
-#### Refresh Token
-```bash
-POST /api/auth/refresh-token
-Content-Type: application/json
-
-{
-  "refreshToken": "eyJhbGc..."
-}
-
-# Response 200 OK
-{
-  "accessToken": "eyJhbGc... (NUEVO)",
-  "refreshToken": "eyJhbGc... (NUEVO)",
-  "tokenType": "Bearer",
-  "expiresIn": 3600
-}
-```
-
----
-
-## 🔐 Seguridad
-
-### Estrategias Implementadas
-
-#### 1. **JWT con Token Rotation**
-- Access Token: 1 hora de validez
-- Refresh Token: 7 días de validez
-- **Rotation**: Cada refresh genera tokens nuevos y revoca los anteriores
-- Refresh tokens almacenados con hash SHA-256
-
-#### 2. **Blacklist de Tokens**
-- Tokens revocados al hacer logout
-- Cleanup automático cada 6 horas
-- Validación en cada request
-
-#### 3. **Control de Sesiones**
-- Máximo 5 dispositivos activos por usuario
-- Metadata: UserAgent, IP Address
-- Revocación individual o masiva de sesiones
-
-#### 4. **Validaciones**
-- Bean Validation en DTOs de API
-- Domain validation en Value Objects
-- Password strength: min 8 chars, mayúscula, minúscula, número, especial
-
-#### 5. **DNI como Username**
-- Identificador único e inmutable
-- Validación: 7-8 dígitos numéricos
-- Email opcional (para menores)
-
----
-
-## 🧪 Testing
-
-### Tests Implementados
-
-```bash
-# Unit Tests
-src/test/java/
-├── auth/application/usecases/
-│   ├── LoginUseCaseTest.java
-│   ├── RefreshTokenUseCaseTest.java
-│   └── CreateStudentUseCaseTest.java
-├── auth/infrastructure/persistence/
-│   └── UserRepositoryImplTest.java
-└── auth/infrastructure/web/
-    └── AuthControllerTest.java
-
-# Integration Tests
-src/test/java/
-└── auth/infrastructure/
-    ├── AuthControllerIntegrationTest.java
-    └── UserRepositoryImplIntegrationTest.java
-```
-
-### Ejecutar Tests
-
-```bash
-# Todos los tests
-mvn test
-
-# Solo unit tests
-mvn test -Dgroups="unit"
-
-# Solo integration tests
-mvn test -Dgroups="integration"
-
-# Con coverage
-mvn test jacoco:report
-```
-
----
-
-## 🔑 Credenciales de Prueba
-
-El sistema incluye datos de prueba en modo **dev** (auto-generados en startup):
-
-### Admin
-```
-DNI: 00000001
-Password: Admin123!
-Roles: ADMIN
-```
-
-### Profesor
-```
-DNI: 12345678
-Password: Teacher123!
-Roles: TEACHER
-Email: juan.perez@ipet132.edu.ar
-```
-
-### Estudiante (con email)
-```
-DNI: 11223344
-Password: 11223344Ipet132!
-Roles: STUDENT
-Email: pedro.rodriguez@student.com
-```
-
-### Estudiante (sin email)
-```
-DNI: 87654321
-Password: 87654321Ipet132!
-Roles: STUDENT
-Email: null
-```
-
----
-
-## 🚀 Inicio Rápido
 
 ### Prerequisitos
 
 - Java 17+
 - Maven 3.8+
 - MySQL 8+
-- IDE (IntelliJ IDEA recomendado)
 
 ### Instalación
 
@@ -597,197 +362,263 @@ cd school-management
 mysql -u root -p
 CREATE DATABASE ipet132_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
-# 3. Configurar application-dev.yml
-# Actualizar credenciales de BD
+# 3. Configurar application-dev.yml con tus credenciales de BD
 
-# 4. Instalar dependencias
+# 4. Instalar dependencias y compilar
 mvn clean install
 
-# 5. Ejecutar aplicación
-mvn spring-boot:run
+# 5. Ejecutar en perfil dev (carga seeders automáticamente)
+mvn spring-boot:run -Dspring-boot.run.profiles=dev
 
-# La aplicación estará disponible en:
-# http://localhost:8080
+# Disponible en: http://localhost:8080
+# Swagger UI:    http://localhost:8080/swagger-ui.html
+# OpenAPI spec:  http://localhost:8080/api-docs
 ```
 
-### Testing con cURL
+---
+
+## 🔑 Endpoints API
+
+### Auth
+| Método | Endpoint | Auth | Descripción |
+|--------|----------|------|-------------|
+| POST | `/api/auth/login` | ❌ | Login con DNI + password |
+| POST | `/api/auth/logout` | ✅ | Logout |
+| POST | `/api/auth/refresh` | ❌ | Refresh del access token |
+| GET | `/api/auth/profile` | ✅ | Perfil del usuario autenticado |
+| POST | `/api/auth/change-password` | ✅ | Cambio de contraseña |
+| GET | `/api/auth/sessions` | ✅ | Sesiones activas |
+| DELETE | `/api/auth/sessions/{id}` | ✅ | Revocar sesión |
+| POST | `/api/admin/students` | ✅ ADMIN | Crear estudiante |
+| POST | `/api/admin/teachers` | ✅ ADMIN | Crear profesor |
+
+### Geography
+| Método | Endpoint | Auth | Descripción |
+|--------|----------|------|-------------|
+| GET | `/api/geography/countries` | ❌ | Listar países |
+| GET | `/api/geography/countries/{iso}` | ❌ | País por ISO (ej: ARG) |
+| GET | `/api/geography/countries/{id}/provinces` | ❌ | Provincias del país |
+| GET | `/api/geography/provinces/search?q=` | ❌ | Buscar provincias |
+| GET | `/api/geography/provinces/{id}/places` | ❌ | Lugares de la provincia |
+| GET | `/api/geography/places/{id}` | ❌ | Lugar por ID |
+| GET | `/api/geography/places/search?q=` | ❌ | Buscar lugares |
+| GET | `/api/geography/search?q=` | ❌ | Búsqueda global |
+| POST | `/api/admin/geography/places` | ✅ ADMIN | Crear localidad |
+| GET | `/api/geography/statistics` | ❌ | Estadísticas |
+
+### Academic
+| Método | Endpoint | Auth | Descripción |
+|--------|----------|------|-------------|
+| POST | `/api/admin/academic-years` | ✅ ADMIN | Crear año académico |
+| GET | `/api/admin/academic-years` | ✅ | Listar años |
+| GET | `/api/admin/academic-years/current` | ✅ | Año actual |
+| GET | `/api/admin/academic-years/{id}` | ✅ | Año por ID |
+| PUT | `/api/admin/academic-years/{id}/activate` | ✅ ADMIN | Activar año |
+| PUT | `/api/admin/academic-years/{id}/close` | ✅ ADMIN | Cerrar año |
+| POST | `/api/admin/orientations` | ✅ ADMIN | Crear orientación |
+| GET | `/api/admin/orientations` | ✅ | Listar orientaciones |
+| PUT | `/api/admin/orientations/{id}` | ✅ ADMIN | Actualizar orientación |
+| PUT | `/api/admin/orientations/{id}/toggle-status` | ✅ ADMIN | Activar/Desactivar |
+| POST | `/api/admin/grade-levels` | ✅ ADMIN | Crear curso |
+| GET | `/api/admin/grade-levels` | ✅ | Listar cursos |
+| PUT | `/api/admin/grade-levels/{id}/homeroom-teacher` | ✅ ADMIN | Asignar tutor |
+| DELETE | `/api/admin/grade-levels/{id}` | ✅ ADMIN | Desactivar curso |
+| POST | `/api/admin/subjects` | ✅ ADMIN | Crear materia |
+| GET | `/api/admin/subjects` | ✅ | Listar materias |
+| PUT | `/api/admin/subjects/{id}` | ✅ ADMIN | Actualizar materia |
+
+**Total actual: ~35 endpoints REST documentados en Swagger**
+
+---
+
+## 🔒 Seguridad
+
+- **JWT access token**: corta duración (configurable en `application.yml`)
+- **Refresh token**: larga duración, almacenado en BD con hash, rotación en cada uso
+- **Blacklist**: access tokens revocados almacenados hasta expiración
+- **Spring Security 6**: `SecurityFilterChain` bean (no `WebSecurityConfigurerAdapter`)
+- **Roles disponibles**: `ADMIN`, `TEACHER`, `STUDENT`, `PARENT`, `STAFF`
+- **Schedulers**: limpieza periódica de refresh tokens y blacklist expirados
+
+---
+
+## 🧪 Testing
+
+```bash
+# Todos los tests
+mvn clean verify
+
+# Solo unit tests
+mvn test -Dgroups="unit"
+
+# Solo integration tests
+mvn test -Dgroups="integration"
+
+# Con coverage (JaCoCo)
+mvn test jacoco:report
+```
+
+### Testing del API
 
 ```bash
 # Login
 curl -X POST http://localhost:8080/api/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"dni":"00000001","password":"Admin123!","rememberMe":false}'
+  -d '{"dni":"00000001","password":"Admin123!"}'
 
-# Guardar token
-export TOKEN="<access_token_from_response>"
+export TOKEN="<access_token>"
 
-# Obtener perfil
-curl -X GET http://localhost:8080/api/auth/profile \
-  -H "Authorization: Bearer $TOKEN"
-
-# Crear estudiante
-curl -X POST http://localhost:8080/api/admin/students \
+# Crear año académico
+curl -X POST http://localhost:8080/api/admin/academic-years \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
-  -d '{
-    "dni":"99887766",
-    "firstName":"Carlos",
-    "lastName":"González",
-    "grade":"4",
-    "division":"B",
-    "parentEmail":"padre@mail.com"
-  }'
+  -d '{"year":2025,"startDate":"2025-03-01","endDate":"2025-12-20","setAsCurrent":true}'
+
+# Buscar localidades
+curl "http://localhost:8080/api/geography/places/search?q=Alta"
 ```
+
+O bien usar **Swagger UI**: `http://localhost:8080/swagger-ui.html`
+
+---
+
+## 🔑 Credenciales de Prueba
+
+Generadas automáticamente por `DataSeederConfig` en perfil `dev`:
+
+| Rol | DNI | Password |
+|-----|-----|----------|
+| ADMIN | `00000001` | `Admin123!` |
+| TEACHER | `12345678` | `Teacher123!` |
+| STUDENT (con email) | `11223344` | `11223344Ipet132!` |
+| STUDENT (sin email) | `87654321` | `87654321Ipet132!` |
+
+> **Nota**: La contraseña inicial de estudiantes sigue el patrón `{DNI}Ipet132!`
+
+---
+
+## 📊 Estado del Proyecto
+
+### ✅ Implementado (MVP + Fase 2)
+
+**Auth Module**
+- [x] Arquitectura hexagonal completa
+- [x] Autenticación con DNI — JWT + Refresh Token con rotación
+- [x] Gestión de sesiones activas por dispositivo
+- [x] Blacklist de tokens — Schedulers de limpieza
+- [x] Creación de estudiantes y profesores (Admin)
+- [x] Activación de cuenta de profesores
+- [x] Cambio de contraseña
+- [x] GlobalExceptionHandler, MapStruct mappers, Flyway migrations
+
+**Geography Module**
+- [x] Países, provincias y localidades (jerarquía completa)
+- [x] Búsqueda con autocompletado
+- [x] Seeder con Argentina completa (24 provincias, ~45 localidades)
+- [x] Endpoints públicos para formularios de alta
+
+**Academic Module**
+- [x] Gestión de años académicos con activación controlada
+- [x] Orientaciones técnicas (Electricista, Electromecánico)
+- [x] Cursos con validación de orientación por ciclo (1°–3° sin, 4°–7° con)
+- [x] Materias comunes y específicas por orientación
+- [x] Registro de Calificaciones con asignación automática de folios
+- [x] 5 Domain Services (FolioAssignment, RegistryNumber, AcademicYearActivation, etc.)
+- [x] 22 Use Cases — 22 endpoints REST
+- [x] Seeder completo (2 años, 2 orientaciones, 37 cursos, ~60 materias)
+- [x] Swagger/OpenAPI completo
+- [x] Validaciones Jakarta en todos los DTOs
+
+### ⏳ Pendiente — Próximos Módulos
+
+**Students Module** (próximo)
+- [ ] Agregado: `StudentPersonalData` (identidad civil, domicilio, fotos de DNI)
+- [ ] Agregado: `StudentHealthRecord` (ficha médica, obra social, alergias)
+- [ ] Agregado: `StudentEnrollment` (matrícula por ciclo lectivo, baja)
+- [ ] Agregado: `StudentRecord + RecordDocuments` (legajo digital con documentación)
+- [ ] Gestión de padres/tutores con su propio `User`
+- [ ] `RecordNumberGenerator` — formato `LEG-{año}-{secuencia}`
+- [ ] Flujo transaccional completo de alta de estudiante (integra Auth + Academic + Geography)
+
+**Teachers Module**
+- [ ] Asignación de profesores a cursos
+- [ ] Homeroom teachers (tutores de curso)
+
+**Calificaciones**
+- [ ] Notas por período y materia
+- [ ] Integración con Qualification Registry
+- [ ] Promedio final
+
+**Infraestructura**
+- [ ] Rate limiting
+- [ ] Auditoría completa
+- [ ] Métricas y monitoring (Actuator)
+- [ ] Email Service (envío real)
+- [ ] Búsqueda y paginación avanzada
+
+---
+
+## 📝 Decisiones Arquitectónicas
+
+| Decisión | Razón |
+|----------|-------|
+| **DNI como username** | Identificador universal en el sistema escolar argentino |
+| **Email opcional** | Estudiantes menores no tienen email propio |
+| **UUID como PK** | Preparado para microservicios, evita IDs predecibles |
+| **Roles como String** | Simplicidad MVP — roles fijos |
+| **Token Rotation** | Seguridad OWASP en refresh tokens |
+| **Records para DTOs** | Inmutabilidad + menos boilerplate (Java 17) |
+| **MapStruct 3 capas** | Type-safe en compile-time — persistence, application y web mapper separados |
+| **Flyway migraciones** | Control de versión de esquema — nunca `ddl-auto: create` |
+| **Shared Kernel** | DNI, Email, PhoneNumber, IDs geográficos reutilizados entre bounded contexts |
+| **Students en 4 agregados** | Evitar God Table — separación por responsabilidad (personal, salud, matrícula, legajo) |
+| **Folio automático** | `FolioAssignmentService` transaccional garantiza unicidad del folio |
+| **Password inicial estudiante** | Patrón `{DNI}Ipet132!` — simple y conocido por el admin |
+| **Endpoints Geography públicos** | Los formularios de alta necesitan autocompletado sin estar autenticado |
+| **Ciclo básico sin orientación** | 1°–3° son comunes; orientación obligatoria solo en ciclo superior (4°–7°) |
+
+### Patrones en uso
+
+- Repository Pattern — Puerto (interface en domain) + Adaptador (impl en infrastructure)
+- Factory Pattern — Creación de entidades con validación en el constructor
+- Value Object Pattern — Tipos primitivos encapsulados con validación
+- Port & Adapters — Arquitectura hexagonal completa
+- Domain Services — Lógica que no pertenece a un solo agregado
+- Domain Events — Preparado en estructura (no implementado aún)
+- CQRS — Preparado (use cases separados por lectura/escritura)
 
 ---
 
 ## 📦 Dependencias Principales
 
 ```xml
-<dependencies>
-    <!-- Spring Boot -->
-    <dependency>
-        <groupId>org.springframework.boot</groupId>
-        <artifactId>spring-boot-starter-web</artifactId>
-    </dependency>
-    <dependency>
-        <groupId>org.springframework.boot</groupId>
-        <artifactId>spring-boot-starter-security</artifactId>
-    </dependency>
-    <dependency>
-        <groupId>org.springframework.boot</groupId>
-        <artifactId>spring-boot-starter-data-jpa</artifactId>
-    </dependency>
-    <dependency>
-        <groupId>org.springframework.boot</groupId>
-        <artifactId>spring-boot-starter-validation</artifactId>
-    </dependency>
+<!-- Spring Boot -->
+<dependency>spring-boot-starter-web</dependency>
+<dependency>spring-boot-starter-security</dependency>
+<dependency>spring-boot-starter-data-jpa</dependency>
+<dependency>spring-boot-starter-validation</dependency>
 
-    <!-- JWT -->
-    <dependency>
-        <groupId>io.jsonwebtoken</groupId>
-        <artifactId>jjwt-api</artifactId>
-        <version>0.12.3</version>
-    </dependency>
+<!-- JWT -->
+<dependency>io.jsonwebtoken:jjwt-api:0.12.3</dependency>
 
-    <!-- MapStruct -->
-    <dependency>
-        <groupId>org.mapstruct</groupId>
-        <artifactId>mapstruct</artifactId>
-        <version>1.5.5.Final</version>
-    </dependency>
+<!-- MapStruct -->
+<dependency>org.mapstruct:mapstruct:1.5.5.Final</dependency>
 
-    <!-- Lombok -->
-    <dependency>
-        <groupId>org.projectlombok</groupId>
-        <artifactId>lombok</artifactId>
-        <optional>true</optional>
-    </dependency>
+<!-- Lombok -->
+<dependency>org.projectlombok:lombok</dependency>
 
-    <!-- MySQL -->
-    <dependency>
-        <groupId>com.mysql</groupId>
-        <artifactId>mysql-connector-j</artifactId>
-    </dependency>
+<!-- MySQL -->
+<dependency>com.mysql:mysql-connector-j</dependency>
 
-    <!-- Flyway -->
-    <dependency>
-        <groupId>org.flywaydb</groupId>
-        <artifactId>flyway-mysql</artifactId>
-    </dependency>
-</dependencies>
+<!-- Flyway -->
+<dependency>org.flywaydb:flyway-mysql</dependency>
+
+<!-- OpenAPI / Swagger -->
+<dependency>org.springdoc:springdoc-openapi-starter-webmvc-ui</dependency>
 ```
 
 ---
 
-## 📊 Estado del Proyecto
-
-### ✅ Implementado (MVP - Fase 1)
-
-- [x] Arquitectura hexagonal completa
-- [x] Domain models y Value Objects
-- [x] Autenticación con DNI
-- [x] Login y Logout
-- [x] Refresh Token con rotation
-- [x] Gestión de sesiones activas
-- [x] Creación de estudiantes (Admin)
-- [x] Creación de profesores (Admin)
-- [x] Activación de cuenta de profesores
-- [x] Cambio de contraseña
-- [x] Blacklist de tokens
-- [x] Global Exception Handler
-- [x] Mappers con MapStruct
-- [x] Repositories completos
-- [x] Unit y Integration Tests
-- [x] Data Seeder para testing
-- [x] Documentación completa
-
-### ⏳ Pendiente (Post-MVP)
-
-- [ ] Bounded Context: Students (separado)
-- [ ] Bounded Context: Teachers (separado)
-- [ ] Bounded Context: Courses
-- [ ] Bounded Context: Grades
-- [ ] Email Service (envío real de emails)
-- [ ] Búsqueda y paginación avanzada
-- [ ] Bulk operations
-- [ ] Rate limiting
-- [ ] Auditoría completa
-- [ ] Métricas y monitoring
-- [ ] Documentación API con Swagger/OpenAPI
-
----
-
-## 🤝 Contribución
-
-Este proyecto sigue principios de **Clean Architecture** y **Domain-Driven Design**. Para contribuir:
-
-1. Mantener la separación de capas estricta
-2. Seguir los patrones establecidos
-3. Escribir tests para nuevo código
-4. Documentar decisiones arquitectónicas importantes
-5. Usar commits descriptivos
-
----
-
-## 📝 Notas Técnicas
-
-### Decisiones Arquitectónicas
-
-1. **DNI como Username**: Decisión específica para sistema escolar argentino
-2. **Email Opcional**: Permite estudiantes menores sin email
-3. **Token Rotation**: Máxima seguridad, siguiendo OWASP recommendations
-4. **Roles como String**: Decisión de simplicidad para MVP, roles son fijos
-5. **Records para DTOs**: Inmutabilidad y menos boilerplate
-6. **MapStruct**: Type-safe mapping en compile-time
-7. **Vertical Slicing**: Preparado para migrar a microservicios
-
-### Patrones Utilizados
-
-- Repository Pattern
-- Factory Pattern (User creation)
-- Value Object Pattern
-- Domain Events (preparado)
-- CQRS (preparado en estructura)
-- Port & Adapters (Hexagonal)
-
----
-
-## 📞 Contacto y Soporte
-
-Para consultas sobre el proyecto, arquitectura o implementación, revisar:
-- Documentación en código (JavaDoc)
-- Tests como ejemplos de uso
-- Este README
-
----
-
-## 📄 Licencia
-
-[Definir licencia del proyecto]
-
----
-
-**Última actualización**: Noviembre 2024
-**Versión**: 1.0.0-MVP
-**Estado**: En desarrollo activo
+**Última actualización**: Marzo 2025
+**Versión**: 2.0.0
+**Estado**: En desarrollo activo — MVP Auth + Geography + Academic completados
