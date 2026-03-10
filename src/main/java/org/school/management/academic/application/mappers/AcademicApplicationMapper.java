@@ -10,6 +10,7 @@ import org.school.management.academic.domain.valueobject.*;
 import org.school.management.academic.domain.valueobject.enums.AcademicYearStatus;
 import org.school.management.academic.domain.valueobject.enums.RegistryStatus;
 import org.school.management.academic.domain.valueobject.enums.Shift;
+import org.school.management.academic.domain.valueobject.enums.SubjectCode;
 import org.school.management.academic.domain.valueobject.ids.*;
 
 import java.util.UUID;

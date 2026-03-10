@@ -1,41 +1,34 @@
 package org.school.management.academic.domain.valueobject.ids;
 
-import lombok.AccessLevel;
-import lombok.Builder;
-import lombok.Value;
-
 import java.util.UUID;
 
-@Value
-@Builder(access = AccessLevel.PRIVATE)
-public class RegistryId {
-    UUID value;
+public record RegistryId(UUID value) {
 
-    public RegistryId(UUID value) {
-        if (value == null) {
-            throw new IllegalArgumentException("UserId cannot be null");
-        }
-        this.value = value;
+    public RegistryId {
+        if (value == null) throw new IllegalArgumentException("RegistryId cannot be null");
+    }
+
+    public static RegistryId of(UUID value) {
+        return new RegistryId(value);
     }
 
     public static RegistryId generate() {
         return new RegistryId(UUID.randomUUID());
     }
 
+    public static RegistryId from(UUID uuid) {
+        return new RegistryId(uuid);
+    }
+
     public static RegistryId from(String id) {
         try {
             return new RegistryId(UUID.fromString(id));
         } catch (IllegalArgumentException e) {
-            throw new IllegalArgumentException("Invalid UserId format: " + id);
+            throw new IllegalArgumentException("Invalid RegistryId format: " + id);
         }
-    }
-
-    public static RegistryId from(UUID uuid) {
-        return new RegistryId(uuid);
     }
 
     public String asString() {
         return value.toString();
     }
 }
-

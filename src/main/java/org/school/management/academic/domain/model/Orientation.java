@@ -3,7 +3,6 @@ package org.school.management.academic.domain.model;
 import lombok.Builder;
 import lombok.Value;
 import org.school.management.academic.domain.valueobject.OrientationCode;
-import org.school.management.academic.domain.valueobject.enums.AcademicYearStatus;
 import org.school.management.academic.domain.valueobject.ids.OrientationId;
 import org.school.management.academic.domain.valueobject.YearLevel;
 

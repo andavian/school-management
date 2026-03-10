@@ -1,15 +1,14 @@
 package org.school.management.academic.domain.valueobject;
 
-import lombok.Value;
+public record YearLevel(int value) {
 
-@Value
-public class YearLevel {
-    int value;
-
-    public static YearLevel of(int value) {
+    public YearLevel {
         if (value < 1 || value > 7) {
             throw new IllegalArgumentException("Year level must be between 1 and 7");
         }
+    }
+
+    public static YearLevel of(int value) {
         return new YearLevel(value);
     }
 
@@ -21,16 +20,10 @@ public class YearLevel {
         return value >= 4;
     }
 
-     /**
-     * Verifica si es ciclo básico (1°-3°)
-     */
     public boolean isBasicCycle() {
         return value >= 1 && value <= 3;
     }
 
-    /**
-     * Verifica si es ciclo orientado (4°-7°)
-     */
     public boolean isOrientedCycle() {
         return value >= 4 && value <= 7;
     }

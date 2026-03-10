@@ -2,8 +2,8 @@ package org.school.management.academic.domain.model;
 
 import lombok.Builder;
 import lombok.Value;
-import lombok.With;
 import org.school.management.academic.domain.valueobject.*;
+import org.school.management.academic.domain.valueobject.enums.SubjectCode;
 import org.school.management.academic.domain.valueobject.ids.OrientationId;
 import org.school.management.academic.domain.valueobject.ids.SubjectId;
 

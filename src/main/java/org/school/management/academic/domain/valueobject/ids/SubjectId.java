@@ -1,41 +1,34 @@
 package org.school.management.academic.domain.valueobject.ids;
 
-import lombok.AccessLevel;
-import lombok.Builder;
-import lombok.Value;
-
 import java.util.UUID;
 
-@Value
-@Builder(access = AccessLevel.PRIVATE)
-public class SubjectId {
-    UUID value;
+public record SubjectId(UUID value) {
 
-    public SubjectId(UUID value) {
-        if (value == null) {
-            throw new IllegalArgumentException("UserId cannot be null");
-        }
-        this.value = value;
+    public SubjectId {
+        if (value == null) throw new IllegalArgumentException("SubjectId cannot be null");
+    }
+
+    public static SubjectId of(UUID value) {
+        return new SubjectId(value);
     }
 
     public static SubjectId generate() {
         return new SubjectId(UUID.randomUUID());
     }
 
+    public static SubjectId from(UUID uuid) {
+        return new SubjectId(uuid);
+    }
+
     public static SubjectId from(String id) {
         try {
             return new SubjectId(UUID.fromString(id));
         } catch (IllegalArgumentException e) {
-            throw new IllegalArgumentException("Invalid UserId format: " + id);
+            throw new IllegalArgumentException("Invalid SubjectId format: " + id);
         }
-    }
-
-    public static SubjectId from(UUID uuid) {
-        return new SubjectId(uuid);
     }
 
     public String asString() {
         return value.toString();
     }
 }
-

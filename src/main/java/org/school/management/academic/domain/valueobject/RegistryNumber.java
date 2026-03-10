@@ -1,28 +1,25 @@
 package org.school.management.academic.domain.valueobject;
 
-import lombok.Value;
-
-@Value
-public class RegistryNumber {
-    String value;
+public record RegistryNumber(String value) {
 
     public static final int MAX_SEQUENCE_ALLOWED = 999;
 
-    public static RegistryNumber of(String value) {
+    public RegistryNumber {
         if (value == null || value.isBlank()) {
             throw new IllegalArgumentException("Registry number cannot be null or empty");
         }
-
         if (!value.matches("^REG-\\d{4}-\\d{3}$")) {
-            throw new IllegalArgumentException("Invalid registry number format. Expected: REG-YYYY-NNN");
+            throw new IllegalArgumentException(
+                    "Invalid registry number format. Expected: REG-YYYY-NNN");
         }
+    }
 
+    public static RegistryNumber of(String value) {
         return new RegistryNumber(value);
     }
 
     public static RegistryNumber generate(int year, int sequence) {
-        String value = String.format("REG-%d-%03d", year, sequence);
-        return new RegistryNumber(value);
+        return new RegistryNumber(String.format("REG-%d-%03d", year, sequence));
     }
 
     public int extractYear() {
