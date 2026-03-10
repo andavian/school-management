@@ -70,7 +70,7 @@ public class QualificationRegistry {
     }
 
     public String getRegistryNumberAsString() {
-        return registryNumber.getValue();
+        return registryNumber.value();
     }
 
      /**

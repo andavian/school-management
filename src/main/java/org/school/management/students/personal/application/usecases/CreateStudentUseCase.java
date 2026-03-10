@@ -6,6 +6,7 @@ import org.school.management.academic.domain.exception.AcademicYearNotFoundExcep
 import org.school.management.academic.domain.exception.GradeLevelNotFoundException;
 import org.school.management.academic.domain.repository.AcademicYearRepository;
 import org.school.management.academic.domain.repository.GradeLevelRepository;
+import org.school.management.academic.domain.repository.QualificationRegistryRepository;
 import org.school.management.academic.domain.service.FolioAssignmentService;
 import org.school.management.academic.domain.service.RegistryNumberGenerator;
 import org.school.management.academic.domain.valueobject.ids.AcademicYearId;
@@ -60,6 +61,7 @@ public class CreateStudentUseCase {
     private final AcademicYearRepository academicYearRepository;
     private final GradeLevelRepository gradeLevelRepository;
     private final UserRepository userRepository;
+    private final QualificationRegistryRepository registryRepository;
 
     // ── Domain Services ───────────────────────────────────────────────────
     private final FolioAssignmentService folioAssignmentService;
@@ -178,15 +180,18 @@ public class CreateStudentUseCase {
         log.debug("StudentHealthRecord created — studentId: {}", studentId.value());
 
         // ── Pasos 10 & 11: Generar número de legajo y crear StudentRecord ──
-        var activeRegistry = academicYear.getActiveRegistry()
+        var activeRegistry = registryRepository
+                .findActiveRegistryForYear(academicYear.getAcademicYearId())
                 .orElseThrow(() -> new IllegalStateException(
                         "No active registry found for academic year: "
                                 + academicYear.getAcademicYearId().value()
                 ));
 
-        RecordNumber recordNumber = registryNumberGenerator.generate(
+        String generatedNumber = registryNumberGenerator.generate(
+                academicYear.getAcademicYearId(),
                 academicYear.getYear().value()
         );
+        RecordNumber recordNumber = RecordNumber.of(generatedNumber);
 
         StudentRecord studentRecord = StudentRecord.create(
                 StudentRecord.builder()
@@ -198,6 +203,7 @@ public class CreateStudentUseCase {
                         .folioNumber(folioNumber)
                         .documents(new ArrayList<>())
         );
+
         studentRecordRepository.save(studentRecord);
         log.debug("StudentRecord created — number: {}", recordNumber.value());
 

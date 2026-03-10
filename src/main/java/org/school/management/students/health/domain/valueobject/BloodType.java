@@ -58,6 +58,26 @@ public enum BloodType {
         };
     }
 
+    /**
+     * Busca un BloodType por su displayName (A+, B-, AB+, etc.)
+     * Es el método de entrada desde la API — el DTO envía el valor legible.
+     */
+    public static BloodType fromString(String value) {
+        if (value == null || value.isBlank()) {
+            throw new IllegalArgumentException("Blood type cannot be null or empty");
+        }
+        String normalized = value.trim().toUpperCase();
+        for (BloodType type : values()) {
+            if (type.displayName.equalsIgnoreCase(normalized)) {
+                return type;
+            }
+        }
+        throw new IllegalArgumentException(
+                "Invalid blood type: " + value +
+                        ". Valid values: A+, A-, B+, B-, AB+, AB-, O+, O-"
+        );
+    }
+
     @Override
     public String toString() {
         return displayName;

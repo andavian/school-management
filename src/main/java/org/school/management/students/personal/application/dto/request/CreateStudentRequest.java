@@ -109,7 +109,10 @@ public record CreateStudentRequest(
 
     public record HealthDataRequest(
 
-            @Size(max = 5, message = "El grupo sanguíneo no puede superar los 5 caracteres")
+            @Pattern(
+                    regexp = "^(A|B|AB|O)[+-]$",
+                    message = "Grupo sanguíneo inválido. Valores válidos: A+, A-, B+, B-, AB+, AB-, O+, O-"
+            )
             String bloodType,
 
             @Size(max = 100, message = "La obra social no puede superar los 100 caracteres")
