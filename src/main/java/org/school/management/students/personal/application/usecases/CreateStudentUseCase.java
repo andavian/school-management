@@ -103,6 +103,7 @@ public class CreateStudentUseCase {
         }
 
 
+
         // ── Paso 5: Asignar folio ─────────────────────────────────────────
         Integer folioNumber = folioAssignmentService.assignNextFolio();
 

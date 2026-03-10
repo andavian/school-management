@@ -1,16 +1,11 @@
 package org.school.management.auth.domain.valueobject;
 
-import lombok.*;
+public record HashedPassword(String value) {
 
-@Value                                     // Inmutable
-public class HashedPassword {
-    String value;
-
-    private HashedPassword(String hashedValue) {
-        if (hashedValue == null || hashedValue.trim().isEmpty()) {
+    public HashedPassword {
+        if (value == null || value.trim().isEmpty()) {
             throw new IllegalArgumentException("Hashed password cannot be null or empty");
         }
-        this.value = hashedValue;
     }
 
     public static HashedPassword of(String hashedValue) {
@@ -21,7 +16,7 @@ public class HashedPassword {
         return encoder.matches(plainPassword, this.value);
     }
 
-    // Override toString para seguridad
+    // Seguridad — nunca exponer el hash
     @Override
     public String toString() {
         return "HashedPassword{***}";
@@ -29,6 +24,7 @@ public class HashedPassword {
 
     public interface PasswordEncoder {
         String encode(String plainPassword);
+
         boolean matches(String plainPassword, String hashedPassword);
     }
 }

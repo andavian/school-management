@@ -1,18 +1,15 @@
 package org.school.management.auth.domain.valueobject;
 
-import lombok.Value;
-import java.util.Objects;
 import java.util.UUID;
 
-@Value
-public class BlacklistedTokenId {
-    UUID value;
+public record BlacklistedTokenId(UUID value) {
 
-    private BlacklistedTokenId(UUID value) {
-        if (value == null) {
-            throw new IllegalArgumentException("BlacklistedTokenId cannot be null");
-        }
-        this.value = value;
+    public BlacklistedTokenId {
+        if (value == null) throw new IllegalArgumentException("BlacklistedTokenId cannot be null");
+    }
+
+    public static BlacklistedTokenId of(UUID value) {
+        return new BlacklistedTokenId(value);
     }
 
     public static BlacklistedTokenId generate() {

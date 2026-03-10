@@ -1,39 +1,27 @@
 package org.school.management.auth.domain.valueobject;
 
-import lombok.*;
-import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import java.util.Set;
-
-@Value
-public class RoleName implements GrantedAuthority {
-
+public record RoleName(String name) implements GrantedAuthority {
 
     private static final Set<String> VALID_ROLES = Set.of(
             "ADMIN", "TEACHER", "STUDENT", "PARENT", "STAFF"
     );
 
-    String name;
-
-    private RoleName(String name) {
+    public RoleName {
         if (name == null || name.trim().isEmpty()) {
             throw new IllegalArgumentException("Role name cannot be null or empty");
         }
-
-        String upperValue = name.trim().toUpperCase();
-
-        if (!VALID_ROLES.contains(upperValue)) {
-            throw new IllegalArgumentException("Invalid role name: " + name + ". Valid roles: " + VALID_ROLES);
+        name = name.trim().toUpperCase();
+        if (!VALID_ROLES.contains(name)) {
+            throw new IllegalArgumentException(
+                    "Invalid role name: " + name + ". Valid roles: " + VALID_ROLES);
         }
-
-        this.name = upperValue;
     }
 
+    // Factory methods
     public static RoleName of(String value) {
         return new RoleName(value);
     }
 
-    // Factory methods para roles específicos
     public static RoleName admin() {
         return new RoleName("ADMIN");
     }
@@ -54,6 +42,7 @@ public class RoleName implements GrantedAuthority {
         return new RoleName("STAFF");
     }
 
+    // Métodos de negocio
     public boolean isAdmin() {
         return "ADMIN".equals(name);
     }
@@ -67,14 +56,19 @@ public class RoleName implements GrantedAuthority {
     }
 
     public SimpleGrantedAuthority toAuthority() {
-        return new SimpleGrantedAuthority("ROLE_" + this.getName());
+        return new SimpleGrantedAuthority("ROLE_" + name);
     }
 
-           @Override
-        public String getAuthority() { return "ROLE_" + name; }
-
-        @Override
-        public String toString() {
-            return name;
-        }
+    // GrantedAuthority — Spring Security
+    @Override
+    public String getAuthority() {
+        return "ROLE_" + name;
     }
+
+    // toString explícito — record generaría RoleName[name=ADMIN]
+    // pero el resto del sistema espera solo el nombre
+    @Override
+    public String toString() {
+        return name;
+    }
+}
