@@ -2,175 +2,230 @@ package org.school.management.students.personal.application.usecases;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.school.management.academic.domain.exception.AcademicYearNotFoundException;
+import org.school.management.academic.domain.exception.GradeLevelNotFoundException;
+import org.school.management.academic.domain.repository.AcademicYearRepository;
+import org.school.management.academic.domain.repository.GradeLevelRepository;
+import org.school.management.academic.domain.service.FolioAssignmentService;
+import org.school.management.academic.domain.service.RegistryNumberGenerator;
+import org.school.management.academic.domain.valueobject.ids.AcademicYearId;
+import org.school.management.academic.domain.valueobject.ids.GradeLevelId;
+import org.school.management.academic.domain.valueobject.ids.RegistryId;
+import org.school.management.auth.domain.model.Role;
+import org.school.management.auth.domain.model.User;
+import org.school.management.auth.domain.repository.UserRepository;
+import org.school.management.auth.domain.valueobject.HashedPassword;
+import org.school.management.auth.domain.valueobject.PlainPassword;
+import org.school.management.auth.domain.valueobject.RoleName;
 import org.school.management.auth.domain.valueobject.UserId;
+import org.school.management.shared.geography.domain.valueobject.PlaceId;
+import org.school.management.shared.person.domain.valueobject.*;
+import org.school.management.students.enrollment.domain.model.StudentEnrollment;
+import org.school.management.students.enrollment.domain.repository.StudentEnrollmentRepository;
+import org.school.management.students.enrollment.domain.valueobject.EnrollmentId;
+import org.school.management.students.enrollment.domain.valueobject.EnrollmentType;
+import org.school.management.students.health.domain.model.StudentHealthRecord;
+import org.school.management.students.health.domain.repository.StudentHealthRecordRepository;
+import org.school.management.students.health.domain.valueobject.BloodType;
+import org.school.management.students.health.domain.valueobject.HealthRecordId;
 import org.school.management.students.personal.application.dto.request.CreateStudentRequest;
 import org.school.management.students.personal.application.dto.response.StudentResponse;
-import org.school.management.students.personal.application.mappers.StudentPersonalDataMapper;
 import org.school.management.students.personal.domain.exception.StudentAlreadyExistsException;
 import org.school.management.students.personal.domain.model.StudentPersonalData;
 import org.school.management.students.personal.domain.repository.StudentPersonalDataRepository;
 import org.school.management.students.personal.domain.valueobject.StudentPersonalDataId;
+import org.school.management.students.records.domain.model.StudentRecord;
+import org.school.management.students.records.domain.repository.StudentRecordRepository;
+import org.school.management.students.records.domain.valueobject.RecordId;
+import org.school.management.students.records.domain.valueobject.RecordNumber;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/**
- * Use Case: Crear un nuevo estudiante
- *
- * Responsabilidad:
- * - Validar que el DNI no exista
- * - Validar coherencia DNI-CUIL
- * - Crear User en Auth context (usando port)
- * - Construir StudentPersonalData con todos los Value Objects
- * - Construir Address usando el VO del Shared Kernel (con normalización automática)
- * - Persistir el agregado
- *
- * Flujo transaccional completo
- */
+import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.Set;
+import java.util.UUID;
+
 @Service
 @RequiredArgsConstructor
+@Transactional
 @Slf4j
 public class CreateStudentUseCase {
 
+    // ── Repositorios ──────────────────────────────────────────────────────
     private final StudentPersonalDataRepository studentRepository;
-    private final StudentPersonalDataMapper mapper;
-    // TODO: Inyectar cuando exista
-    // private final UserService userService; // Port hacia Auth context
-    // private final PlaceService placeService; // Port hacia Geography context
+    private final StudentHealthRecordRepository healthRecordRepository;
+    private final StudentRecordRepository studentRecordRepository;
+    private final StudentEnrollmentRepository enrollmentRepository;
+    private final AcademicYearRepository academicYearRepository;
+    private final GradeLevelRepository gradeLevelRepository;
+    private final UserRepository userRepository;
 
-    /**
-     * Ejecuta el caso de uso
-     *
-     * @param request Datos del estudiante a crear
-     * @param createdBy Usuario que ejecuta la acción
-     * @return StudentResponse con datos completos del estudiante creado
-     * @throws StudentAlreadyExistsException si el DNI ya existe
-     * @throws IllegalArgumentException si CUIL no coincide con DNI
-     */
-    @Transactional
-    public StudentResponse execute(CreateStudentRequest request, UserId createdBy) {
+    // ── Domain Services ───────────────────────────────────────────────────
+    private final FolioAssignmentService folioAssignmentService;
+    private final RegistryNumberGenerator registryNumberGenerator;
+    private final HashedPassword.PasswordEncoder passwordEncoder;
+
+    // ── Use Cases ─────────────────────────────────────────────────────────
+    private final GetStudentByIdUseCase getStudentByIdUseCase;
+
+    public StudentResponse execute(CreateStudentRequest request, UUID createdByUserId) {
         log.info("Creating student with DNI: {}", request.dni());
 
-        // 1. Validar que DNI no exista
-        var dni = mapper.mapDni(request.dni());
+        // ── Paso 1 & 2: Validar unicidad DNI y CUIL ───────────────────────
+        Dni dni = Dni.of(request.dni());
+        Cuil cuil = Cuil.of(request.cuil());
+
         if (studentRepository.existsByDni(dni)) {
-            throw new StudentAlreadyExistsException(
-                    "Student with DNI " + request.dni() + " already exists"
+            throw StudentAlreadyExistsException.withDni(request.dni());
+        }
+        if (studentRepository.existsByCuil(cuil.value())) {
+            throw StudentAlreadyExistsException.withCuil(request.cuil());
+        }
+
+        // ── Paso 3: Obtener AcademicYear activo ───────────────────────────
+        var academicYear = academicYearRepository.findCurrentYear()
+                .orElseThrow(() -> new AcademicYearNotFoundException(
+                        "No active academic year found. Cannot enroll student."
+                ));
+
+        // ── Paso 4: Validar GradeLevel existe y está activo ───────────────
+        GradeLevelId gradeLevelId = GradeLevelId.from(request.gradeLevelId());
+
+        var gradeLevel = gradeLevelRepository
+                .findById(gradeLevelId)
+                .orElseThrow(() -> new GradeLevelNotFoundException(gradeLevelId));
+
+        if (!gradeLevel.getIsActive()) {
+            throw new GradeLevelNotFoundException(
+                    "GradeLevel is not active: " + request.gradeLevelId()
             );
         }
 
 
+        // ── Paso 5: Asignar folio ─────────────────────────────────────────
+        Integer folioNumber = folioAssignmentService.assignNextFolio();
 
-        // 3. Crear User en Auth context (TODO: cuando exista el port)
-        // UserId userId = userService.createUserForStudent(dni, generateInitialPassword(dni.getValue()));
-        UserId userId = UserId.generate(); // Temporal hasta implementar Auth integration
+        // ── Paso 6: Generar password inicial {DNI}Ipet132! ────────────────
+        String rawPassword = request.dni() + "Ipet132!";
+        PlainPassword plainPassword = PlainPassword.of(rawPassword);
 
-        // 4. Construir Address usando el VO del Shared Kernel
-        // IMPORTANTE: Address hace normalización automática:
-        // - "av colon" → "Av. Colón"
-        // - "1234" valida formato
-        // - floor/apartment opcionales
-        var address = mapper.mapAddress(request);
+        // ── Paso 7: Crear User en auth ────────────────────────────────────
+        Role studentRole = Role.create(RoleName.student());
+        User user = User.create(dni, plainPassword, Set.of(studentRole), passwordEncoder);
+        User savedUser = userRepository.save(user);
+        UserId userId = savedUser.getUserId();
+        UserId createdBy = UserId.from(createdByUserId);
 
-        // 5. Construir StudentPersonalData con builder validado
-        StudentPersonalData student = StudentPersonalData.create(
-                StudentPersonalData.builder()
-                        .studentId(StudentPersonalDataId.generate())
-                        .userId(userId)
-                        .dni(dni)
-                        .cuil(mapper.mapCuil(request.cuil()))
-                        .fullName(mapper.mapFullName(request))
-                        .birthDate(request.birthDate())
-                        .gender(mapper.mapGender(request.gender()))
-                        .nationality(mapper.mapNationality(request.nationality()))
-                        .birthPlaceId(mapper.mapPlaceId(request.birthPlaceId()))
-                        .residencePlaceId(mapper.mapResidencePlaceId(request.residencePlaceId()))
-                        .phone(mapper.mapPhoneNumber(request.phone()))
-                        .email(mapper.mapEmail(request.email()))
-                        .address(address) // Address del Shared Kernel (ya normalizado)
-                        .createdBy(createdBy)
+        log.debug("User created for student — userId: {}, DNI: {}", userId.value(), request.dni());
+
+        // ── Paso 8: Crear StudentPersonalData ─────────────────────────────
+        StudentPersonalDataId studentId = StudentPersonalDataId.generate();
+
+        Address address = new Address(
+                request.addressStreet(),
+                request.addressNumber(),
+                request.addressFloor(),
+                request.addressApartment(),
+                PlaceId.of(request.residencePlaceId()),
+                request.postalCode()
         );
 
-        // 6. Persistir
-        StudentPersonalData saved = studentRepository.save(student);
+        StudentPersonalData student = StudentPersonalData.create(
+                StudentPersonalData.builder()
+                        .studentId(studentId)
+                        .userId(userId)
+                        .dni(dni)
+                        .cuil(cuil)
+                        .fullName(FullName.of(request.firstName(), request.lastName()))
+                        .birthDate(request.birthDate())
+                        .birthPlaceId(PlaceId.of(request.birthPlaceId()))
+                        .residencePlaceId(PlaceId.of(request.residencePlaceId()))
+                        .gender(Gender.valueOf(request.gender()))
+                        .nationality(Nationality.of(request.nationality()))
+                        .phone(request.phone() != null && !request.phone().isBlank()
+                                ? PhoneNumber.of(request.phone()) : null)
+                        .email(request.email() != null && !request.email().isBlank()
+                                ? Email.of(request.email()) : null)
+                        .address(address)
+                        .createdBy(createdBy)
+        );
+        studentRepository.save(student);
+        log.debug("StudentPersonalData created — id: {}", studentId.value());
 
-        log.info("Student created successfully with ID: {}", saved.getStudentId().asString());
+        // ── Paso 9: Crear StudentHealthRecord ─────────────────────────────
+        var healthData = request.healthData();
+        StudentHealthRecord healthRecord = StudentHealthRecord.create(
+                StudentHealthRecord.builder()
+                        .healthRecordId(HealthRecordId.generate())
+                        .studentId(studentId)
+                        .bloodType(healthData.bloodType() != null
+                                ? BloodType.fromString(healthData.bloodType()) : null)
+                        .healthInsurance(healthData.healthInsurance())
+                        .healthInsuranceNumber(healthData.healthInsuranceNumber())
+                        .allergies(healthData.allergies())
+                        .chronicConditions(healthData.chronicConditions())
+                        .medications(healthData.medications())
+                        .medicalObservations(healthData.medicalObservations())
+                        .emergencyContactName(FullName.of(
+                                healthData.emergencyContactFirstName(),
+                                healthData.emergencyContactLastName()
+                        ))
+                        .emergencyContactPhone(PhoneNumber.of(healthData.emergencyContactPhone()))
+        );
+        healthRecordRepository.save(healthRecord);
+        log.debug("StudentHealthRecord created — studentId: {}", studentId.value());
 
-        // 7. Convertir a DTO
-        StudentResponse response = mapper.toResponse(saved);
+        // ── Pasos 10 & 11: Generar número de legajo y crear StudentRecord ──
+        var activeRegistry = academicYear.getActiveRegistry()
+                .orElseThrow(() -> new IllegalStateException(
+                        "No active registry found for academic year: "
+                                + academicYear.getAcademicYearId().value()
+                ));
 
-        // 8. Enriquecer con datos de Geography context (TODO: cuando exista el port)
-        // response = enrichWithPlaceNames(response, placeService);
+        RecordNumber recordNumber = registryNumberGenerator.generate(
+                academicYear.getYear().value()
+        );
 
-        return response;
-    }
+        StudentRecord studentRecord = StudentRecord.create(
+                StudentRecord.builder()
+                        .recordId(RecordId.generate())
+                        .studentId(studentId)
+                        .academicYearId(AcademicYearId.of(academicYear.getAcademicYearId().value()))
+                        .recordNumber(recordNumber)
+                        .registryId(RegistryId.of(activeRegistry.getRegistryId().value()))
+                        .folioNumber(folioNumber)
+                        .documents(new ArrayList<>())
+        );
+        studentRecordRepository.save(studentRecord);
+        log.debug("StudentRecord created — number: {}", recordNumber.value());
 
-    /**
-     * Genera password inicial para el estudiante
-     * Formato: {DNI}Ipet132!
-     */
-    private String generateInitialPassword(String dni) {
-        return dni + "Ipet132!";
-    }
+        // ── Pasos 12 & 13: Parent + StudentParent ─────────────────────────
+        // TODO: implementar cuando el agregado parents/ esté desarrollado
+        // - Buscar Parent por DNI: request.parent().dni()
+        // - Si no existe: crear User (password aleatorio seguro) + crear Parent
+        // - Crear StudentParent: relationship, isPrimaryContact, isAuthorizedPickup
+        log.warn("Parent/StudentParent creation pending — parents aggregate not yet implemented");
 
-    /**
-     * Enriquece la respuesta con nombres de lugares desde Geography context
-     *
-     * TODO: Implementar cuando exista el port PlaceService
-     *
-     * @param response Response básico sin nombres de lugares
-     * @param placeService Servicio de Geography context
-     * @return Response enriquecido con nombres completos
-     */
-    private StudentResponse enrichWithPlaceNames(
-            StudentResponse response,
-            Object placeService) {
+        // ── Paso 14: Crear StudentEnrollment ──────────────────────────────
+        StudentEnrollment enrollment = StudentEnrollment.create(
+                StudentEnrollment.builder()
+                        .enrollmentId(EnrollmentId.generate())
+                        .studentId(studentId)
+                        .academicYearId(AcademicYearId.of(academicYear.getAcademicYearId().value()))
+                        .gradeLevelId(GradeLevelId.of(request.gradeLevelId()))
+                        .enrollmentDate(LocalDate.now())
+                        .enrollmentType(EnrollmentType.valueOf(request.enrollmentType()))
+                        .isRepeating(Boolean.TRUE.equals(request.isRepeating()))
+                        .previousSchool(request.previousSchool())
+        );
+        enrollmentRepository.save(enrollment);
+        log.debug("StudentEnrollment created — studentId: {}", studentId.value());
 
-        // Pseudocódigo de implementación futura:
+        // ── Paso 15: Commit y retornar response ───────────────────────────
+        log.info("Student created successfully — id: {}, DNI: {}",
+                studentId.value(), request.dni());
 
-        // 1. Obtener nombre completo del birth place
-        // var birthPlace = placeService.getPlaceDetails(response.birthPlace().placeId());
-        // var birthPlaceDto = new StudentResponse.PlaceDto(
-        //     birthPlace.id(),
-        //     birthPlace.name(),       // "Córdoba Capital"
-        //     birthPlace.province(),   // "Córdoba"
-        //     birthPlace.country()     // "Argentina"
-        // );
-
-        // 2. Obtener nombre completo del residence place
-        // var residencePlace = placeService.getPlaceDetails(response.address().residencePlaceId());
-        // var residencePlaceDto = new StudentResponse.PlaceDto(
-        //     residencePlace.id(),
-        //     residencePlace.name(),
-        //     residencePlace.province(),
-        //     residencePlace.country()
-        // );
-
-        // 3. Actualizar AddressDto con formato completo usando Address.toStringFormatted()
-        // var enrichedAddress = new StudentResponse.AddressDto(
-        //     response.address().street(),
-        //     response.address().number(),
-        //     response.address().floor(),
-        //     response.address().apartment(),
-        //     response.address().residencePlaceId(),
-        //     residencePlace.name(), // "Córdoba"
-        //     response.address().postalCode(),
-        //     // Usar método del Shared Kernel Address para formato oficial
-        //     Address.toStringFormatted(residencePlace.name())
-        //     // Resultado: "Av. Colón 1234, Piso 5, Depto A, Córdoba, CP X5000"
-        // );
-
-        // 4. Reconstruir response con los datos completos
-        // return new StudentResponse(
-        //     response.studentId(),
-        //     response.userId(),
-        //     // ... todos los campos
-        //     enrichedAddress,
-        //     birthPlaceDto,
-        //     residencePlaceDto,
-        //     response.createdAt(),
-        //     response.updatedAt()
-        // );
-
-        return response;
+        return getStudentByIdUseCase.buildResponse(student);
     }
 }

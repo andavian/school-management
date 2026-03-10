@@ -124,8 +124,12 @@ public record CreateStudentRequest(
             String medicalObservations,
 
             @NotBlank(message = "El nombre del contacto de emergencia es obligatorio")
-            @Size(max = 200, message = "El nombre no puede superar los 200 caracteres")
-            String emergencyContactName,
+            @Size(max = 100)
+            String emergencyContactFirstName,
+
+            @NotBlank(message = "El apellido del contacto de emergencia es obligatorio")
+            @Size(max = 100)
+            String emergencyContactLastName,
 
             @NotBlank(message = "El teléfono del contacto de emergencia es obligatorio")
             @Pattern(regexp = "^[+]?[\\d\\s\\-()]{7,20}$", message = "Teléfono de emergencia inválido")
