@@ -2,53 +2,61 @@ package org.school.management.students.personal.application.usecases;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.school.management.shared.geography.domain.valueobject.PlaceId;
+import org.school.management.shared.person.domain.valueobject.Dni;
+import org.school.management.students.personal.application.dto.response.StudentSummaryResponse;
+import org.school.management.students.personal.application.mappers.StudentPersonalDataApplicationMapper;
 import org.school.management.students.personal.domain.repository.StudentPersonalDataRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/**
- * Use Case: Buscar estudiantes por diferentes criterios
- * <p>
- * Nota: Este Use Case requiere que el repository implemente
- * métodos de búsqueda adicionales (findByFullNameContaining, etc)
- */
+import java.util.List;
+import java.util.UUID;
+
 @Service
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 @Slf4j
 public class SearchStudentsUseCase {
 
     private final StudentPersonalDataRepository studentRepository;
-    private final StudentPersonalDataMapper mapper;
+    private final StudentPersonalDataApplicationMapper mapper;
 
-    /**
-     * Ejecuta el caso de uso
-     *
-     * @param request Criterios de búsqueda
-     * @return Lista de estudiantes que coinciden
-     */
-    @Transactional(readOnly = true)
-    public List<StudentSummaryResponse> execute(SearchStudentRequest request) {
-        log.debug("Searching students with criteria: {}", request);
+    public List<StudentSummaryResponse> execute(String dni, String fullName, UUID residencePlaceId) {
+        log.debug("Searching students — dni: {}, fullName: {}, residencePlaceId: {}",
+                dni, fullName, residencePlaceId);
 
-        List<StudentSummaryResponse> results = new ArrayList<>();
-
-        // Buscar por DNI (exacto)
-        if (request.dni() != null && !request.dni().isBlank()) {
-            var dni = mapper.mapDni(request.dni());
-            studentRepository.findByDni(dni)
-                    .ifPresent(student -> results.add(mapper.toSummaryResponse(student)));
+        // Búsqueda por DNI — retorna exactamente uno o vacío
+        if (dni != null && !dni.isBlank()) {
+            return studentRepository.findByDni(Dni.of(dni))
+                    .map(mapper::toStudentSummaryResponse)
+                    .map(List::of)
+                    .orElse(List.of());
         }
 
-        // TODO: Implementar búsqueda por nombre completo
-        // Requiere agregar método al repository:
-        // List<StudentPersonalData> findByFullNameContaining(String name)
+        // Búsqueda por lugar de residencia
+        if (residencePlaceId != null) {
+            return studentRepository
+                    .findByResidencePlaceId(PlaceId.of(residencePlaceId))
+                    .stream()
+                    .map(mapper::toStudentSummaryResponse)
+                    .toList();
+        }
 
-        // TODO: Implementar búsqueda por lugar de residencia
-        // Requiere agregar método al repository:
-        // List<StudentPersonalData> findByResidencePlaceId(PlaceId placeId)
+        // Búsqueda por nombre — fullName como último criterio (más costoso)
+        if (fullName != null && !fullName.isBlank()) {
+            return studentRepository
+                    .findByFullNameContaining(fullName.trim())
+                    .stream()
+                    .map(mapper::toStudentSummaryResponse)
+                    .toList();
+        }
 
-        log.debug("Found {} students", results.size());
-
-        return results;
+        // Sin criterios — retorna todos (solo ADMIN debería poder hacer esto)
+        log.warn("SearchStudentsUseCase called without criteria — returning all students");
+        return studentRepository.findAll()
+                .stream()
+                .map(mapper::toStudentSummaryResponse)
+                .toList();
     }
 }

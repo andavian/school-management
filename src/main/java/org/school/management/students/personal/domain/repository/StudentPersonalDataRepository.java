@@ -3,6 +3,7 @@ package org.school.management.students.personal.domain.repository;
 import org.school.management.shared.geography.domain.valueobject.PlaceId;
 import org.school.management.shared.person.domain.valueobject.Dni;
 import org.school.management.students.personal.domain.model.StudentPersonalData;
+import org.school.management.students.personal.domain.valueobject.StudentPersonalDataId;
 
 import java.util.List;
 import java.util.Optional;
@@ -16,7 +17,7 @@ public interface StudentPersonalDataRepository {
 
     StudentPersonalData save(StudentPersonalData student);
 
-    Optional<StudentPersonalData> findByStudentId(UUID studentId);
+    Optional<StudentPersonalData> findByStudentId(StudentPersonalDataId studentId);
 
     Optional<StudentPersonalData> findByDni(Dni dni);
 

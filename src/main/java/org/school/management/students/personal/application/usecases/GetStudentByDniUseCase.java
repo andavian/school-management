@@ -2,42 +2,30 @@ package org.school.management.students.personal.application.usecases;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.school.management.shared.person.domain.valueobject.Dni;
 import org.school.management.students.personal.application.dto.response.StudentResponse;
-import org.school.management.students.personal.application.mappers.StudentPersonalDataMapper;
 import org.school.management.students.personal.domain.exception.StudentNotFoundException;
+import org.school.management.students.personal.domain.model.StudentPersonalData;
 import org.school.management.students.personal.domain.repository.StudentPersonalDataRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/**
- * Use Case: Obtener estudiante por DNI
- */
 @Service
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 @Slf4j
 public class GetStudentByDniUseCase {
 
     private final StudentPersonalDataRepository studentRepository;
-    private final StudentPersonalDataMapper mapper;
+    private final GetStudentByIdUseCase getStudentByIdUseCase;
 
-    /**
-     * Ejecuta el caso de uso
-     *
-     * @param dni DNI del estudiante
-     * @return StudentResponse con datos completos
-     * @throws StudentNotFoundException si no existe
-     */
-    @Transactional(readOnly = true)
     public StudentResponse execute(String dni) {
-        log.debug("Getting student by DNI: {}", dni);
+        log.debug("Fetching student with DNI: {}", dni);
 
-        var dniVO = mapper.mapDni(dni);
+        StudentPersonalData student = studentRepository
+                .findByDni(Dni.of(dni))
+                .orElseThrow(() -> StudentNotFoundException.byDni(dni));
 
-        var student = studentRepository.findByDni(dniVO)
-                .orElseThrow(() -> new StudentNotFoundException(
-                        "Student not found with DNI: " + dni
-                ));
-
-        return mapper.toResponse(student);
+        return getStudentByIdUseCase.buildResponse(student);
     }
 }

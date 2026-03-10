@@ -5,7 +5,7 @@ import lombok.Builder;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
-@Builder
+
 public record PlaceResponse(
         UUID placeId,
         UUID provinceId,
