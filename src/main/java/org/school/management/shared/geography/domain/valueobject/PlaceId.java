@@ -1,20 +1,21 @@
 package org.school.management.shared.geography.domain.valueobject;
 
-import lombok.AccessLevel;
-import lombok.Builder;
-import lombok.Value;
-
 import java.util.UUID;
 
-@Value                                     // Inmutable automáticamente
-@Builder(access = AccessLevel.PRIVATE)     // Builder privado
-public class PlaceId {
-    UUID value;
+/**
+ * Value Object: identificador de un lugar geográfico (Place).
+ * Compartido entre bounded contexts via Shared Kernel.
+ */
+public record PlaceId(UUID value) {
 
-    public static PlaceId of (UUID value) {
+    // Constructor compacto — validación
+    public PlaceId {
         if (value == null) {
-            throw new IllegalArgumentException("UserId cannot be null");
+            throw new IllegalArgumentException("PlaceId cannot be null");
         }
+    }
+
+    public static PlaceId of(UUID value) {
         return new PlaceId(value);
     }
 
@@ -26,7 +27,7 @@ public class PlaceId {
         try {
             return new PlaceId(UUID.fromString(id));
         } catch (IllegalArgumentException e) {
-            throw new IllegalArgumentException("Invalid UserId format: " + id);
+            throw new IllegalArgumentException("Invalid PlaceId format: " + id);
         }
     }
 
@@ -38,4 +39,3 @@ public class PlaceId {
         return value.toString();
     }
 }
-

@@ -1,4 +1,4 @@
-package org.school.management.students.personal.application.dto;
+package org.school.management.students.personal.application.dto.request;
 
 import jakarta.validation.constraints.Pattern;
 

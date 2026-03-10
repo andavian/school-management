@@ -3,10 +3,10 @@ package org.school.management.geography.domain.model;
 import lombok.Builder;
 import lombok.Value;
 import lombok.With;
-import org.school.management.geography.domain.valueobject.CountryId;
+import org.school.management.shared.geography.domain.valueobject.CountryId;
 import org.school.management.geography.domain.valueobject.GeographicName;
 import org.school.management.geography.domain.valueobject.ProvinceCode;
-import org.school.management.geography.domain.valueobject.ProvinceId;
+import org.school.management.shared.geography.domain.valueobject.ProvinceId;
 
 import java.time.LocalDateTime;
 

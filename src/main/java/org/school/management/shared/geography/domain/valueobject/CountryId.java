@@ -1,20 +1,16 @@
-package org.school.management.geography.domain.valueobject;
-
-import lombok.AccessLevel;
-import lombok.Builder;
-import lombok.Value;
+package org.school.management.shared.geography.domain.valueobject;
 
 import java.util.UUID;
 
-@Value                                     // Inmutable automáticamente
-@Builder(access = AccessLevel.PRIVATE)     // Builder privado
-public class CountryId {
-    UUID value;
+public record CountryId(UUID value) {
+
+    public CountryId {
+        if (value == null) {
+            throw new IllegalArgumentException("CountryId cannot be null");
+        }
+    }
 
     public static CountryId of(UUID value) {
-        if (value == null) {
-            throw new IllegalArgumentException("UserId cannot be null");
-        }
         return new CountryId(value);
     }
 
@@ -26,7 +22,7 @@ public class CountryId {
         try {
             return new CountryId(UUID.fromString(id));
         } catch (IllegalArgumentException e) {
-            throw new IllegalArgumentException("Invalid UserId format: " + id);
+            throw new IllegalArgumentException("Invalid CountryId format: " + id);
         }
     }
 
@@ -38,4 +34,3 @@ public class CountryId {
         return value.toString();
     }
 }
-

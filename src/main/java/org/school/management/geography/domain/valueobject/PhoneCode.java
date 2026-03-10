@@ -1,29 +1,25 @@
 package org.school.management.geography.domain.valueobject;
 
-import lombok.Value;
+public record PhoneCode(String value) {
 
-@Value
-public class PhoneCode {
-    String value;
-
-    public static PhoneCode of(String value) {
+    public PhoneCode {
         if (value == null || value.isBlank()) {
             throw new IllegalArgumentException("Phone code cannot be null or empty");
         }
 
-        String normalized = value.trim();
+        value = value.trim();
 
-        // Agregar + si no lo tiene
-        if (!normalized.startsWith("+")) {
-            normalized = "+" + normalized;
+        if (!value.startsWith("+")) {
+            value = "+" + value;
         }
 
-        // Validar formato: +seguido de 1-4 dígitos
-        if (!normalized.matches("^\\+[0-9]{1,4}$")) {
+        if (!value.matches("^\\+[0-9]{1,4}$")) {
             throw new IllegalArgumentException("Invalid phone code format. Expected: +XX or +XXX");
         }
+    }
 
-        return new PhoneCode(normalized);
+    public static PhoneCode of(String value) {
+        return new PhoneCode(value);
     }
 
     @Override
@@ -31,4 +27,3 @@ public class PhoneCode {
         return value;
     }
 }
-

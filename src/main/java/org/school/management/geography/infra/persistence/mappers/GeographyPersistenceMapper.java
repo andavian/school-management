@@ -11,7 +11,9 @@ import org.school.management.geography.infra.persistence.entity.CountryEntity;
 import org.school.management.geography.infra.persistence.entity.PlaceEntity;
 import org.school.management.geography.infra.persistence.entity.PlaceWithHierarchyProjection;
 import org.school.management.geography.infra.persistence.entity.ProvinceEntity;
+import org.school.management.shared.geography.domain.valueobject.CountryId;
 import org.school.management.shared.geography.domain.valueobject.PlaceId;
+import org.school.management.shared.geography.domain.valueobject.ProvinceId;
 
 import java.util.UUID;
 

@@ -1,27 +1,25 @@
 package org.school.management.geography.domain.valueobject;
 
-import lombok.Value;
+public record IsoCode(String value) {
 
-@Value
-public class IsoCode {
-    String value;
-
-    public static IsoCode of(String value) {
+    public IsoCode {
         if (value == null || value.isBlank()) {
             throw new IllegalArgumentException("ISO code cannot be null or empty");
         }
 
-        String normalized = value.trim().toUpperCase();
+        value = value.trim().toUpperCase();
 
-        if (normalized.length() != 3) {
+        if (value.length() != 3) {
             throw new IllegalArgumentException("ISO code must be exactly 3 characters");
         }
 
-        if (!normalized.matches("^[A-Z]{3}$")) {
+        if (!value.matches("^[A-Z]{3}$")) {
             throw new IllegalArgumentException("ISO code must contain only uppercase letters");
         }
+    }
 
-        return new IsoCode(normalized);
+    public static IsoCode of(String value) {
+        return new IsoCode(value);
     }
 
     @Override
@@ -29,4 +27,3 @@ public class IsoCode {
         return value;
     }
 }
-

@@ -7,7 +7,7 @@ import org.school.management.geography.application.dto.response.PlaceResponse;
 import org.school.management.geography.application.mappers.GeographyApplicationMapper;
 import org.school.management.geography.domain.model.PlaceWithHierarchy;
 import org.school.management.geography.domain.repository.PlaceRepository;
-import org.school.management.geography.domain.valueobject.ProvinceId;
+import org.school.management.shared.geography.domain.valueobject.ProvinceId;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 

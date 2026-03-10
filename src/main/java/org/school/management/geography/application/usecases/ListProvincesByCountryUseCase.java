@@ -9,7 +9,7 @@ import org.school.management.geography.domain.exception.CountryNotFoundException
 import org.school.management.geography.domain.model.Province;
 import org.school.management.geography.domain.repository.CountryRepository;
 import org.school.management.geography.domain.repository.ProvinceRepository;
-import org.school.management.geography.domain.valueobject.CountryId;
+import org.school.management.shared.geography.domain.valueobject.CountryId;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 

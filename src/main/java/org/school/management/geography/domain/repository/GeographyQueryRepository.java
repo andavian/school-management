@@ -4,7 +4,7 @@ import org.school.management.geography.domain.model.Country;
 import org.school.management.geography.domain.model.Place;
 import org.school.management.geography.domain.model.PlaceWithHierarchy;
 import org.school.management.geography.domain.model.Province;
-import org.school.management.geography.domain.valueobject.CountryId;
+import org.school.management.shared.geography.domain.valueobject.CountryId;
 
 import java.util.List;
 

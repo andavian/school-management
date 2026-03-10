@@ -1,179 +1,83 @@
 package org.school.management.students.personal.application.mappers;
 
 import org.mapstruct.*;
-import org.school.management.students.personal.application.dto.*;
+import org.school.management.students.personal.application.dto.response.StudentResponse;
+import org.school.management.students.personal.application.dto.response.StudentSummaryResponse;
 import org.school.management.students.personal.domain.model.StudentPersonalData;
-import org.school.management.shared.person.domain.valueobject.*;
-import org.school.management.shared.geography.domain.valueobject.PlaceId;
 
 /**
- * MapStruct Mapper: Domain (StudentPersonalData) ↔ Application DTOs
+ * Mapper MapStruct: Domain → Application DTOs
  *
- * Convierte entre modelos de dominio y DTOs de la capa de aplicación
- * IMPORTANTE: Usa Address del Shared Kernel (record con ResidencePlaceId)
+ * Responsabilidades:
+ * - StudentPersonalData → StudentResponse
+ * - StudentPersonalData → StudentSummaryResponse
+ *
+ * NO mapea request → domain (eso lo hace el Use Case via StudentPersonalData.create())
+ * NO accede a Geography — los PlaceResponse se resuelven en el Use Case y se pasan como parámetros
  */
 @Mapper(
         componentModel = "spring",
-        unmappedTargetPolicy = ReportingPolicy.IGNORE,
         nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE
 )
-public interface StudentPersonalDataMapper {
+public interface StudentPersonalDataApplicationMapper {
 
-    // ========== Domain → Response DTO ==========
+    // ── StudentPersonalData → StudentResponse ─────────────────────────────
 
-    /**
-     * Convierte StudentPersonalData a StudentResponse completo
-     */
-    @Mapping(target = "studentId", source = "studentId.value")
-    @Mapping(target = "userId", source = "userId.value")
-    @Mapping(target = "dni", source = "dni.value")
-    @Mapping(target = "cuil", source = "cuil.value")
-    @Mapping(target = "fullName", expression = "java(domain.getFullName().getFullName())")
-    @Mapping(target = "firstName", source = "fullName.firstName")
-    @Mapping(target = "lastName", source = "fullName.lastName")
-    @Mapping(target = "age", expression = "java(domain.calculateAge())")
-    @Mapping(target = "isAdult", expression = "java(domain.isAdult())")
-    @Mapping(target = "gender", source = "gender")
-    @Mapping(target = "nationality", source = "nationality.value")
-    @Mapping(target = "phone", source = "phone.value")
-    @Mapping(target = "email", source = "email.value")
-    @Mapping(target = "address", expression = "java(mapAddressDto(domain.getAddress(), null))")
-    @Mapping(target = "birthPlace", ignore = true) // Se completa en el Use Case con Geography service
-    @Mapping(target = "residencePlace", ignore = true) // Se completa en el Use Case con Geography service
-    StudentResponse toResponse(StudentPersonalData domain);
+    @Mapping(target = "studentId",      expression = "java(student.getStudentId().value())")
+    @Mapping(target = "userId",         expression = "java(student.getUserId().value())")
+    @Mapping(target = "dni",            expression = "java(student.getDni().value())")
+    @Mapping(target = "cuil",           expression = "java(student.getCuil().formatted())")
+    @Mapping(target = "firstName",      expression = "java(student.getFullName().firstName())")
+    @Mapping(target = "lastName",       expression = "java(student.getFullName().lastName())")
+    @Mapping(target = "fullName",       expression = "java(student.getFullName().fullName())")
+    @Mapping(target = "age",            expression = "java(student.calculateAge())")
+    @Mapping(target = "isAdult",        expression = "java(student.isAdult())")
+    @Mapping(target = "gender",         expression = "java(student.getGender().name())")
+    @Mapping(target = "nationality",    expression = "java(student.getNationality().value())")
+    @Mapping(target = "phone",          expression = "java(student.getPhone() != null ? student.getPhone().value() : null)")
+    @Mapping(target = "email",          expression = "java(student.getEmail() != null ? student.getEmail().value() : null)")
+    @Mapping(target = "address",        source = "student", qualifiedByName = "toAddressResponse")
+    @Mapping(target = "birthPlace",     source = "birthPlaceResponse")
+    @Mapping(target = "residencePlace", source = "residencePlaceResponse")
+    @Mapping(target = "createdAt",      source = "student.createdAt")
+    @Mapping(target = "updatedAt",      source = "student.updatedAt")
+    StudentResponse toStudentResponse(
+            StudentPersonalData student,
+            StudentResponse.PlaceResponse birthPlaceResponse,
+            StudentResponse.PlaceResponse residencePlaceResponse
+    );
 
-    /**
-     * Convierte StudentPersonalData a StudentSummaryResponse (para listas)
-     */
-    @Mapping(target = "studentId", source = "studentId.value")
-    @Mapping(target = "dni", source = "dni.value")
-    @Mapping(target = "fullName", expression = "java(domain.getFullName().getFullName())")
-    @Mapping(target = "age", expression = "java(domain.calculateAge())")
-    @Mapping(target = "email", source = "email.value")
-    @Mapping(target = "phone", source = "phone.value")
-    StudentSummaryResponse toSummaryResponse(StudentPersonalData domain);
+    // ── StudentPersonalData → StudentSummaryResponse ──────────────────────
 
-    /**
-     * Mapea Address del dominio (Shared Kernel) a AddressDto
-     *
-     * @param address Address VO del Shared Kernel
-     * @param localityName Nombre de la localidad (obtenido de Geography service)
-     * @return AddressDto con formato completo
-     */
-    default StudentResponse.AddressDto mapAddressDto(Address address, String localityName) {
+    @Mapping(target = "studentId",  expression = "java(student.getStudentId().value())")
+    @Mapping(target = "dni",        expression = "java(student.getDni().value())")
+    @Mapping(target = "fullName",   expression = "java(student.getFullName().fullName())")
+    @Mapping(target = "age",        expression = "java(student.calculateAge())")
+    @Mapping(target = "email",      expression = "java(student.getEmail() != null ? student.getEmail().value() : null)")
+    @Mapping(target = "phone",      expression = "java(student.getPhone() != null ? student.getPhone().value() : null)")
+    StudentSummaryResponse toStudentSummaryResponse(StudentPersonalData student);
+
+    // ── Named mappings ────────────────────────────────────────────────────
+
+    @Named("toAddressResponse")
+    default StudentResponse.AddressResponse toAddressResponse(StudentPersonalData student) {
+        var address = student.getAddress();
         if (address == null) return null;
 
-        return new StudentResponse.AddressDto(
+        // formatted requiere el nombre de la localidad resuelto externamente.
+        // En este mapper no tenemos acceso a Geography, así que se deja null.
+        // El Use Case que necesite formatted debe llamar a toStudentResponse()
+        // pasando PlaceResponse ya construido con localityName.
+        String formatted = null;
+
+        return new StudentResponse.AddressResponse(
                 address.street(),
                 address.number(),
                 address.floor(),
                 address.apartment(),
-                address.residencePlaceId().value(),
-                localityName, // Se completa en Use Case
                 address.postalCode(),
-                localityName != null ? address.toStringFormatted(localityName) : null
-        );
-    }
-
-    // ========== Request DTO → Domain Value Objects ==========
-
-    /**
-     * Extrae FullName desde CreateStudentRequest
-     */
-    default FullName mapFullName(CreateStudentRequest request) {
-        return FullName.of(request.firstName(), request.lastName());
-    }
-
-    /**
-     * Extrae FullName desde UpdateStudentRequest
-     */
-    default FullName mapFullName(UpdateStudentRequest request) {
-        return FullName.of(request.firstName(), request.lastName());
-    }
-
-    /**
-     * Extrae Dni desde String
-     */
-    default Dni mapDni(String dni) {
-        return dni != null ? Dni.of(dni) : null;
-    }
-
-    /**
-     * Extrae Cuil desde String
-     */
-    default Cuil mapCuil(String cuil) {
-        return cuil != null ? Cuil.of(cuil) : null;
-    }
-
-    /**
-     * Extrae Gender desde String
-     */
-    default Gender mapGender(String gender) {
-        if (gender == null) return null;
-        return switch (gender.toUpperCase()) {
-            case "MALE" -> Gender.MALE;
-            case "FEMALE" -> Gender.FEMALE;
-            case "OTHER" -> Gender.OTHER;
-            default -> throw new IllegalArgumentException("Invalid gender: " + gender);
-        };
-    }
-
-    /**
-     * Extrae Nationality desde String
-     */
-    default Nationality mapNationality(String nationality) {
-        return nationality != null ? Nationality.of(nationality) : null;
-    }
-
-    /**
-     * Extrae PhoneNumber desde String
-     */
-    default PhoneNumber mapPhoneNumber(String phone) {
-        return phone != null && !phone.isBlank() ? PhoneNumber.of(phone) : null;
-    }
-
-    /**
-     * Extrae Email desde String
-     */
-    default Email mapEmail(String email) {
-        return email != null && !email.isBlank() ? Email.of(email) : null;
-    }
-
-    /**
-     * Extrae PlaceId desde UUID
-     */
-    default PlaceId mapPlaceId(java.util.UUID uuid) {
-        return uuid != null ? PlaceId.of(uuid) : null;
-    }
-
-    /**
-     * Extrae ResidencePlaceId desde UUID
-     */
-    default ResidencePlaceId mapResidencePlaceId(java.util.UUID uuid) {
-        return uuid != null ? ResidencePlaceId.of(uuid) : null;
-    }
-
-
-    default Address mapAddress(CreateStudentRequest request) {
-        return new Address(
-                request.addressStreet(),
-                request.addressNumber(),
-                request.addressFloor(),
-                request.addressApartment(),
-                mapResidencePlaceId(request.residencePlaceId()),
-                request.postalCode()
-        );
-    }
-
-
-    default Address mapAddress(UpdateStudentRequest request) {
-        return new Address(
-                request.addressStreet(),
-                request.addressNumber(),
-                request.addressFloor(),
-                request.addressApartment(),
-                mapResidencePlaceId(request.residencePlaceId()),
-                request.postalCode()
+                address.placeId().value(),
+                formatted
         );
     }
 }

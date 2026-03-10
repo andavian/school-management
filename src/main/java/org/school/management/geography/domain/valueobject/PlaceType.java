@@ -1,8 +1,5 @@
 package org.school.management.geography.domain.valueobject;
 
-import lombok.Getter;
-
-
 public enum PlaceType {
     CIUDAD("Ciudad"),
     LOCALIDAD("Localidad"),

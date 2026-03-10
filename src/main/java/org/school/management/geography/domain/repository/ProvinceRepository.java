@@ -1,8 +1,8 @@
 package org.school.management.geography.domain.repository;
 
 import org.school.management.geography.domain.model.Province;
-import org.school.management.geography.domain.valueobject.CountryId;
-import org.school.management.geography.domain.valueobject.ProvinceId;
+import org.school.management.shared.geography.domain.valueobject.CountryId;
+import org.school.management.shared.geography.domain.valueobject.ProvinceId;
 
 import java.util.List;
 import java.util.Optional;

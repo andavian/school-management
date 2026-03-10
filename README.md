@@ -32,17 +32,19 @@ Sistema de gestión escolar para el **IPET 132** (Argentina) que permite:
 - ✅ Gestión académica completa (años, orientaciones, cursos, materias)
 - ✅ Registro de calificaciones con asignación automática de folios
 - ✅ Documentación interactiva con Swagger/OpenAPI
+- ⏳ Módulo de estudiantes (en construcción — domain layer personal completado)
 
 ### 🎯 Características Principales
 
 - **DNI como username**: Sistema adaptado a la realidad argentina
+- **CUIL validado**: Dígito verificador ANSES/AFIP con compatibilidad con DNI embebido
 - **Email opcional**: Para estudiantes menores sin email propio
 - **Token Rotation**: Máxima seguridad en refresh tokens
 - **Multi-dispositivo**: Control de sesiones activas
 - **Roles específicos**: ADMIN, TEACHER, STUDENT, PARENT, STAFF
 - **Arquitectura escalable**: Preparada para migrar a microservicios
 - **Folios automáticos**: Asignación automática desde el Registro de Calificaciones
-- **Shared Kernel**: Value Objects reutilizados entre bounded contexts (DNI, Email, PhoneNumber)
+- **Shared Kernel**: Value Objects reutilizados entre bounded contexts (DNI, CUIL, Email, PhoneNumber, Address, IDs geográficos)
 
 ---
 
@@ -78,14 +80,12 @@ Sistema de gestión escolar para el **IPET 132** (Argentina) que permite:
 
 ### Vertical Slicing (Bounded Contexts)
 
-Cada bounded context es un slice vertical completo:
-
 ```
-shared/         → Shared Kernel (DNI, Email, PhoneNumber, IDs geográficos)
+shared/         → Shared Kernel (DNI, CUIL, Email, PhoneNumber, Address, IDs geográficos)
 auth/           → Autenticación y autorización ✅
 geography/      → Lugares geográficos (País, Provincia, Localidad) ✅
 academic/       → Estructura académica (Años, Cursos, Materias) ✅
-students/       → Gestión de estudiantes ⏳
+students/       → Gestión de estudiantes ⏳ (domain/personal ✅)
 teachers/       → Gestión de profesores ⏳
 ```
 
@@ -100,9 +100,9 @@ teachers/       → Gestión de profesores ⏳
 - **Spring Data JPA**
 - **MySQL 8**
 - **JWT (jjwt 0.12.x)**
-- **MapStruct 1.5.5** - Mapeo de objetos entre capas
-- **Lombok** - Reducción de boilerplate
-- **SpringDoc OpenAPI 3** - Documentación Swagger/OpenAPI
+- **MapStruct 1.5.5** — Mapeo de objetos entre capas
+- **Lombok** — Reducción de boilerplate
+- **SpringDoc OpenAPI 3** — Documentación Swagger/OpenAPI
 
 ### Testing
 - **JUnit 5**
@@ -130,129 +130,42 @@ src/main/java/org/school/management/
 │   │   ├── Gender.java
 │   │   ├── Nationality.java
 │   │   ├── PhoneNumber.java
-│   │   └── Email.java
+│   │   ├── Email.java
+│   │   ├── Cuil.java                        # ✅ CUIL con validación dígito verificador ANSES/AFIP
+│   │   ├── CuilType.java                    # ✅ Enum: MALE_ARGENTINEAN, FEMALE_ARGENTINEAN...
+│   │   └── Address.java                     # ✅ Domicilio postal (street, number, PlaceId, CP...)
 │   ├── geography/domain/valueobject/
 │   │   ├── CountryId.java
 │   │   ├── ProvinceId.java
 │   │   └── PlaceId.java
 │   └── domain/exception/
-│       └── DomainException.java             # Base abstracta de excepciones
+│       └── DomainException.java
 │
 ├── auth/                                    # BOUNDED CONTEXT: Autenticación ✅
-│   ├── domain/
-│   │   ├── model/
-│   │   │   ├── User.java
-│   │   │   ├── RefreshToken.java
-│   │   │   └── BlacklistedToken.java
-│   │   ├── valueobject/
-│   │   │   └── UserId.java, HashedPassword.java, PlainPassword.java, RoleName.java...
-│   │   ├── repository/
-│   │   │   └── UserRepository.java, RefreshTokenRepository.java, BlacklistedTokenRepository.java
-│   │   └── exception/
-│   │       └── InvalidPasswordException.java, UserNotActiveException.java
-│   ├── application/
-│   │   ├── usecases/
-│   │   │   ├── LoginUseCase.java
-│   │   │   ├── RefreshTokenUseCase.java
-│   │   │   ├── LogoutUseCase.java
-│   │   │   ├── ChangePasswordUseCase.java
-│   │   │   ├── GetUserProfileUseCase.java
-│   │   │   ├── GetActiveSessionsUseCase.java
-│   │   │   ├── RevokeSessionUseCase.java
-│   │   │   └── admin/
-│   │   │       ├── CreateStudentUseCase.java
-│   │   │       └── CreateTeacherUseCase.java
-│   │   ├── dto/
-│   │   └── mappers/
-│   │       └── AuthApplicationMapper.java
-│   └── infrastructure/
-│       ├── web/controller/
-│       │   ├── AuthController.java
-│       │   ├── AdminController.java
-│       │   └── UsersController.java
-│       ├── persistence/
-│       │   ├── entity/
-│       │   ├── repository/
-│       │   └── mappers/
-│       └── security/
-│           ├── SecurityConfig.java
-│           ├── JwtTokenProvider.java
-│           ├── JwtAuthenticationFilter.java
-│           └── CustomUserDetailsService.java
+│   └── ...                                  # (sin cambios)
 │
 ├── geography/                               # BOUNDED CONTEXT: Geografía ✅
-│   ├── domain/
-│   │   ├── model/
-│   │   │   ├── Country.java
-│   │   │   ├── Province.java
-│   │   │   ├── Place.java
-│   │   │   └── PlaceWithHierarchy.java
-│   │   ├── valueobject/
-│   │   │   ├── IsoCode.java, PhoneCode.java, ProvinceCode.java
-│   │   │   ├── PostalCode.java, GeographicName.java, PlaceType.java
-│   │   │   └── ids/ (CountryId, ProvinceId, PlaceId)
-│   │   └── repository/
-│   │       ├── CountryRepository.java
-│   │       ├── ProvinceRepository.java
-│   │       ├── PlaceRepository.java
-│   │       └── GeographyQueryRepository.java
-│   ├── application/
-│   │   ├── usecases/                        # 10 use cases
-│   │   ├── dto/
-│   │   └── mappers/
-│   └── infrastructure/
-│       ├── persistence/ (entity, repository, adapter, mapper)
-│       ├── web/controller/
-│       │   ├── GeographyController.java
-│       │   └── GeographyAdminController.java
-│       └── seeder/
-│           └── GeographyDataSeeder.java
+│   └── ...                                  # (sin cambios)
 │
 ├── academic/                                # BOUNDED CONTEXT: Académico ✅
-│   ├── domain/
-│   │   ├── model/
-│   │   │   ├── AcademicYear.java
-│   │   │   ├── Orientation.java
-│   │   │   ├── GradeLevel.java
-│   │   │   ├── Subject.java
-│   │   │   ├── StudyPlan.java
-│   │   │   ├── EvaluationPeriod.java
-│   │   │   └── QualificationRegistry.java
-│   │   ├── valueobject/
-│   │   │   ├── Year.java, YearLevel.java, Division.java
-│   │   │   ├── enums/ (AcademicYearStatus, Shift, RegistryStatus)
-│   │   │   └── ids/ (AcademicYearId, OrientationId, GradeLevelId, SubjectId...)
-│   │   ├── repository/                      # 7 interfaces (puertos)
-│   │   ├── service/
-│   │   │   ├── FolioAssignmentService.java  # ← CRÍTICO para Students
-│   │   │   ├── RegistryNumberGenerator.java
-│   │   │   ├── AcademicYearActivationService.java
-│   │   │   ├── GradeLevelValidationService.java
-│   │   │   └── StudyPlanManagementService.java
-│   │   └── exception/                       # 20+ excepciones de dominio
-│   ├── application/
-│   │   ├── usecases/                        # 22 use cases
-│   │   ├── dto/ (request/ + response/)
-│   │   └── mapper/
-│   │       └── AcademicApplicationMapper.java
-│   └── infrastructure/
-│       ├── persistence/ (entity, repository, adapter, mapper)
-│       ├── web/
-│       │   ├── controller/
-│       │   │   ├── AcademicYearController.java
-│       │   │   ├── OrientationController.java
-│       │   │   ├── GradeLevelController.java
-│       │   │   └── SubjectController.java
-│       │   └── exception/
-│       │       └── AcademicExceptionHandler.java
-│       └── seeder/
-│           └── AcademicDataSeeder.java
+│   └── ...                                  # (sin cambios)
 │
 ├── students/                                # BOUNDED CONTEXT: Estudiantes ⏳
 │   ├── personal/                            # Agregado: StudentPersonalData
-│   ├── health/                              # Agregado: StudentHealthRecord
-│   ├── enrollment/                          # Agregado: StudentEnrollment
-│   └── records/                             # Agregado: StudentRecord + RecordDocuments
+│   │   └── domain/                          # ✅ COMPLETO
+│   │       ├── model/
+│   │       │   └── StudentPersonalData.java # @Builder+@Getter, factory method create()
+│   │       ├── valueobject/
+│   │       │   └── StudentPersonalDataId.java # record UUID
+│   │       ├── repository/
+│   │       │   └── StudentPersonalDataRepository.java  # Puerto
+│   │       └── exception/
+│   │           ├── StudentNotFoundException.java        # + factory methods byId, byDni
+│   │           ├── StudentAlreadyExistsException.java   # + factory methods withDni, withCuil
+│   │           └── InvalidStudentDataException.java
+│   ├── health/                              # Agregado: StudentHealthRecord ⏳
+│   ├── enrollment/                          # Agregado: StudentEnrollment ⏳
+│   └── records/                             # Agregado: StudentRecord + RecordDocuments ⏳
 │
 └── SchoolManagementApplication.java
 
@@ -267,7 +180,11 @@ src/main/resources/
     ├── V4__Create_refresh_tokens_table.sql
     ├── V5__create_geography_tables.sql
     ├── V6__create_academic_tables.sql
-    └── V7__extend_academic_module.sql
+    ├── V7__extend_academic_module.sql
+    ├── V10__create_students_tables.sql      # student_personal_data, student_health_records
+    ├── V11__create_records_tables.sql       # document_types, student_records, record_documents
+    ├── V12__create_parents_tables.sql       # parents, student_parents
+    └── V14__create_enrollments_table.sql    # withdrawal_reasons, student_enrollments
 ```
 
 ---
@@ -275,49 +192,33 @@ src/main/resources/
 ## 🗂️ Módulos Implementados
 
 ### ✅ Auth — Autenticación y Autorización
-
-- Login con DNI + password
-- Logout con blacklist de access token
-- Refresh token con rotación automática
-- Cambio de contraseña
-- Gestión de sesiones activas por dispositivo
-- Creación de estudiantes y profesores (Admin)
-- Activación de cuenta de profesores
+*(sin cambios)*
 
 ### ✅ Geography — Geografía Argentina
-
-- Países, provincias y localidades con jerarquía completa
-- Búsqueda con autocompletado
-- Datos precargados: Argentina completa (1 país, 24 provincias, ~45 localidades)
-- Endpoints públicos para autocompletado en formularios (sin auth requerida)
+*(sin cambios)*
 
 ### ✅ Academic — Estructura Académica
+*(sin cambios)*
 
-**Gestión de Años Académicos**
-- Crear, activar y cerrar años académicos
-- Solo un año puede estar activo a la vez
-- Al activar uno nuevo, el anterior se cierra automáticamente
+### ⏳ Students — Gestión de Estudiantes
 
-**Gestión de Orientaciones**
-- Técnico Electricista (ELEC) y Técnico Electromecánico (ELMEC)
-- Solo disponibles desde 4° año (ciclo superior)
-- Obligatorias para años 4°–7°
+**Domain Layer — `personal/` ✅ Completo**
 
-**Gestión de Cursos (GradeLevel)**
-- Ciclo básico (1°–3°): sin orientación
-- Ciclo superior (4°–7°): con orientación obligatoria
-- 37 cursos activos precargados para 2024
+- `StudentPersonalData` — agregado principal con validaciones de dominio, métodos de negocio (`calculateAge`, `isAdult`, `isEligibleForSecondarySchool`, `updateContactInfo`, `updateAddress`)
+- `StudentPersonalDataId` — Value Object UUID como `record`
+- `StudentPersonalDataRepository` — puerto con `save`, `findByStudentId`, `findByDni`, `findByFullNameContaining`, `findByResidencePlaceId`, `existsByDni`, `existsByCuil`, `count`
+- Excepciones: `StudentNotFoundException` (+ `byId`, `byDni`), `StudentAlreadyExistsException` (+ `withDni`, `withCuil`), `InvalidStudentDataException`
 
-**Gestión de Materias (Subject)**
-- Materias comunes (todos los cursos)
-- Materias específicas por orientación
-- ~60 materias precargadas
+**Shared Kernel ampliado (para Students y futuros módulos)**
 
-**Registro de Calificaciones (QualificationRegistry)**
-- Instrumento legal obligatorio por año académico
-- Asignación automática de folios via `FolioAssignmentService`
-- REG-2024-001 activo con 500 folios disponibles
-- Limpieza automática de tokens vencidos (Schedulers)
+- `Cuil` — validación completa ANSES/AFIP con dígito verificador, `extractDni()`, `formatted()`
+- `CuilType` — enum con display names en español
+- `Address` — domicilio encapsulado con `PlaceId`, normalización de calle, `toStringFormatted(localityName)`
+
+**Próximo: Application Layer `personal/`**
+- `CreateStudentRequest.java` — DTO con Jakarta
+- `StudentPersonalDataResponse.java` — DTO response
+- `StudentPersonalDataApplicationMapper.java` — MapStruct
 
 ---
 
@@ -327,18 +228,22 @@ src/main/resources/
 
 | Migración | Descripción |
 |-----------|-------------|
-| `V1` | Tabla `users` con UUID PK, DNI unique |
+| `V1` | Tabla `users` |
 | `V2` | Tabla `blacklisted_tokens` |
 | `V3` | Admin por defecto (solo dev) |
 | `V4` | Tabla `refresh_tokens` |
-| `V5` | Tablas geography (`countries`, `provinces`, `places`) |
-| `V6` | Tablas academic core (`academic_years`, `orientations`, `grade_levels`, `subjects`, `qualification_registries`) |
-| `V7` | Tablas academic extendidas (`study_plans`, `evaluation_periods`, `grades`) |
+| `V5` | `countries`, `provinces`, `places` |
+| `V6` | `academic_years`, `orientations`, `grade_levels`, `subjects`, `qualification_registries` |
+| `V7` | `study_plans`, `evaluation_periods`, `grades` |
+| `V10` | `student_personal_data`, `student_health_records` |
+| `V11` | `document_types`, `student_records`, `record_documents` |
+| `V12` | `parents`, `student_parents` |
+| `V14` | `withdrawal_reasons`, `student_enrollments` |
 
 ### Convenciones de BD
-- **PK**: UUID (VARCHAR 36)
-- **Timestamps**: `created_at`, `updated_at`, `expires_at` tipo DATETIME
-- **Flags**: `is_active`, `is_current`, `is_revoked` tipo BOOLEAN
+- **PK**: `BINARY(16)` (UUID binario) — los mappers de persistencia incluyen `bytesToUuid` / `uuidToBytes`
+- **Timestamps**: `TIMESTAMP` con `DEFAULT CURRENT_TIMESTAMP` y `ON UPDATE CURRENT_TIMESTAMP`
+- **Flags**: `is_active`, `is_current`, `is_mandatory`, `requires_documentation` tipo `BOOLEAN`
 - **Nunca** modificar migraciones ya ejecutadas — siempre crear `V{n+1}`
 
 ---
@@ -412,20 +317,14 @@ mvn spring-boot:run -Dspring-boot.run.profiles=dev
 | POST | `/api/admin/academic-years` | ✅ ADMIN | Crear año académico |
 | GET | `/api/admin/academic-years` | ✅ | Listar años |
 | GET | `/api/admin/academic-years/current` | ✅ | Año actual |
-| GET | `/api/admin/academic-years/{id}` | ✅ | Año por ID |
 | PUT | `/api/admin/academic-years/{id}/activate` | ✅ ADMIN | Activar año |
 | PUT | `/api/admin/academic-years/{id}/close` | ✅ ADMIN | Cerrar año |
 | POST | `/api/admin/orientations` | ✅ ADMIN | Crear orientación |
 | GET | `/api/admin/orientations` | ✅ | Listar orientaciones |
-| PUT | `/api/admin/orientations/{id}` | ✅ ADMIN | Actualizar orientación |
-| PUT | `/api/admin/orientations/{id}/toggle-status` | ✅ ADMIN | Activar/Desactivar |
 | POST | `/api/admin/grade-levels` | ✅ ADMIN | Crear curso |
 | GET | `/api/admin/grade-levels` | ✅ | Listar cursos |
-| PUT | `/api/admin/grade-levels/{id}/homeroom-teacher` | ✅ ADMIN | Asignar tutor |
-| DELETE | `/api/admin/grade-levels/{id}` | ✅ ADMIN | Desactivar curso |
 | POST | `/api/admin/subjects` | ✅ ADMIN | Crear materia |
 | GET | `/api/admin/subjects` | ✅ | Listar materias |
-| PUT | `/api/admin/subjects/{id}` | ✅ ADMIN | Actualizar materia |
 
 **Total actual: ~35 endpoints REST documentados en Swagger**
 
@@ -436,7 +335,7 @@ mvn spring-boot:run -Dspring-boot.run.profiles=dev
 - **JWT access token**: corta duración (configurable en `application.yml`)
 - **Refresh token**: larga duración, almacenado en BD con hash, rotación en cada uso
 - **Blacklist**: access tokens revocados almacenados hasta expiración
-- **Spring Security 6**: `SecurityFilterChain` bean (no `WebSecurityConfigurerAdapter`)
+- **Spring Security 6**: `SecurityFilterChain` bean
 - **Roles disponibles**: `ADMIN`, `TEACHER`, `STUDENT`, `PARENT`, `STAFF`
 - **Schedulers**: limpieza periódica de refresh tokens y blacklist expirados
 
@@ -445,46 +344,15 @@ mvn spring-boot:run -Dspring-boot.run.profiles=dev
 ## 🧪 Testing
 
 ```bash
-# Todos los tests
 mvn clean verify
-
-# Solo unit tests
 mvn test -Dgroups="unit"
-
-# Solo integration tests
 mvn test -Dgroups="integration"
-
-# Con coverage (JaCoCo)
 mvn test jacoco:report
 ```
-
-### Testing del API
-
-```bash
-# Login
-curl -X POST http://localhost:8080/api/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{"dni":"00000001","password":"Admin123!"}'
-
-export TOKEN="<access_token>"
-
-# Crear año académico
-curl -X POST http://localhost:8080/api/admin/academic-years \
-  -H "Authorization: Bearer $TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{"year":2025,"startDate":"2025-03-01","endDate":"2025-12-20","setAsCurrent":true}'
-
-# Buscar localidades
-curl "http://localhost:8080/api/geography/places/search?q=Alta"
-```
-
-O bien usar **Swagger UI**: `http://localhost:8080/swagger-ui.html`
 
 ---
 
 ## 🔑 Credenciales de Prueba
-
-Generadas automáticamente por `DataSeederConfig` en perfil `dev`:
 
 | Rol | DNI | Password |
 |-----|-----|----------|
@@ -493,132 +361,56 @@ Generadas automáticamente por `DataSeederConfig` en perfil `dev`:
 | STUDENT (con email) | `11223344` | `11223344Ipet132!` |
 | STUDENT (sin email) | `87654321` | `87654321Ipet132!` |
 
-> **Nota**: La contraseña inicial de estudiantes sigue el patrón `{DNI}Ipet132!`
+> La contraseña inicial de estudiantes sigue el patrón `{DNI}Ipet132!`
 
 ---
 
 ## 📊 Estado del Proyecto
 
-### ✅ Implementado (MVP + Fase 2)
+### ✅ Implementado
 
-**Auth Module**
-- [x] Arquitectura hexagonal completa
-- [x] Autenticación con DNI — JWT + Refresh Token con rotación
-- [x] Gestión de sesiones activas por dispositivo
-- [x] Blacklist de tokens — Schedulers de limpieza
-- [x] Creación de estudiantes y profesores (Admin)
-- [x] Activación de cuenta de profesores
-- [x] Cambio de contraseña
-- [x] GlobalExceptionHandler, MapStruct mappers, Flyway migrations
+- Auth, Geography, Academic completos (ver secciones anteriores)
+- **Shared Kernel ampliado**: `Cuil` + `CuilType` + `Address`
+- **Students `personal/` domain layer**: `StudentPersonalData`, `StudentPersonalDataId`, `StudentPersonalDataRepository`, excepciones con factory methods
+- Flyway V1–V7, V10–V14 ejecutados
 
-**Geography Module**
-- [x] Países, provincias y localidades (jerarquía completa)
-- [x] Búsqueda con autocompletado
-- [x] Seeder con Argentina completa (24 provincias, ~45 localidades)
-- [x] Endpoints públicos para formularios de alta
+### ⏳ En construcción — Students Module
 
-**Academic Module**
-- [x] Gestión de años académicos con activación controlada
-- [x] Orientaciones técnicas (Electricista, Electromecánico)
-- [x] Cursos con validación de orientación por ciclo (1°–3° sin, 4°–7° con)
-- [x] Materias comunes y específicas por orientación
-- [x] Registro de Calificaciones con asignación automática de folios
-- [x] 5 Domain Services (FolioAssignment, RegistryNumber, AcademicYearActivation, etc.)
-- [x] 22 Use Cases — 22 endpoints REST
-- [x] Seeder completo (2 años, 2 orientaciones, 37 cursos, ~60 materias)
-- [x] Swagger/OpenAPI completo
-- [x] Validaciones Jakarta en todos los DTOs
+- [ ] Application layer `personal/` — DTOs, mapper, use cases ← **próximo**
+- [ ] Infrastructure layer `personal/` — JPA entity, adapter, controller
+- [ ] Agregado `health/` — StudentHealthRecord
+- [ ] Agregado `records/` — StudentRecord + RecordDocuments
+- [ ] Agregado `enrollment/` — StudentEnrollment
+- [ ] Parents + StudentParents
+- [ ] Flujo transaccional completo (15 pasos)
 
-### ⏳ Pendiente — Próximos Módulos
+### ⏳ Pendiente — Otros Módulos
 
-**Students Module** (próximo)
-- [ ] Agregado: `StudentPersonalData` (identidad civil, domicilio, fotos de DNI)
-- [ ] Agregado: `StudentHealthRecord` (ficha médica, obra social, alergias)
-- [ ] Agregado: `StudentEnrollment` (matrícula por ciclo lectivo, baja)
-- [ ] Agregado: `StudentRecord + RecordDocuments` (legajo digital con documentación)
-- [ ] Gestión de padres/tutores con su propio `User`
-- [ ] `RecordNumberGenerator` — formato `LEG-{año}-{secuencia}`
-- [ ] Flujo transaccional completo de alta de estudiante (integra Auth + Academic + Geography)
-
-**Teachers Module**
-- [ ] Asignación de profesores a cursos
-- [ ] Homeroom teachers (tutores de curso)
-
-**Calificaciones**
-- [ ] Notas por período y materia
-- [ ] Integración con Qualification Registry
-- [ ] Promedio final
-
-**Infraestructura**
-- [ ] Rate limiting
-- [ ] Auditoría completa
-- [ ] Métricas y monitoring (Actuator)
-- [ ] Email Service (envío real)
-- [ ] Búsqueda y paginación avanzada
+- Teachers — asignación a cursos
+- Calificaciones por período y promedio final
+- Rate limiting, auditoría, métricas, email service
 
 ---
 
-## 📝 Decisiones Arquitectónicas
+## 📝 Decisiones Arquitectónicas Clave
 
 | Decisión | Razón |
 |----------|-------|
 | **DNI como username** | Identificador universal en el sistema escolar argentino |
-| **Email opcional** | Estudiantes menores no tienen email propio |
+| **CUIL con validación completa** | Algoritmo ANSES/AFIP — dígito verificador + compatibilidad DNI |
+| **BINARY(16) para UUIDs** | Consistente en todo el proyecto — mappers incluyen conversión bytes↔UUID |
+| **Address en Shared Kernel con PlaceId** | Domicilio completo reutilizable — students, parents, teachers |
+| **@Builder para modelos de dominio complejos** | Ergonomía con +15 campos — `StudentPersonalData.create(builder)` agrega validaciones |
+| **Excepciones con factory methods** | Constructor genérico + `byId()`, `byDni()` — flexibilidad y consistencia |
+| **Sin delete físico de estudiantes** | Integridad referencial — baja lógica via StudentEnrollment |
+| **Students en 4 agregados** | Evitar God Table — separación por responsabilidad |
+| **Folio automático** | `FolioAssignmentService` transaccional garantiza unicidad |
 | **UUID como PK** | Preparado para microservicios, evita IDs predecibles |
-| **Roles como String** | Simplicidad MVP — roles fijos |
-| **Token Rotation** | Seguridad OWASP en refresh tokens |
-| **Records para DTOs** | Inmutabilidad + menos boilerplate (Java 17) |
 | **MapStruct 3 capas** | Type-safe en compile-time — persistence, application y web mapper separados |
 | **Flyway migraciones** | Control de versión de esquema — nunca `ddl-auto: create` |
-| **Shared Kernel** | DNI, Email, PhoneNumber, IDs geográficos reutilizados entre bounded contexts |
-| **Students en 4 agregados** | Evitar God Table — separación por responsabilidad (personal, salud, matrícula, legajo) |
-| **Folio automático** | `FolioAssignmentService` transaccional garantiza unicidad del folio |
-| **Password inicial estudiante** | Patrón `{DNI}Ipet132!` — simple y conocido por el admin |
-| **Endpoints Geography públicos** | Los formularios de alta necesitan autocompletado sin estar autenticado |
-| **Ciclo básico sin orientación** | 1°–3° son comunes; orientación obligatoria solo en ciclo superior (4°–7°) |
-
-### Patrones en uso
-
-- Repository Pattern — Puerto (interface en domain) + Adaptador (impl en infrastructure)
-- Factory Pattern — Creación de entidades con validación en el constructor
-- Value Object Pattern — Tipos primitivos encapsulados con validación
-- Port & Adapters — Arquitectura hexagonal completa
-- Domain Services — Lógica que no pertenece a un solo agregado
-- Domain Events — Preparado en estructura (no implementado aún)
-- CQRS — Preparado (use cases separados por lectura/escritura)
 
 ---
 
-## 📦 Dependencias Principales
-
-```xml
-<!-- Spring Boot -->
-<dependency>spring-boot-starter-web</dependency>
-<dependency>spring-boot-starter-security</dependency>
-<dependency>spring-boot-starter-data-jpa</dependency>
-<dependency>spring-boot-starter-validation</dependency>
-
-<!-- JWT -->
-<dependency>io.jsonwebtoken:jjwt-api:0.12.3</dependency>
-
-<!-- MapStruct -->
-<dependency>org.mapstruct:mapstruct:1.5.5.Final</dependency>
-
-<!-- Lombok -->
-<dependency>org.projectlombok:lombok</dependency>
-
-<!-- MySQL -->
-<dependency>com.mysql:mysql-connector-j</dependency>
-
-<!-- Flyway -->
-<dependency>org.flywaydb:flyway-mysql</dependency>
-
-<!-- OpenAPI / Swagger -->
-<dependency>org.springdoc:springdoc-openapi-starter-webmvc-ui</dependency>
-```
-
----
-
-**Última actualización**: Marzo 2025
-**Versión**: 2.0.0
-**Estado**: En desarrollo activo — MVP Auth + Geography + Academic completados
+**Última actualización**: Marzo 2026
+**Versión**: 2.1.0
+**Estado**: En desarrollo activo — MVP Auth + Geography + Academic completados | Students domain/personal en progreso

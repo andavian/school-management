@@ -10,7 +10,7 @@
 Sistema de gestión escolar para el **IPET 132** (Argentina).
 **Stack:** Java 17 + Spring Boot 3.2.x + Spring Security 6 + MySQL 8
 **Package raíz:** `org.school.management`
-**Estado actual:** Auth ✅ + Geography ✅ + Academic ✅ — Students en construcción.
+**Estado actual:** Auth ✅ + Geography ✅ + Academic ✅ + Students domain/personal ✅ (en construcción)
 
 ---
 
@@ -38,7 +38,7 @@ shared/       → Shared Kernel — NUNCA duplicar estos tipos en otros contexto
 auth/         → Autenticación y autorización ✅
 geography/    → Países, provincias, localidades ✅
 academic/     → Años, cursos, materias, registro de calificaciones ✅
-students/     → Estudiantes, salud, matrícula, legajo ⏳
+students/     → Estudiantes, salud, matrícula, legajo ⏳ (domain/personal ✅)
 teachers/     → Profesores (futuro)
 ```
 
@@ -64,7 +64,10 @@ shared/
 │   ├── Gender.java        # Enum: MALE, FEMALE, OTHER
 │   ├── Nationality.java
 │   ├── PhoneNumber.java
-│   └── Email.java
+│   ├── Email.java
+│   ├── Cuil.java          # CUIL argentino — validación dígito verificador ANSES/AFIP ← NUEVO
+│   ├── CuilType.java      # Enum: MALE_ARGENTINEAN, FEMALE_ARGENTINEAN, LEGAL_ENTITY... ← NUEVO
+│   └── Address.java       # Domicilio postal — encapsula street, number, floor, apt, PlaceId, CP ← NUEVO
 ├── geography/domain/valueobject/
 │   ├── CountryId.java
 │   ├── ProvinceId.java
@@ -74,6 +77,24 @@ shared/
 ```
 
 **Regla de oro:** Si un concepto aparece en más de un bounded context, va al Shared Kernel.
+
+### Notas sobre los nuevos Value Objects del Shared Kernel
+
+**`Cuil.java`**
+- Valida prefijos ANSES/AFIP: `20`, `27`, `23`, `24`, `30`, `33`, `34`
+- Valida dígito verificador con el algoritmo oficial (pesos `5,4,3,2,7,6,5,4,3,2`)
+- Normaliza a 11 dígitos sin guiones internamente
+- `extractDni()` → devuelve el `Dni` embebido en el CUIL
+- `formatted()` → formato `XX-XXXXXXXX-X` para display
+- `getType()` → devuelve `CuilType`
+
+**`Address.java`**
+- Encapsula domicilio completo: `street`, `number`, `floor` (opt), `apartment` (opt), `PlaceId` (obligatorio), `postalCode` (opt)
+- `street` se normaliza automáticamente (capitalización, abreviaturas Av., Dr., Gral., etc.)
+- `number` acepta formato `1234` o `567B`
+- El persistence mapper es responsable de **aplanar** los campos de `Address` a las columnas de BD (`address_street`, `address_number`, `address_floor`, `address_apartment`, `residence_place_id`, `postal_code`)
+- `toStringFormatted(String localityName)` para documentos/PDFs — requiere nombre de localidad resuelto externamente
+- **No override de `equals`/`hashCode`** — el `record` compara todos los campos (semántica correcta)
 
 ---
 
@@ -152,19 +173,47 @@ academic/
     └── seeder/           AcademicDataSeeder — 2 años, 2 orientaciones, 37 cursos, ~60 materias
 ```
 
-### `students/` — A implementar
+### `students/` — En construcción
 
 Estructura aprobada — **4 agregados separados** (NO una God Table):
 
 ```
 students/
-├── personal/     → StudentPersonalData (identidad civil, domicilio, fotos DNI)
-├── health/       → StudentHealthRecord (ficha médica, obra social, alergias)
-├── enrollment/   → StudentEnrollment (matrícula por ciclo, baja, promedio final)
-└── records/      → StudentRecord + RecordDocuments (legajo digital con documentación)
+├── personal/     → StudentPersonalData (identidad civil, domicilio) ✅ domain layer completo
+├── health/       → StudentHealthRecord (ficha médica, obra social, alergias) ⏳
+├── enrollment/   → StudentEnrollment (matrícula por ciclo, baja, promedio final) ⏳
+└── records/      → StudentRecord + RecordDocuments (legajo digital con documentación) ⏳
 ```
 
 Cada subdirectorio tiene su propia estructura `domain/ / application/ / infrastructure/`.
+
+#### `students/personal/` — Domain Layer ✅ COMPLETO
+
+```
+students/personal/
+└── domain/
+    ├── model/
+    │   └── StudentPersonalData.java        # Agregado principal — @Builder + @Getter + Lombok
+    ├── valueobject/
+    │   └── StudentPersonalDataId.java      # record UUID — consistente con el resto del proyecto
+    ├── repository/
+    │   └── StudentPersonalDataRepository.java   # Puerto del dominio
+    └── exception/
+        ├── StudentNotFoundException.java
+        ├── StudentAlreadyExistsException.java
+        └── InvalidStudentDataException.java
+```
+
+**Decisiones de diseño tomadas en `students/personal/domain/`:**
+
+- `StudentPersonalData` usa `@Builder` de Lombok (no constructor manual) + `@Getter` + `@EqualsAndHashCode(onlyExplicitlyIncluded = true)`
+- Los campos mutables (`phone`, `email`, `address`, `updatedAt`) no son `final` — se modifican via métodos de negocio (`updateContactInfo`, `updateAddress`, `updatePersonalData`)
+- `create(StudentPersonalDataBuilder builder)` es el **factory method con validaciones de dominio** — siempre usar esto, nunca `.builder().build()` directo
+- Validación cruzada **CUIL ↔ DNI** en `create()` — `cuil.extractDni()` debe coincidir con `dni`
+- `birthDate` solo valida que no sea futuro — sin rango de edad rígido (flexible para casos especiales)
+- `Address` está embebido en `StudentPersonalData` (no `PlaceId` suelto) — el persistence mapper aplana a columnas BD
+- **No hay `deleteByStudentId`** en el puerto — la baja es lógica y se gestiona desde `StudentEnrollment`
+- Excepciones siguen el patrón: **constructor genérico + factory methods estáticos nombrados** (`StudentNotFoundException.byId(id)`, `StudentNotFoundException.byDni(dni)`, `StudentAlreadyExistsException.withDni(dni)`, `StudentAlreadyExistsException.withCuil(cuil)`)
 
 ---
 
@@ -194,12 +243,14 @@ Cada subdirectorio tiene su propia estructura `domain/ / application/ / infrastr
 | **DNI como username** | Identificador universal en Argentina |
 | **Email opcional** | Estudiantes menores no tienen email |
 | **UUID como PK** | Preparado para microservicios |
+| **BINARY(16) para UUIDs en BD** | Consistente en todo el proyecto — persistence mappers incluyen `bytesToUuid` / `uuidToBytes` |
 | **Roles como String** | MVP — roles fijos: ADMIN, TEACHER, STUDENT, PARENT, STAFF |
 | **Token Rotation** | Seguridad OWASP |
-| **Records para DTOs** | Inmutabilidad Java 17 |
+| **Records para DTOs y Value Objects simples** | Inmutabilidad Java 17 |
+| **Lombok @Builder para modelos de dominio complejos** | Ergonomía — `StudentPersonalData` tiene +15 campos |
 | **MapStruct en 3 capas** | Type-safe en compile-time, sin reflection |
 | **Flyway obligatorio** | Nunca `ddl-auto: create` |
-| **Shared Kernel** | Evitar duplicación de DNI, Email, PhoneNumber, IDs geográficos |
+| **Shared Kernel** | Evitar duplicación — `Dni`, `Email`, `PhoneNumber`, `Cuil`, `Address`, IDs geográficos |
 | **Students en 4 agregados** | Evitar God Table — separación real de responsabilidades |
 | **Folio automático** | `FolioAssignmentService` transaccional garantiza unicidad |
 | **Password inicial estudiante** | `{DNI}Ipet132!` — simple para el admin |
@@ -208,12 +259,16 @@ Cada subdirectorio tiene su propia estructura `domain/ / application/ / infrastr
 | **Ciclo básico sin orientación** | 1°–3° comunes; 4°–7° orientación obligatoria |
 | **Dos capas de DTOs** | `application/dto/` puros; `infrastructure/web/dto/` con Jakarta |
 | **Naming adapter vs impl** | Auth usa `*RepositoryImpl` (histórico); módulos nuevos usan `*RepositoryAdapter` |
+| **Baja de estudiante es lógica** | No hay delete físico — se gestiona desde `StudentEnrollment` |
+| **Address encapsula PlaceId** | `Address` en Shared Kernel incluye `PlaceId` — domicilio completo como VO |
+| **Excepciones: constructor + factory methods** | Flexibilidad + consistencia de mensajes (`byId`, `byDni`, `withDni`, `withCuil`) |
+| **Validación CUIL↔DNI en dominio** | Regla de negocio argentina — el DNI embebido en el CUIL debe coincidir |
 
 ---
 
 ## 📐 Convenciones de Código
 
-### Value Object (inmutable con validación)
+### Value Object simple (record)
 
 ```java
 // domain/valueobject/YearLevel.java
@@ -225,6 +280,55 @@ public record YearLevel(int value) {
     public static YearLevel of(int value) { return new YearLevel(value); }
     public boolean requiresOrientation() { return value >= 4; }
 }
+```
+
+### Value Object complejo con lógica (record con métodos)
+
+```java
+// shared/person/domain/valueobject/Cuil.java
+public record Cuil(String value) {
+    public Cuil { /* validar prefijo, dígito verificador */ }
+    public static Cuil of(String value) { return new Cuil(value); }
+    public Dni extractDni() { ... }
+    public String formatted() { ... }
+    public CuilType getType() { ... }
+}
+```
+
+### Modelo de dominio con Lombok (cuando tiene muchos campos)
+
+```java
+// students/personal/domain/model/StudentPersonalData.java
+@Getter
+@Builder
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
+public class StudentPersonalData {
+    @EqualsAndHashCode.Include
+    private final StudentPersonalDataId studentId;
+    // campos final para inmutables, sin final para mutables
+    private PhoneNumber phone; // mutable via updateContactInfo()
+
+    public static StudentPersonalData create(StudentPersonalDataBuilder builder) {
+        // validaciones de dominio aquí — nunca en .builder().build() directo
+    }
+}
+```
+
+### Excepciones de dominio (constructor genérico + factory methods)
+
+```java
+public class StudentNotFoundException extends DomainException {
+    public StudentNotFoundException(String message) { super(message); }
+
+    public static StudentNotFoundException byId(UUID id) {
+        return new StudentNotFoundException("Student not found with id: " + id);
+    }
+    public static StudentNotFoundException byDni(String dni) {
+        return new StudentNotFoundException("Student not found with DNI: " + dni);
+    }
+}
+// Uso en use case:
+throw StudentNotFoundException.byDni(dni.value());
 ```
 
 ### Domain Service
@@ -322,9 +426,11 @@ public class AcademicYearController {
 - **Flyway para cambios de esquema** — nueva migración `V{n}__descripcion.sql`, nunca editar existentes.
 - **`@Slf4j` para logging** — nunca `System.out.println`.
 - **Validar con Jakarta** en `infrastructure/web/dto/` — el dominio lanza sus propias excepciones.
-- **Consultar el Shared Kernel** antes de crear un Value Object — puede ya existir.
+- **Consultar el Shared Kernel** antes de crear un Value Object — puede ya existir (`Cuil`, `Address`, `Dni`, `Email`, `PhoneNumber`, `PlaceId`...).
 - **Usar `FolioAssignmentService`** al asignar folios a estudiantes — nunca hacerlo manualmente.
 - **Geography es de lectura pública** — no requiere autenticación.
+- **Usar factory methods de excepción** — `StudentNotFoundException.byDni(dni)` no `new StudentNotFoundException("...")`.
+- **Usar `StudentPersonalData.create(builder)`** — nunca `.builder().build()` directo en el dominio students.
 
 ### ❌ Nunca hacer
 
@@ -336,8 +442,9 @@ public class AcademicYearController {
 - **Nunca usar** `ddl-auto: create` o `update`.
 - **Nunca hardcodear** secretos, contraseñas o URLs.
 - **Nunca cruzar** bounded contexts con clases completas — solo IDs o Shared Kernel.
-- **Nunca duplicar** `Dni`, `Email`, `PhoneNumber` — están en `shared/`.
+- **Nunca duplicar** `Dni`, `Email`, `PhoneNumber`, `Cuil`, `Address` — están en `shared/`.
 - **Nunca usar herencia** entre entidades de distintos bounded contexts.
+- **Nunca hacer delete físico** de estudiantes — la baja es lógica via `StudentEnrollment`.
 
 ### 🔍 Al analizar código existente
 
@@ -362,7 +469,7 @@ Orden estricto de implementación:
 10. `infrastructure/persistence/entity/` — entidades JPA sin lógica
 11. `infrastructure/persistence/repository/` — `XJpaRepository`
 12. `infrastructure/persistence/adapter/` — `XRepositoryAdapter implements XRepository`
-13. `infrastructure/persistence/mapper/` — MapStruct domain ↔ entity
+13. `infrastructure/persistence/mapper/` — MapStruct domain ↔ entity (incluir `bytesToUuid`/`uuidToBytes`)
 14. `infrastructure/web/dto/` — DTOs de API con Jakarta
 15. `infrastructure/web/controller/` — REST con `@PreAuthorize`
 16. `infrastructure/web/mapper/` — MapStruct application ↔ web DTO
@@ -374,28 +481,37 @@ Orden estricto de implementación:
 
 ```java
 // ✅ Permitido — solo IDs y Shared Kernel
+import org.school.management.shared.person.domain.valueobject.Dni;
+import org.school.management.shared.person.domain.valueobject.Cuil;
+import org.school.management.shared.person.domain.valueobject.Address;
+import org.school.management.auth.domain.valueobject.UserId;
+import org.school.management.academic.domain.valueobject.ids.GradeLevelId;
+import org.school.management.academic.domain.valueobject.ids.AcademicYearId;
+import org.school.management.shared.geography.domain.valueobject.PlaceId;
 
 // ❌ Prohibido — clases completas de otro bounded context
-
+import org.school.management.academic.domain.model.GradeLevel; // NUNCA
+import org.school.management.auth.domain.model.User;           // NUNCA
 ```
 
 Flujo transaccional de creación de estudiante (14 pasos, TODO O NADA):
 
 ```
-1.  Validar DNI no existente
-2.  Obtener AcademicYear activo (debe existir uno ACTIVE)
-3.  Validar GradeLevel existe y está activo
-4.  FolioAssignmentService.assignNextFolio()
-5.  Generar password: {DNI}Ipet132!
-6.  Crear User en auth (dni, password hasheado, roles: [STUDENT])
-7.  Crear StudentPersonalData
-8.  Crear StudentHealthRecord
-9.  RecordNumberGenerator.generate() → LEG-{año}-{secuencia}
-10. Crear StudentRecord (registry_id + folio)
-11. Buscar o crear Parent (con su propio User, password aleatorio)
-12. Crear StudentParent (relación + flags)
-13. Crear Enrollment
-14. Commit → retornar response
+1.  Validar DNI no existente (StudentPersonalDataRepository.existsByDni)
+2.  Validar CUIL no existente (StudentPersonalDataRepository.existsByCuil)
+3.  Obtener AcademicYear activo (debe existir uno ACTIVE)
+4.  Validar GradeLevel existe y está activo
+5.  FolioAssignmentService.assignNextFolio()
+6.  Generar password: {DNI}Ipet132!
+7.  Crear User en auth (dni, password hasheado, roles: [STUDENT])
+8.  Crear StudentPersonalData (via StudentPersonalData.create(builder))
+9.  Crear StudentHealthRecord
+10. RecordNumberGenerator.generate() → LEG-{año}-{secuencia}
+11. Crear StudentRecord (registry_id + folio)
+12. Buscar o crear Parent (con su propio User, password aleatorio)
+13. Crear StudentParent (relación + flags)
+14. Crear Enrollment
+15. Commit → retornar response
 ```
 
 ### 🧪 Al generar tests
@@ -440,10 +556,27 @@ class AcademicYearControllerIntegrationTest { /* usa H2 */ }
 | V5 | `countries`, `provinces`, `places` |
 | V6 | `academic_years`, `orientations`, `grade_levels`, `subjects`, `qualification_registries` |
 | V7 | `study_plans`, `evaluation_periods`, extensiones academic |
+| V10 | `student_personal_data`, `student_health_records` |
+| V11 | `document_types`, `student_records`, `record_documents` |
+| V12 | `parents`, `student_parents` |
+| V14 | `withdrawal_reasons`, `student_enrollments` |
 
-**Próxima:** `V8__create_students_tables.sql`
+**Convenciones de BD:**
+- PK: `BINARY(16)` (UUID binario) — persistence mappers convierten con `bytesToUuid` / `uuidToBytes`
+- Timestamps: `TIMESTAMP` con `DEFAULT CURRENT_TIMESTAMP` y `ON UPDATE CURRENT_TIMESTAMP`
+- Booleanos: `is_active`, `is_current`, `is_mandatory`, `requires_documentation`
+- Nunca modificar migraciones ya ejecutadas — siempre crear `V{n+1}`
 
-Convención de columnas: PK UUID, timestamps DATETIME, booleanos `is_active` / `is_current`.
+**Correcciones aplicadas respecto al diseño original (V10–V14):**
+- `BINARY(16)` para todos los UUIDs (no `VARCHAR(36)`)
+- `cuil VARCHAR(11)` agregado en `student_personal_data` — obligatorio, normalizado sin guiones
+- `residence_place_id` en lugar de `place_id` — nombre semántico para domicilio
+- `status VARCHAR(20) DEFAULT 'PENDING'` en `record_documents` — estado por documento
+- `record_documents.updated_at` con `ON UPDATE CURRENT_TIMESTAMP`
+- `parents.updated_at` con `ON UPDATE CURRENT_TIMESTAMP`
+- `withdrawal_reasons.requires_documentation BOOLEAN` — indica si la baja requiere adjunto
+- `student_enrollments` UNIQUE KEY es `(student_id, academic_year_id)` — permite cambio de curso en el mismo año
+- Tabla renombrada de `enrollments` a `student_enrollments`
 
 ---
 
@@ -477,10 +610,21 @@ mvn clean package -DskipTests                               # generar JAR
 - `auth/` — JWT, refresh, blacklist, sesiones, creación de usuarios
 - `geography/` — Geografía argentina con búsqueda y jerarquía
 - `academic/` — Años, orientaciones, cursos, materias, registro de calificaciones, 22 use cases, Swagger
-- Shared Kernel, Flyway V1–V7, Seeders, OpenAPI
+- Shared Kernel ampliado: `Cuil`, `CuilType`, `Address` agregados
+- Flyway V1–V7, V10–V12, V14 ejecutados
+- Seeders, OpenAPI
 
 ### En construcción
-- `students/` — 4 agregados, flujo transaccional de 14 pasos, legajo digital
+- `students/personal/` — domain layer ✅ completo | application layer ⏳ siguiente
+- `students/health/` — pendiente
+- `students/enrollment/` — pendiente
+- `students/records/` — pendiente
 - `teachers/` — Asignación a cursos
 - Calificaciones por período y promedio final
 - Rate limiting, auditoría, métricas, email service
+
+### Próximo paso
+**Application layer de `students/personal/`:**
+- `CreateStudentRequest.java` — DTO con validaciones Jakarta
+- `StudentPersonalDataResponse.java` — DTO response
+- `StudentPersonalDataApplicationMapper.java` — MapStruct domain → response

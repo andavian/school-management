@@ -1,23 +1,32 @@
 package org.school.management.geography.domain.valueobject;
 
-import lombok.Value;
+import java.util.Optional;
 
-@Value
-public class ProvinceCode {
-    String value;
+public record ProvinceCode(String value) {
 
-    public static ProvinceCode of(String value) {
+    public ProvinceCode {
         if (value == null || value.isBlank()) {
-            return null; // El código de provincia es opcional
+            throw new IllegalArgumentException("ProvinceCode cannot be null or blank");
         }
 
-        String normalized = value.trim().toUpperCase();
+        value = value.trim().toUpperCase();
 
-        if (normalized.length() > 10) {
+        if (value.length() > 10) {
             throw new IllegalArgumentException("Province code cannot exceed 10 characters");
         }
+    }
 
-        return new ProvinceCode(normalized);
+
+    public static ProvinceCode of(String value) {
+        return new ProvinceCode(value);
+    }
+
+
+    public static Optional<ProvinceCode> ofNullable(String value) {
+        if (value == null || value.isBlank()) {
+            return Optional.empty();
+        }
+        return Optional.of(new ProvinceCode(value));
     }
 
     @Override
@@ -25,4 +34,3 @@ public class ProvinceCode {
         return value;
     }
 }
-

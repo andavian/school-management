@@ -1,7 +1,7 @@
 package org.school.management.geography.domain.repository;
 
 import org.school.management.geography.domain.model.Country;
-import org.school.management.geography.domain.valueobject.CountryId;
+import org.school.management.shared.geography.domain.valueobject.CountryId;
 import org.school.management.geography.domain.valueobject.IsoCode;
 
 import java.util.List;

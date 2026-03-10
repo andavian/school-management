@@ -10,7 +10,7 @@ import org.school.management.geography.domain.model.Province;
 import org.school.management.geography.domain.repository.CountryRepository;
 import org.school.management.geography.domain.repository.PlaceRepository;
 import org.school.management.geography.domain.repository.ProvinceRepository;
-import org.school.management.geography.domain.valueobject.CountryId;
+import org.school.management.shared.geography.domain.valueobject.CountryId;
 import org.school.management.geography.domain.valueobject.PlaceType;
 import org.school.management.geography.infra.persistence.repository.CountryJpaRepository;
 import org.springframework.boot.ApplicationArguments;

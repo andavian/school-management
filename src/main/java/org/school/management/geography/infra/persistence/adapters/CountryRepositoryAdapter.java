@@ -4,7 +4,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.school.management.geography.domain.model.Country;
 import org.school.management.geography.domain.repository.CountryRepository;
-import org.school.management.geography.domain.valueobject.CountryId;
+import org.school.management.shared.geography.domain.valueobject.CountryId;
 import org.school.management.geography.domain.valueobject.IsoCode;
 import org.school.management.geography.infra.persistence.entity.CountryEntity;
 import org.school.management.geography.infra.persistence.mappers.GeographyPersistenceMapper;

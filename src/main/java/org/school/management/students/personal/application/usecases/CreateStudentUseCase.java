@@ -3,8 +3,8 @@ package org.school.management.students.personal.application.usecases;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.school.management.auth.domain.valueobject.UserId;
-import org.school.management.students.personal.application.dto.CreateStudentRequest;
-import org.school.management.students.personal.application.dto.StudentResponse;
+import org.school.management.students.personal.application.dto.request.CreateStudentRequest;
+import org.school.management.students.personal.application.dto.response.StudentResponse;
 import org.school.management.students.personal.application.mappers.StudentPersonalDataMapper;
 import org.school.management.students.personal.domain.exception.StudentAlreadyExistsException;
 import org.school.management.students.personal.domain.model.StudentPersonalData;
@@ -12,8 +12,6 @@ import org.school.management.students.personal.domain.repository.StudentPersonal
 import org.school.management.students.personal.domain.valueobject.StudentPersonalDataId;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.time.LocalDateTime;
 
 /**
  * Use Case: Crear un nuevo estudiante

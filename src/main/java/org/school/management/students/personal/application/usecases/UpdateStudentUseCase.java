@@ -2,7 +2,7 @@ package org.school.management.students.personal.application.usecases;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.school.management.students.personal.application.dto.StudentResponse;
+import org.school.management.students.personal.application.dto.response.StudentResponse;
 import org.school.management.students.personal.domain.exception.StudentNotFoundException;
 import org.school.management.students.personal.domain.repository.StudentPersonalDataRepository;
 import org.springframework.stereotype.Service;

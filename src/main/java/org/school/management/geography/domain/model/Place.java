@@ -5,6 +5,7 @@ import lombok.Value;
 import lombok.With;
 import org.school.management.geography.domain.valueobject.*;
 import org.school.management.shared.geography.domain.valueobject.PlaceId;
+import org.school.management.shared.geography.domain.valueobject.ProvinceId;
 
 import java.time.LocalDateTime;
 

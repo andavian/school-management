@@ -1,7 +1,7 @@
 package org.school.management.geography.domain.exception;
 
-import org.school.management.geography.domain.valueobject.CountryId;
-import org.school.management.geography.domain.valueobject.ProvinceId;
+import org.school.management.shared.geography.domain.valueobject.CountryId;
+import org.school.management.shared.geography.domain.valueobject.ProvinceId;
 
 public class ProvinceNotFoundException extends RuntimeException {
     public ProvinceNotFoundException(ProvinceId provinceId) {

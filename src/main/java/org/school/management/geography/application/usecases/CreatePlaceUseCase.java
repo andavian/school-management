@@ -14,7 +14,7 @@ import org.school.management.geography.domain.model.Province;
 import org.school.management.geography.domain.repository.PlaceRepository;
 import org.school.management.geography.domain.repository.ProvinceRepository;
 import org.school.management.geography.domain.valueobject.PlaceType;
-import org.school.management.geography.domain.valueobject.ProvinceId;
+import org.school.management.shared.geography.domain.valueobject.ProvinceId;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 

@@ -7,7 +7,7 @@ import org.school.management.geography.domain.model.PlaceWithHierarchy;
 import org.school.management.geography.domain.repository.PlaceRepository;
 import org.school.management.shared.geography.domain.valueobject.PlaceId;
 import org.school.management.geography.domain.valueobject.PlaceType;
-import org.school.management.geography.domain.valueobject.ProvinceId;
+import org.school.management.shared.geography.domain.valueobject.ProvinceId;
 import org.school.management.geography.infra.persistence.entity.PlaceEntity;
 import org.school.management.geography.infra.persistence.mappers.GeographyPersistenceMapper;
 import org.school.management.geography.infra.persistence.repository.CountryJpaRepository;
