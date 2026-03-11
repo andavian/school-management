@@ -5,7 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.school.management.shared.geography.domain.valueobject.PlaceId;
 import org.school.management.shared.person.domain.valueobject.Dni;
 import org.school.management.students.personal.application.dto.response.StudentSummaryResponse;
-import org.school.management.students.personal.application.mappers.StudentPersonalDataApplicationMapper;
+import org.school.management.students.personal.application.mapper.StudentPersonalDataApplicationMapper;
 import org.school.management.students.personal.domain.repository.StudentPersonalDataRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;

@@ -62,7 +62,7 @@ public class AcademicYear {
     }
 
     public int getYearValue() {
-        return year.getValue();
+        return year.value();
     }
 
 

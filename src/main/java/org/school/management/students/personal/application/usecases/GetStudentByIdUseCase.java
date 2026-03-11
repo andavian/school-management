@@ -6,7 +6,7 @@ import org.school.management.geography.application.dto.request.GetPlaceByIdReque
 import org.school.management.geography.application.dto.response.PlaceResponse;
 import org.school.management.geography.application.usecases.GetPlaceByIdUseCase;
 import org.school.management.students.personal.application.dto.response.StudentResponse;
-import org.school.management.students.personal.application.mappers.StudentPersonalDataApplicationMapper;
+import org.school.management.students.personal.application.mapper.StudentPersonalDataApplicationMapper;
 import org.school.management.students.personal.domain.exception.StudentNotFoundException;
 import org.school.management.students.personal.domain.model.StudentPersonalData;
 import org.school.management.students.personal.domain.repository.StudentPersonalDataRepository;

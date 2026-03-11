@@ -1,4 +1,4 @@
-package org.school.management.students.personal.application.mappers;
+package org.school.management.students.personal.application.mapper;
 
 import org.mapstruct.*;
 import org.school.management.students.personal.application.dto.response.StudentResponse;
