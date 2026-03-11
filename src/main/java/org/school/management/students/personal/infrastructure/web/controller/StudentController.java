@@ -9,6 +9,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.school.management.auth.domain.model.User;
 import org.school.management.students.personal.application.usecases.CreateStudentUseCase;
 import org.school.management.students.personal.application.usecases.GetStudentByDniUseCase;
 import org.school.management.students.personal.application.usecases.GetStudentByIdUseCase;
@@ -24,22 +25,17 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
 import java.util.UUID;
 
 /**
  * REST Controller para el agregado StudentPersonalData.
  *
  * Base path: /api/admin/students
- * Seguridad: ADMIN para escritura (POST, PATCH), ADMIN o STAFF para lectura (GET).
+ * Seguridad: ADMIN para escritura (POST), ADMIN o STAFF para lectura y actualización (GET, PATCH).
  *
- * Responsabilidades:
- * — Recibir y validar requests HTTP
- * — Delegar a Use Cases (nunca lógica de negocio aquí)
- * — Convertir responses via StudentWebMapper
- *
- * El studentId del usuario autenticado se extrae del UserDetails para auditoría
- * (campo createdBy en CreateStudentUseCase).
+ * El usuario autenticado llega como User (domain model de auth/) porque
+ * CustomUserDetailsService.loadUserByUsername() devuelve directamente User,
+ * que implementa UserDetails. El cast es seguro en todos los endpoints protegidos.
  */
 @RestController
 @RequestMapping("/api/admin/students")
@@ -49,12 +45,12 @@ import java.util.UUID;
 @SecurityRequirement(name = "bearerAuth")
 public class StudentController {
 
-    private final CreateStudentUseCase    createStudentUseCase;
-    private final GetStudentByIdUseCase   getStudentByIdUseCase;
-    private final GetStudentByDniUseCase  getStudentByDniUseCase;
-    private final SearchStudentsUseCase   searchStudentsUseCase;
-    private final UpdateStudentUseCase    updateStudentUseCase;
-    private final StudentWebMapper        webMapper;
+    private final CreateStudentUseCase   createStudentUseCase;
+    private final GetStudentByIdUseCase  getStudentByIdUseCase;
+    private final GetStudentByDniUseCase getStudentByDniUseCase;
+    private final SearchStudentsUseCase  searchStudentsUseCase;
+    private final UpdateStudentUseCase   updateStudentUseCase;
+    private final StudentWebMapper       webMapper;
 
     // ── POST /api/admin/students ──────────────────────────────────────────
 
@@ -136,14 +132,14 @@ public class StudentController {
             @Parameter(description = "DNI exacto (8 dígitos)")
             @RequestParam(required = false) String dni,
 
-            @Parameter(description = "UUID de la localidad de residencia")
-            @RequestParam(required = false) UUID residencePlaceId,
-
             @Parameter(description = "Nombre o apellido (búsqueda parcial)")
-            @RequestParam(required = false) String fullName) {
+            @RequestParam(required = false) String fullName,
 
-        log.debug("GET /api/admin/students — dni={}, residencePlaceId={}, fullName={}",
-                dni, residencePlaceId, fullName);
+            @Parameter(description = "UUID de la localidad de residencia")
+            @RequestParam(required = false) UUID residencePlaceId) {
+
+        log.debug("GET /api/admin/students — dni={}, fullName={}, residencePlaceId={}",
+                dni, fullName, residencePlaceId);
 
         var appSummaries = searchStudentsUseCase.execute(dni, fullName, residencePlaceId);
         var webSummaries = webMapper.toSummaryWebResponseList(appSummaries);
@@ -181,26 +177,24 @@ public class StudentController {
     // ── Helper privado ────────────────────────────────────────────────────
 
     /**
-     * Extrae el UUID del usuario autenticado desde el UserDetails.
-     * El username en este proyecto es el DNI — pero el Use Case necesita el userId.
+     * Extrae el UUID del usuario autenticado.
      *
-     * NOTA: si el UserDetails implementado en auth/ expone el userId directamente,
-     * castear aquí. Si no, se puede obtener via un método auxiliar del servicio auth.
-     * Por ahora se lanza UnsupportedOperationException como recordatorio de implementar
-     * el cast correcto según el CustomUserDetails de tu proyecto.
+     * CustomUserDetailsService.loadUserByUsername() devuelve directamente User
+     * (domain model de auth/), que implementa UserDetails. El cast es seguro
+     * porque Spring Security garantiza que @AuthenticationPrincipal es el objeto
+     * devuelto por loadUserByUsername() — que en este proyecto siempre es User.
      *
-     * Ejemplo típico:
-     *   if (userDetails instanceof CustomUserDetails custom) {
-     *       return custom.getUserId();
-     *   }
+     * User.getUserId() está disponible via @Data de Lombok → getUserId().value()
+     * devuelve el UUID interno del UserId record.
      */
     private UUID extractUserId(UserDetails userDetails) {
-        // TODO: reemplazar con el cast correcto a CustomUserDetails de auth/
-        // cuando se integre el controller con Spring Security real.
-        // El DNI es el username — pero el use case necesita el userId (UUID).
-        throw new UnsupportedOperationException(
-                "extractUserId: implement cast to CustomUserDetails from auth/ — " +
-                        "replace this with: ((CustomUserDetails) userDetails).getUserId()"
+        if (userDetails instanceof User user) {
+            return user.getUserId().value();
+        }
+        throw new IllegalStateException(
+                "Principal inesperado en el contexto de seguridad: "
+                        + userDetails.getClass().getName()
+                        + ". Se esperaba org.school.management.auth.domain.model.User"
         );
     }
 }
