@@ -14,9 +14,8 @@ Sistema de gestión escolar para el **IPET 132** (Argentina) que permite:
 - ✅ Sistema de roles y permisos (ADMIN, TEACHER, STUDENT, PARENT, STAFF)
 - ✅ Gestión de geografía argentina (países, provincias, localidades)
 - ✅ Gestión académica completa (años, orientaciones, cursos, materias, legajo)
-- ✅ Módulo de estudiantes — domain layer completo (personal, health, enrollment, records)
-- ✅ Application layer de students/personal completa (DTOs, mapper, 5 use cases)
-- ⏳ Infrastructure layer de students (en construcción)
+- ✅ Módulo de estudiantes — `personal/` completo (domain + application + infrastructure)
+- ⏳ Infrastructure layer de `students/health/`, `enrollment/`, `records/` (en construcción)
 - ⏳ Módulo de padres/tutores (pendiente)
 
 ### 🎯 Características Principales
@@ -29,6 +28,8 @@ Sistema de gestión escolar para el **IPET 132** (Argentina) que permite:
 - **Arquitectura escalable**: Preparada para migrar a microservicios
 - **Folios automáticos**: Asignación automática desde el Registro de Calificaciones
 - **Flujo transaccional**: Creación de estudiante en 15 pasos atómicos (TODO O NADA)
+- **BINARY(16) para UUIDs**: Conversión transparente via `UuidBinaryConverter` compartido
+- **ProblemDetail (RFC 9457)**: Respuestas de error estandarizadas en toda la API
 
 ---
 
@@ -60,11 +61,12 @@ Sistema de gestión escolar para el **IPET 132** (Argentina) que permite:
 ### Vertical Slicing (Bounded Contexts)
 
 ```
-shared/         → Shared Kernel (Dni, Cuil, Email, PhoneNumber, Address, IDs geográficos)
+shared/         → Shared Kernel (Dni, Cuil, Email, PhoneNumber, Address, Gender, IDs geográficos,
+                                 UuidBinaryConverter)
 auth/           → Autenticación y autorización ✅
 geography/      → Lugares geográficos (País, Provincia, Localidad) ✅
 academic/       → Estructura académica (Años, Cursos, Materias) ✅
-students/       → Gestión de estudiantes ⏳ (domain ✅ | personal application ✅)
+students/       → Gestión de estudiantes ⏳ (personal ✅ COMPLETO)
 teachers/       → Gestión de profesores ⏳
 ```
 
@@ -74,14 +76,14 @@ teachers/       → Gestión de profesores ⏳
 
 | Tecnología | Versión | Uso |
 |------------|---------|-----|
-| Java | 17 | Records, Value Objects inmutables |
+| Java | 17 | Records, Value Objects inmutables, pattern matching instanceof |
 | Spring Boot | 3.2.x | Framework principal |
 | Spring Security | 6.x | Auth/Authz + JWT |
 | Spring Data JPA | Boot managed | Persistencia |
 | MySQL | 8 | Producción |
 | H2 | test scope | Tests |
 | jjwt | 0.12.3 | JWT access + refresh tokens |
-| MapStruct | 1.5.5.Final | Mapeo type-safe entre capas |
+| MapStruct | 1.5.5.Final | Mapeo type-safe entre capas (3 capas: persistence/application/web) |
 | Lombok | Boot managed | Solo modelos complejos (@Builder, @Getter) |
 | Flyway | Boot managed | Migraciones de esquema |
 | SpringDoc OpenAPI | latest | Swagger UI |
@@ -94,81 +96,70 @@ teachers/       → Gestión de profesores ⏳
 ```
 src/main/java/org/school/management/
 │
-├── shared/                                  # Shared Kernel
+├── shared/                                          # Shared Kernel
 │   ├── person/domain/valueobject/
-│   │   ├── Dni.java                         # ✅ DNI argentino (exactamente 8 dígitos)
-│   │   ├── FullName.java                    # ✅ record: firstName + lastName
-│   │   ├── Gender.java                      # ✅ Enum: MALE, FEMALE, OTHER
-│   │   ├── Nationality.java
-│   │   ├── PhoneNumber.java
-│   │   ├── Email.java
-│   │   ├── Cuil.java                        # ✅ CUIL con validación dígito verificador ANSES/AFIP
-│   │   ├── CuilType.java                    # ✅ Enum con display names en español
-│   │   └── Address.java                     # ✅ Domicilio postal (street, number, PlaceId, CP...)
+│   │   ├── Dni.java                                 # ✅ DNI argentino (exactamente 8 dígitos)
+│   │   ├── FullName.java                            # ✅ record: firstName + lastName
+│   │   ├── Gender.java                              # ✅ Enum puro — usar directo en entidades JPA
+│   │   ├── Nationality.java, PhoneNumber.java, Email.java
+│   │   ├── Cuil.java                                # ✅ CUIL con validación dígito verificador ANSES/AFIP
+│   │   ├── CuilType.java
+│   │   └── Address.java                             # ✅ Domicilio postal (street, number, PlaceId, CP...)
 │   ├── geography/domain/valueobject/
-│   │   ├── CountryId.java                   # ✅ record UUID — of() + from() + generate()
-│   │   ├── ProvinceId.java                  # ✅ record UUID
-│   │   └── PlaceId.java                     # ✅ record UUID
-│   └── domain/exception/
-│       └── DomainException.java
+│   │   ├── CountryId.java, ProvinceId.java, PlaceId.java  # ✅ records UUID con of()+from()+generate()
+│   ├── domain/exception/
+│   │   └── DomainException.java
+│   └── infrastructure/persistence/converter/
+│       └── UuidBinaryConverter.java                 # ✅ NUEVO — AttributeConverter UUID ↔ BINARY(16)
 │
-├── auth/                                    # BOUNDED CONTEXT: Autenticación ✅
-│   └── domain/valueobject/
-│       ├── UserId.java                      # ✅ refactorizado a record
-│       ├── RoleId.java                      # ✅ refactorizado a record
-│       ├── BlacklistedTokenId.java          # ✅ refactorizado a record
-│       ├── HashedPassword.java              # ✅ record — toString() oculta el hash
-│       ├── PlainPassword.java               # ✅ record — valida fortaleza en constructor
-│       └── RoleName.java                    # ✅ record — implementa GrantedAuthority
+├── auth/                                            # BOUNDED CONTEXT: Autenticación ✅
+│   └── domain/model/
+│       └── User.java                                # ✅ Implementa UserDetails directamente (no wrapper)
 │
-├── geography/                               # BOUNDED CONTEXT: Geografía ✅
-│   └── domain/valueobject/
-│       ├── IsoCode.java                     # ✅ refactorizado a record
-│       ├── PhoneCode.java                   # ✅ refactorizado a record
-│       ├── GeographicName.java              # ✅ refactorizado a record
-│       ├── PostalCode.java                  # ✅ record — ofNullable() para campos opcionales
-│       └── ProvinceCode.java                # ✅ record — ofNullable() para campos opcionales
+├── geography/                                       # BOUNDED CONTEXT: Geografía ✅
 │
-├── academic/                                # BOUNDED CONTEXT: Académico ✅
-│   └── domain/
-│       ├── valueobject/                     # ✅ todos refactorizados a records
-│       │   ├── Year.java, YearLevel.java, Division.java
-│       │   ├── OrientationCode.java, SubjectCode.java
-│       │   ├── WeeklyHours.java, PeriodNumber.java, RegistryNumber.java
-│       │   └── ids/  AcademicYearId, GradeLevelId, OrientationId, SubjectId,
-│       │             RegistryId, StudyPlanId, PeriodId, CourseId,
-│       │             EvaluationId, EvaluationTypeId, WithdrawalReasonId
-│       └── service/
-│           ├── FolioAssignmentService.java  # assignNextFolio() @Transactional
-│           └── RegistryNumberGenerator.java # generate(AcademicYearId, int year) → String
+├── academic/                                        # BOUNDED CONTEXT: Académico ✅
 │
-└── students/                                # BOUNDED CONTEXT: Estudiantes ⏳
-    ├── personal/
-    │   ├── domain/                          # ✅ COMPLETO
+└── students/                                        # BOUNDED CONTEXT: Estudiantes ⏳
+    ├── personal/                                    # ✅ COMPLETO
+    │   ├── domain/
     │   │   ├── model/StudentPersonalData.java
-    │   │   ├── valueobject/StudentPersonalDataId.java
+    │   │   ├── valueobject/StudentPersonalDataId.java  # of(UUID) + from(UUID|String) + generate()
     │   │   ├── repository/StudentPersonalDataRepository.java
     │   │   └── exception/  StudentNotFoundException, StudentAlreadyExistsException,
     │   │                   InvalidStudentDataException
-    │   └── application/                     # ✅ COMPLETO
-    │       ├── dto/request/  CreateStudentRequest.java, UpdateStudentRequest.java
-    │       ├── dto/response/ StudentResponse.java, StudentSummaryResponse.java
-    │       ├── mapper/       StudentPersonalDataApplicationMapper.java
-    │       └── usecases/     GetStudentByIdUseCase, GetStudentByDniUseCase,
-    │                         SearchStudentsUseCase, UpdateStudentUseCase,
-    │                         CreateStudentUseCase (orquestador 15 pasos)
+    │   ├── application/
+    │   │   ├── dto/request/  CreateStudentRequest.java, UpdateStudentRequest.java
+    │   │   ├── dto/response/ StudentResponse.java, StudentSummaryResponse.java
+    │   │   ├── mapper/       StudentPersonalDataApplicationMapper.java
+    │   │   └── usecases/     GetStudentByIdUseCase, GetStudentByDniUseCase,
+    │   │                     SearchStudentsUseCase, UpdateStudentUseCase,
+    │   │                     CreateStudentUseCase (orquestador 15 pasos)
+    │   └── infrastructure/
+    │       ├── persistence/
+    │       │   ├── entity/    StudentPersonalDataEntity.java   # UUID @Id + UuidBinaryConverter
+    │       │   │                                               # Gender del SharedKernel directo
+    │       │   │                                               # @PrePersist / @PreUpdate
+    │       │   ├── repository/ StudentPersonalDataJpaRepository.java  # JpaRepository<Entity, UUID>
+    │       │   ├── adapter/   StudentPersonalDataRepositoryAdapter.java
+    │       │   └── mapper/    StudentPersonalDataPersistenceMapper.java  # @AfterMapping para FullName+Address
+    │       └── web/
+    │           ├── controller/  StudentController.java    # 5 endpoints, extractUserId via User cast
+    │           ├── dto/         StudentWebDto.java        # clase contenedora con todos los web DTOs
+    │           ├── mapper/      StudentWebMapper.java
+    │           └── exception/   StudentExceptionHandler.java  # ProblemDetail (RFC 9457)
     ├── health/
-    │   └── domain/                          # ✅ COMPLETO
+    │   └── domain/                                  # ✅ COMPLETO
     │       ├── model/StudentHealthRecord.java
     │       ├── valueobject/  HealthRecordId, BloodType (fromString por displayName)
     │       └── repository/StudentHealthRecordRepository.java
     ├── enrollment/
-    │   └── domain/                          # ✅ COMPLETO
+    │   └── domain/                                  # ✅ COMPLETO
     │       ├── model/StudentEnrollment.java
     │       ├── valueobject/  EnrollmentId, EnrollmentType, EnrollmentStatus
     │       └── repository/StudentEnrollmentRepository.java
     └── records/
-        └── domain/                          # ✅ COMPLETO
+        └── domain/                                  # ✅ COMPLETO
             ├── model/  StudentRecord.java, RecordDocument.java
             ├── valueobject/  RecordId, RecordNumber, DocumentId, DocumentTypeId...
             └── repository/  StudentRecordRepository.java
@@ -180,45 +171,45 @@ src/main/java/org/school/management/
 
 ### ✅ Auth — Autenticación y Autorización
 JWT con refresh tokens, rotación de tokens, blacklist, sesiones múltiples por dispositivo.
-Todos los VOs refactorizados a records Java 17.
+`User` implementa `UserDetails` directamente — en controllers usar pattern matching Java 17:
+```java
+if (userDetails instanceof User user) { return user.getUserId().value(); }
+```
 
 ### ✅ Geography — Geografía Argentina
 Jerarquía País → Provincia → Localidad. Endpoints públicos para autocompletado en formularios.
-`GetPlaceByIdUseCase` retorna `PlaceResponse` con jerarquía completa.
 
 ### ✅ Academic — Estructura Académica
 Años lectivos, orientaciones, cursos (1°A–7°B), materias, registro de calificaciones.
-`FolioAssignmentService` y `RegistryNumberGenerator` disponibles para Students.
-Todos los VOs e IDs refactorizados a records Java 17.
 
-### ⏳ Students — Gestión de Estudiantes
+### ✅ Students Personal — COMPLETO
 
-**Domain Layer — todos los agregados ✅ Completos**
-- `StudentPersonalData` — identidad civil, domicilio, validación CUIL↔DNI
-- `StudentHealthRecord` — ficha médica, obra social, contacto de emergencia
-- `StudentEnrollment` — matrícula por ciclo, estados, baja lógica
-- `StudentRecord` — legajo digital con documentos adjuntos
+**Infrastructure Layer:**
 
-**Application Layer — `personal/` ✅ Completo**
+Persistence:
+- `StudentPersonalDataEntity` — `@Id` como `UUID` con `@Convert(UuidBinaryConverter.class)`, `Gender` del Shared Kernel directo (sin `GenderEntity`), `@PrePersist`/`@PreUpdate` para timestamps
+- `StudentPersonalDataJpaRepository` — `JpaRepository<Entity, UUID>`, queries para búsqueda por nombre y por lugar de residencia
+- `StudentPersonalDataRepositoryAdapter` — implementa el contrato completo del puerto (sin `deleteByStudentId` — no hay delete físico)
+- `StudentPersonalDataPersistenceMapper` — `@AfterMapping` para `FullName` y `Address` (VOs compuestos de múltiples columnas), sin `INSTANCE` estático
 
-DTOs:
-- `CreateStudentRequest` — datos personales + `HealthDataRequest` + `ParentRequest` + matrícula
-- `UpdateStudentRequest` — solo contacto y domicilio (studentId va como `@PathVariable`)
-- `StudentResponse` — response completo con `AddressResponse` y `PlaceResponse` nested
-- `StudentSummaryResponse` — para listas y búsquedas
+Web:
+- `StudentController` — 5 endpoints REST, `@PreAuthorize` por rol, `extractUserId()` via cast a `User` con pattern matching Java 17
+- `StudentWebDto` — clase contenedora `final` con todos los web DTOs del módulo
+- `StudentWebMapper` — tercera capa de mappers (web ↔ application)
+- `StudentExceptionHandler` — `ProblemDetail` (RFC 9457): 404/409/422/500
 
-Use Cases:
-- `GetStudentByIdUseCase` — resuelve Geography via `GetPlaceByIdUseCase`
-- `GetStudentByDniUseCase` — delega resolución de places a GetById
-- `SearchStudentsUseCase` — prioridad: dni > residencePlaceId > fullName > all
-- `UpdateStudentUseCase` — llama `updatePersonalData(fullName, phone, email, address)`
-- `CreateStudentUseCase` — orquestador @Transactional de 15 pasos
+Shared:
+- `UuidBinaryConverter` en `shared/infrastructure/persistence/converter/` — reutilizable por todos los bounded contexts
 
-**Próximo: Infrastructure Layer `personal/`**
-- `StudentPersonalDataJpaEntity` + `StudentPersonalDataJpaRepository`
-- `StudentPersonalDataRepositoryAdapter`
-- `StudentPersonalDataPersistenceMapper` (aplanar Address, bytesToUuid/uuidToBytes)
-- `StudentController` + `StudentExceptionHandler`
+**Endpoints disponibles:**
+
+| Método | Path | Rol | Descripción |
+|--------|------|-----|-------------|
+| POST | `/api/admin/students` | ADMIN | Crear estudiante (15 pasos atómicos) |
+| GET | `/api/admin/students/{id}` | ADMIN, STAFF | Obtener por ID |
+| GET | `/api/admin/students/dni/{dni}` | ADMIN, STAFF | Obtener por DNI |
+| GET | `/api/admin/students` | ADMIN, STAFF | Buscar (dni / fullName / residencePlaceId) |
+| PATCH | `/api/admin/students/{id}` | ADMIN, STAFF | Actualizar contacto y domicilio |
 
 ---
 
@@ -241,9 +232,9 @@ Use Cases:
 | `V14` | `withdrawal_reasons`, `student_enrollments` |
 
 ### Convenciones de BD
-- **PK**: `BINARY(16)` (UUID binario) — los mappers incluyen `bytesToUuid` / `uuidToBytes`
-- **Timestamps**: `TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP`
-- **Flags**: `is_active`, `is_current`, `is_mandatory`, `requires_documentation` tipo `BOOLEAN`
+- **PK**: `BINARY(16)` — `@Convert(UuidBinaryConverter.class)` en entidades, `@Id` como `UUID`
+- **Timestamps**: `TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP` + `@PrePersist`/`@PreUpdate`
+- **Enums**: `VARCHAR` con `@Enumerated(EnumType.STRING)` — usar enums del Shared Kernel directamente
 - **Nunca** modificar migraciones ya ejecutadas — siempre crear `V{n+1}`
 
 ---
@@ -269,56 +260,6 @@ mvn spring-boot:run -Dspring-boot.run.profiles=dev
 
 ---
 
-## 🔑 Endpoints API
-
-### Auth
-| Método | Endpoint | Auth | Descripción |
-|--------|----------|------|-------------|
-| POST | `/api/auth/login` | ❌ | Login con DNI + password |
-| POST | `/api/auth/logout` | ✅ | Logout |
-| POST | `/api/auth/refresh` | ❌ | Refresh del access token |
-| GET | `/api/auth/profile` | ✅ | Perfil del usuario autenticado |
-| POST | `/api/auth/change-password` | ✅ | Cambio de contraseña |
-| GET | `/api/auth/sessions` | ✅ | Sesiones activas |
-| DELETE | `/api/auth/sessions/{id}` | ✅ | Revocar sesión |
-
-### Geography (todos públicos)
-| Método | Endpoint | Descripción |
-|--------|----------|-------------|
-| GET | `/api/geography/countries` | Listar países |
-| GET | `/api/geography/provinces/search?q=` | Buscar provincias |
-| GET | `/api/geography/places/{id}` | Lugar por ID (con jerarquía) |
-| GET | `/api/geography/places/search?q=` | Buscar lugares |
-
-### Academic
-| Método | Endpoint | Auth | Descripción |
-|--------|----------|------|-------------|
-| POST | `/api/admin/academic-years` | ADMIN | Crear año académico |
-| GET | `/api/admin/academic-years/current` | ✅ | Año actual |
-| POST | `/api/admin/grade-levels` | ADMIN | Crear curso |
-| GET | `/api/admin/grade-levels` | ✅ | Listar cursos |
-
-### Students (infrastructure layer pendiente)
-| Método | Endpoint | Auth | Descripción |
-|--------|----------|------|-------------|
-| POST | `/api/admin/students` | ADMIN | Crear estudiante (15 pasos atómicos) |
-| GET | `/api/admin/students/{id}` | ADMIN/STAFF | Obtener por ID |
-| GET | `/api/admin/students/dni/{dni}` | ADMIN/STAFF | Obtener por DNI |
-| GET | `/api/admin/students` | ADMIN/STAFF | Buscar (dni, fullName, residencePlaceId) |
-| PATCH | `/api/admin/students/{id}` | ADMIN/STAFF | Actualizar contacto/domicilio |
-
----
-
-## 🔒 Seguridad
-
-- **JWT access token**: corta duración (configurable)
-- **Refresh token**: larga duración, almacenado hasheado en BD, rotación en cada uso
-- **Blacklist**: access tokens revocados hasta expiración
-- **Roles**: `ADMIN`, `TEACHER`, `STUDENT`, `PARENT`, `STAFF`
-- **Password inicial estudiante**: `{DNI}Ipet132!`
-
----
-
 ## 🔑 Credenciales de Prueba
 
 | Rol | DNI | Password |
@@ -330,20 +271,35 @@ mvn spring-boot:run -Dspring-boot.run.profiles=dev
 
 ---
 
+## 🔒 Seguridad
+
+- **JWT access token**: corta duración (configurable)
+- **Refresh token**: larga duración, almacenado hasheado en BD, rotación en cada uso
+- **Blacklist**: access tokens revocados hasta expiración
+- **Roles**: `ADMIN`, `TEACHER`, `STUDENT`, `PARENT`, `STAFF`
+- **Password inicial estudiante**: `{DNI}Ipet132!`
+- **ProblemDetail**: respuestas de error estandarizadas (RFC 9457)
+
+---
+
 ## 📊 Estado del Proyecto
 
 ### ✅ Implementado
 
 - Auth, Geography, Academic completos
-- **Refactor global**: todos los VOs de `auth/`, `geography/`, `academic/` y `shared/` migrados de Lombok `@Value` a `record` Java 17 con `of()` + `from()` estandarizados
-- **Students domain**: los 4 agregados con domain layer completo
-- **Students personal application layer**: 5 use cases + 4 DTOs + mapper
+- **Refactor global**: todos los VOs migrados a `record` Java 17 con `of()` + `from()` estandarizados
+- **`UuidBinaryConverter`** en `shared/infrastructure/` — conversión BINARY(16) ↔ UUID para todos los módulos
+- **Students `personal/`** — las 3 capas completas:
+    - Domain: modelo, VO (con `of(UUID)` corregido), repositorio, excepciones
+    - Application: 5 use cases, 4 DTOs, application mapper
+    - Infrastructure persistence: entity (UUID @Id, Gender directo, @PrePersist), JpaRepository, adapter, PersistenceMapper (@AfterMapping)
+    - Infrastructure web: controller (5 endpoints, Spring Security integrado), web DTOs, web mapper, exception handler
+- **Students domain** de los otros 3 agregados completo (health, enrollment, records)
 - Flyway V1–V7, V10–V14 ejecutados
 
 ### ⏳ Pendiente
 
-- [ ] Infrastructure layer `students/personal/` ← **próximo**
-- [ ] Application + Infrastructure `students/health/`
+- [ ] Application + Infrastructure `students/health/` ← **próximo**
 - [ ] Application + Infrastructure `students/enrollment/`
 - [ ] Application + Infrastructure `students/records/`
 - [ ] Agregado `students/parents/` — completo (domain + application + infrastructure)
@@ -358,22 +314,25 @@ mvn spring-boot:run -Dspring-boot.run.profiles=dev
 
 | Decisión | Razón |
 |----------|-------|
-| **Records Java 17 para VOs** | Inmutabilidad nativa, equals/hashCode/toString sin boilerplate, sin Lombok `@Value` |
-| **of() como factory principal** | Estándar del proyecto — todos los VOs tienen `of()`. `from()` como alias |
+| **Records Java 17 para VOs** | Inmutabilidad nativa, equals/hashCode/toString sin boilerplate |
+| **of() como factory principal** | Estándar del proyecto — `from()` como alias de compatibilidad |
+| **UuidBinaryConverter en shared/** | Un solo converter para todos los BCs — no duplicar por módulo |
+| **@Id como UUID + @Convert** | `JpaRepository<Entity, UUID>` transparente — más limpio que `byte[]` |
+| **@PrePersist / @PreUpdate en entidades** | Garantizan timestamps nunca nulos independientemente del dominio |
+| **Gender directo en entidades JPA** | Enum puro del Shared Kernel — elimina `GenderEntity` duplicado |
+| **@AfterMapping para VOs compuestos** | `FullName` y `Address` necesitan múltiples columnas — `@Named` no funciona con múltiples parámetros en MapStruct |
+| **Sin INSTANCE en mappers Spring** | `componentModel = "spring"` genera bean — `INSTANCE` es para uso sin Spring |
+| **PersistenceMapper separado de ApplicationMapper** | Naming `*PersistenceMapper` distingue las 3 capas |
+| **StudentWebDto clase contenedora** | Todos los web DTOs del módulo en un archivo — facilita navegación |
+| **User implementa UserDetails directo** | No hay wrapper — cast via pattern matching Java 17 en `extractUserId()` |
+| **extractUserId via instanceof User** | Seguro, explícito, lanza IllegalStateException con mensaje claro si falla |
+| **ProblemDetail para errores** | RFC 9457, nativo en Spring 6 — estandarizado en toda la API |
+| **SearchStudentsUseCase parámetros primitivos** | Testeable sin infraestructura web — `execute(dni, fullName, residencePlaceId)` |
 | **DNI siempre 8 dígitos** | Consistente con `Dni.java` del Shared Kernel |
-| **CreateStudentRequest unificado** | Un solo request para 15 pasos atómicos — HealthDataRequest y ParentRequest como nested records |
-| **studentId como @PathVariable** | No va en el body — estándar REST |
-| **Validaciones de negocio en dominio** | No en DTOs — edad, CUIL↔DNI en `create()` del agregado |
-| **BloodType.fromString() por displayName** | API recibe "A+", "B-" — no exponer nombres internos |
-| **ofNullable() en VOs opcionales** | PostalCode, ProvinceCode — para persistence mappers con columnas nullable |
-| **PlaceResponse como parámetro del mapper** | Application mapper no puede cruzar a Geography — use case resuelve los lugares |
-| **RegistryNumberGenerator.generate(AcademicYearId, int)** | Requiere dos argumentos — retorna String, no RecordNumber |
 | **BINARY(16) para UUIDs** | Consistente en todo el proyecto |
-| **MapStruct 3 capas** | persistence, application y web mapper separados — type-safe en compile-time |
-| **Flyway migraciones** | Control de versión de esquema — nunca `ddl-auto: create` |
 
 ---
 
 **Última actualización**: Marzo 2026
-**Versión**: 2.2.0
-**Estado**: En desarrollo activo — Students domain completo + personal application layer completo
+**Versión**: 2.3.0
+**Estado**: En desarrollo activo — Students personal COMPLETO (domain + application + infrastructure)
