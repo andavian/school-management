@@ -15,7 +15,8 @@ Sistema de gestión escolar para el **IPET 132** (Argentina) que permite:
 - ✅ Gestión de geografía argentina (países, provincias, localidades)
 - ✅ Gestión académica completa (años, orientaciones, cursos, materias, legajo)
 - ✅ Módulo de estudiantes — `personal/` completo (domain + application + infrastructure)
-- ⏳ Infrastructure layer de `students/health/`, `enrollment/`, `records/` (en construcción)
+- ✅ Módulo de estudiantes — `health/` completo (domain + application + infrastructure)
+- ⏳ Infrastructure layer de `students/enrollment/`, `records/` (en construcción)
 - ⏳ Módulo de padres/tutores (pendiente)
 
 ### 🎯 Características Principales
@@ -148,11 +149,29 @@ src/main/java/org/school/management/
     │           ├── dto/         StudentWebDto.java        # clase contenedora con todos los web DTOs
     │           ├── mapper/      StudentWebMapper.java
     │           └── exception/   StudentExceptionHandler.java  # ProblemDetail (RFC 9457)
-    ├── health/
-    │   └── domain/                                  # ✅ COMPLETO
-    │       ├── model/StudentHealthRecord.java
-    │       ├── valueobject/  HealthRecordId, BloodType (fromString por displayName)
-    │       └── repository/StudentHealthRecordRepository.java
+    ├── health/                                          # ✅ COMPLETO
+    │   ├── domain/
+    │   │   ├── model/StudentHealthRecord.java
+    │   │   ├── valueobject/  HealthRecordId (record Java 17), BloodType (fromString por displayName)
+    │   │   ├── repository/StudentHealthRecordRepository.java  # VOs en puerto (no UUID crudo)
+    │   │   └── exception/HealthRecordNotFoundException
+    │   ├── application/
+    │   │   ├── dto/request/   UpdateHealthRecordRequest.java   # PATCH semántico
+    │   │   ├── dto/response/  HealthRecordResponse.java        # incluye flags calculados del dominio
+    │   │   ├── mapper/        StudentHealthRecordApplicationMapper.java
+    │   │   └── usecases/      GetHealthRecordByStudentIdUseCase.java
+    │   │                      UpdateHealthRecordUseCase.java
+    │   └── infrastructure/
+    │       ├── persistence/
+    │       │   ├── entity/    StudentHealthRecordEntity.java   # emergency_contact_name concatenado
+    │       │   ├── repository/ StudentHealthRecordJpaRepository.java
+    │       │   ├── adapter/   StudentHealthRecordRepositoryAdapter.java
+    │       │   └── mapper/    StudentHealthRecordPersistenceMapper.java  # @AfterMapping FullName+PhoneNumber
+    │       └── web/
+    │           ├── controller/  HealthRecordController.java  # GET + PATCH
+    │           ├── dto/         HealthRecordWebDto.java       # clase contenedora
+    │           ├── mapper/      HealthRecordWebMapper.java
+    │           └── exception/   HealthRecordExceptionHandler.java  # ProblemDetail 404/422
     ├── enrollment/
     │   └── domain/                                  # ✅ COMPLETO
     │       ├── model/StudentEnrollment.java
@@ -211,9 +230,28 @@ Shared:
 | GET | `/api/admin/students` | ADMIN, STAFF | Buscar (dni / fullName / residencePlaceId) |
 | PATCH | `/api/admin/students/{id}` | ADMIN, STAFF | Actualizar contacto y domicilio |
 
----
+### ✅ Students Health — COMPLETO
 
-## 🗄️ Base de Datos
+**Decisión de diseño clave:** La tabla `student_health_records` (V10) tiene una sola columna `emergency_contact_name VARCHAR(200)`. Se optó por concatenar "firstName lastName" en esa columna en lugar de crear una migración adicional. La separación ocurre en el `@AfterMapping` del PersistenceMapper (split por primer espacio).
+
+Persistence:
+- `StudentHealthRecordEntity` — `emergency_contact_name` como columna única concatenada, `@PrePersist`/`@PreUpdate`
+- `StudentHealthRecordPersistenceMapper` — `@AfterMapping` reconstruye `FullName` y `PhoneNumber` desde columnas simples
+- `StudentHealthRecordRepositoryAdapter` — implementa el contrato completo del puerto con VOs tipados
+
+Web:
+- `HealthRecordController` — 2 endpoints REST, `@PreAuthorize` ADMIN/STAFF
+- `HealthRecordWebDto` — clase contenedora `final` con todos los web DTOs del módulo
+- `HealthRecordExceptionHandler` — ProblemDetail 404/422
+
+**Endpoints disponibles:**
+
+| Método | Path | Rol | Descripción |
+|--------|------|-----|-------------|
+| GET | `/api/admin/students/{studentId}/health` | ADMIN, STAFF | Obtener ficha médica |
+| PATCH | `/api/admin/students/{studentId}/health` | ADMIN, STAFF | Actualizar ficha médica (campos null conservan valor) |
+
+---
 
 ### Migraciones Flyway
 
@@ -294,13 +332,17 @@ mvn spring-boot:run -Dspring-boot.run.profiles=dev
     - Application: 5 use cases, 4 DTOs, application mapper
     - Infrastructure persistence: entity (UUID @Id, Gender directo, @PrePersist), JpaRepository, adapter, PersistenceMapper (@AfterMapping)
     - Infrastructure web: controller (5 endpoints, Spring Security integrado), web DTOs, web mapper, exception handler
-- **Students domain** de los otros 3 agregados completo (health, enrollment, records)
+- **Students `health/`** — las 3 capas completas:
+    - Domain: `HealthRecordId` refactorizado a record Java 17, puerto corregido a VOs tipados, `HealthRecordNotFoundException`
+    - Application: `HealthRecordResponse` (con flags calculados), `UpdateHealthRecordRequest` (PATCH semántico), mapper, 2 use cases
+    - Infrastructure persistence: entity (emergency_contact_name concatenado, @PrePersist), JpaRepository, adapter, PersistenceMapper (@AfterMapping para FullName+PhoneNumber)
+    - Infrastructure web: `HealthRecordWebDto` contenedora, mapper, controller (GET/PATCH), exception handler (ProblemDetail 404/422)
+- **Students domain** de los otros 2 agregados completo (enrollment, records)
 - Flyway V1–V7, V10–V14 ejecutados
 
 ### ⏳ Pendiente
 
-- [ ] Application + Infrastructure `students/health/` ← **próximo**
-- [ ] Application + Infrastructure `students/enrollment/`
+- [ ] Application + Infrastructure `students/enrollment/` ← **próximo**
 - [ ] Application + Infrastructure `students/records/`
 - [ ] Agregado `students/parents/` — completo (domain + application + infrastructure)
 - [ ] Teachers — asignación a cursos
@@ -314,6 +356,7 @@ mvn spring-boot:run -Dspring-boot.run.profiles=dev
 
 | Decisión | Razón |
 |----------|-------|
+| **emergency_contact_name concatenado** | Schema V10 tiene columna única — se concatena "firstName lastName", se separa en @AfterMapping |
 | **Records Java 17 para VOs** | Inmutabilidad nativa, equals/hashCode/toString sin boilerplate |
 | **of() como factory principal** | Estándar del proyecto — `from()` como alias de compatibilidad |
 | **UuidBinaryConverter en shared/** | Un solo converter para todos los BCs — no duplicar por módulo |
@@ -334,5 +377,5 @@ mvn spring-boot:run -Dspring-boot.run.profiles=dev
 ---
 
 **Última actualización**: Marzo 2026
-**Versión**: 2.3.0
-**Estado**: En desarrollo activo — Students personal COMPLETO (domain + application + infrastructure)
+**Versión**: 2.4.0
+**Estado**: En desarrollo activo — Students personal ✅ + Students health ✅ COMPLETO

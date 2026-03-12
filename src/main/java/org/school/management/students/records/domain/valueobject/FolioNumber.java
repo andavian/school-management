@@ -1,7 +1,5 @@
 // src/main/java/org/school/management/students/enrollment/domain/valueobject/FolioNumber.java
-package org.school.management.students.enrollment.domain.valueobject;
-
-import org.school.management.shared.domain.exception.DomainException;
+package org.school.management.students.records.domain.valueobject;
 
 public record FolioNumber(String value) {
     public FolioNumber {

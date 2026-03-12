@@ -10,7 +10,7 @@
 Sistema de gestión escolar para el **IPET 132** (Argentina).
 **Stack:** Java 17 + Spring Boot 3.2.x + Spring Security 6 + MySQL 8
 **Package raíz:** `org.school.management`
-**Estado actual:** Auth ✅ + Geography ✅ + Academic ✅ + Students personal ✅ COMPLETO (domain + application + infrastructure)
+**Estado actual:** Auth ✅ + Geography ✅ + Academic ✅ + Students personal ✅ + Students health ✅ COMPLETO (domain + application + infrastructure)
 
 ---
 
@@ -560,13 +560,29 @@ students/personal/
 15. Commit → retornar StudentResponse via getStudentByIdUseCase.buildResponse(student)
 ```
 
-#### `students/health/` — Domain ✅ completo | Application + Infrastructure ⏳ próximo
+#### `students/health/` — ✅ COMPLETO (domain + application + infrastructure)
 
 - `StudentHealthRecord` — `@Builder + @Getter`, factory method `create(builder)`
 - `BloodType` enum — tiene `fromString(String)` que busca por `displayName` (A+, B-, etc.)
   → En el DTO: `@Pattern(regexp = "^(A|B|AB|O)[+-]$")` valida el formato
-- `HealthRecordId` — record UUID con `of()`, `from()`, `generate()`
-- `StudentHealthRecordRepository` — `findByStudentId(StudentPersonalDataId)`, `existsByStudentId()`
+  → Se almacena en BD como nombre del enum (A_POSITIVE) — conversión en PersistenceMapper
+- `HealthRecordId` — **record Java 17** con `of()`, `from(UUID)`, `from(String)`, `generate()`
+  ← Refactorizado de Lombok `@Value` a `record` en esta iteración
+- `StudentHealthRecordRepository` — puerto corregido: recibe `HealthRecordId` y `StudentPersonalDataId` (no UUID crudo)
+- `HealthRecordNotFoundException` — factory methods `byStudentId(UUID)` y `byHealthRecordId(UUID)`
+- Application: `HealthRecordResponse`, `UpdateHealthRecordRequest` (PATCH semántico — campos null conservan valor actual)
+- `StudentHealthRecordApplicationMapper` — domain → response, flags calculados del dominio (hasAllergies, etc.)
+- `GetHealthRecordByStudentIdUseCase` — `@Transactional(readOnly = true)`
+- `UpdateHealthRecordUseCase` — reconstruye el objeto via builder (no factory `create()` — es actualización, no creación); preserva `createdAt`
+- `StudentHealthRecordEntity` — `emergency_contact_name` almacena "firstName lastName" concatenado (columna única del schema V10)
+- `StudentHealthRecordPersistenceMapper` — `@AfterMapping` reconstruye `FullName` (split por primer espacio) y `PhoneNumber`
+- `HealthRecordController` — 2 endpoints: `GET /api/admin/students/{studentId}/health` y `PATCH /api/admin/students/{studentId}/health`
+- `HealthRecordWebDto` — clase contenedora con `UpdateHealthRecordWebRequest` y `HealthRecordWebResponse`
+- `HealthRecordExceptionHandler` — ProblemDetail 404 (`HealthRecordNotFoundException`) y 422 (`IllegalArgumentException`)
+
+**Decisión de diseño — contacto de emergencia:** La tabla V10 tiene una sola columna `emergency_contact_name VARCHAR(200)`.
+Se optó por concatenar "firstName lastName" en esa columna (Opción A) en lugar de crear una migración V15.
+La separación se hace en `@AfterMapping`: split por primer espacio, primer token = firstName, resto = lastName.
 
 #### `students/enrollment/` — Domain ✅ completo | Application + Infrastructure ⏳
 
@@ -828,38 +844,45 @@ mvn clean package -DskipTests                               # generar JAR
 - `students/personal/` — **COMPLETO**: domain ✅ + application ✅ + infrastructure ✅
     - Persistence: entity (UUID @Id + @Convert, Gender directo, @PrePersist), JpaRepository, adapter, PersistenceMapper (@AfterMapping)
     - Web: controller (5 endpoints, Spring Security integrado), web DTOs, web mapper, exception handler (ProblemDetail)
+- `students/health/` — **COMPLETO**: domain ✅ + application ✅ + infrastructure ✅
+    - Domain: HealthRecordId (record Java 17, refactorizado), HealthRecordNotFoundException, puerto corregido (VOs no UUID crudo)
+    - Application: HealthRecordResponse, UpdateHealthRecordRequest, mapper, GetHealthRecordByStudentIdUseCase, UpdateHealthRecordUseCase (PATCH semántico)
+    - Persistence: entity (@PrePersist/@PreUpdate, emergency_contact_name concatenado), JpaRepository, adapter, PersistenceMapper (@AfterMapping para FullName+PhoneNumber)
+    - Web: HealthRecordWebDto (contenedora), HealthRecordWebMapper, HealthRecordController (2 endpoints GET/PATCH), HealthRecordExceptionHandler (ProblemDetail 404/422)
 - Flyway V1–V7, V10–V12, V14 ejecutados
 - Seeders, OpenAPI
 
 ### ⏳ En construcción
 
-- `students/health/` — application + infrastructure layers ← **próximo**
-- `students/enrollment/` — application + infrastructure layers
+- `students/enrollment/` — application + infrastructure layers ← **próximo**
 - `students/records/` — application + infrastructure layers
 - `students/parents/` — todo (domain, application, infrastructure) — TODO en CreateStudentUseCase pasos 12-13
 - `teachers/` — asignación a cursos
 - Calificaciones por período y promedio final
 - Rate limiting, auditoría, métricas, email service (password aleatorio para padres)
 
-### 🎯 Próximo paso — `students/health/` application + infrastructure
+### 🎯 Próximo paso — `students/enrollment/` application + infrastructure
 
 ```
-students/health/
+students/enrollment/
 ├── application/
-│   ├── dto/request/   UpdateHealthRecordRequest.java
-│   ├── dto/response/  HealthRecordResponse.java
-│   ├── mapper/        StudentHealthRecordApplicationMapper.java
-│   └── usecases/      GetHealthRecordByStudentIdUseCase.java
-│                      UpdateHealthRecordUseCase.java
+│   ├── dto/request/   UpdateEnrollmentRequest.java
+│   ├── dto/response/  EnrollmentResponse.java
+│   ├── mapper/        StudentEnrollmentApplicationMapper.java
+│   └── usecases/      GetEnrollmentByStudentIdUseCase.java
+│                      GetActiveEnrollmentUseCase.java
+│                      UpdateEnrollmentUseCase.java (cierre de ciclo, baja)
 └── infrastructure/
     ├── persistence/
-    │   ├── entity/    StudentHealthRecordEntity.java   ← mismo patrón que personal
-    │   ├── repository/ StudentHealthRecordJpaRepository.java
-    │   ├── adapter/   StudentHealthRecordRepositoryAdapter.java
-    │   └── mapper/    StudentHealthRecordPersistenceMapper.java
+    │   ├── entity/    StudentEnrollmentEntity.java
+    │   ├── repository/ StudentEnrollmentJpaRepository.java
+    │   ├── adapter/   StudentEnrollmentRepositoryAdapter.java
+    │   └── mapper/    StudentEnrollmentPersistenceMapper.java
     └── web/
-        ├── controller/  HealthRecordController.java
-        ├── dto/         HealthRecordWebDto.java
-        ├── mapper/      HealthRecordWebMapper.java
-        └── exception/   HealthRecordExceptionHandler.java (si tiene excepciones propias)
+        ├── controller/  EnrollmentController.java
+        ├── dto/         EnrollmentWebDto.java
+        ├── mapper/      EnrollmentWebMapper.java
+        └── exception/   EnrollmentExceptionHandler.java
 ```
+
+**Para iniciar:** adjuntar `StudentEnrollment.java`, `StudentEnrollmentRepository.java`, `EnrollmentId.java`, `EnrollmentType.java`, `EnrollmentStatus.java`
