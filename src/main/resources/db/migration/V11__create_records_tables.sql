@@ -1,11 +1,12 @@
 -- ================================================
--- AGREGADO: StudentRecord (legajo anual)
+-- AGREGADO: StudentRecord (legajo del estudiante)
+-- El legajo es ÚNICO POR ESTUDIANTE — no por año.
+-- El número de legajo ES el DNI del estudiante (8 dígitos).
 -- ================================================
--- Crear tabla de tipos de documentos
 CREATE TABLE document_types (
     document_type_id    BINARY(16) PRIMARY KEY,
-    name                VARCHAR(100) NOT NULL UNIQUE,  -- Certificado de Nacimiento, Vacunas
-    code                VARCHAR(20) NOT NULL UNIQUE,   -- CERT_NAC, VAC
+    name                VARCHAR(100) NOT NULL UNIQUE,
+    code                VARCHAR(20) NOT NULL UNIQUE,
     description         TEXT,
     is_mandatory        BOOLEAN NOT NULL DEFAULT FALSE,
     category            VARCHAR(50) NOT NULL,  -- PERSONAL, ACADEMIC, MEDICAL, LEGAL
@@ -18,12 +19,12 @@ CREATE TABLE document_types (
 
 CREATE TABLE student_records (
     record_id           BINARY(16) PRIMARY KEY,
-    student_id          BINARY(16) NOT NULL,
-    academic_year_id    BINARY(16) NOT NULL,
+    student_id          BINARY(16) NOT NULL UNIQUE,  -- Un legajo por estudiante
+    academic_year_id    BINARY(16) NOT NULL,          -- Año en que se creó el legajo
 
-    record_number       VARCHAR(50) NOT NULL UNIQUE, -- LEG-2024-001234
-    registry_id         BINARY(16) NOT NULL, -- del academic context
-    folio_number        INT NOT NULL, -- autoasignado
+    record_number       VARCHAR(8) NOT NULL UNIQUE,   -- DNI del estudiante (8 dígitos)
+    registry_id         BINARY(16) NOT NULL,
+    folio_number        INT NOT NULL,
 
     status              VARCHAR(20) NOT NULL DEFAULT 'INCOMPLETE',
     completeness_percentage DECIMAL(5,2) DEFAULT 0.00,
@@ -40,21 +41,17 @@ CREATE TABLE student_records (
     FOREIGN KEY (academic_year_id) REFERENCES academic_years(academic_year_id) ON DELETE RESTRICT,
     FOREIGN KEY (registry_id) REFERENCES qualification_registries(registry_id) ON DELETE RESTRICT,
 
-    UNIQUE KEY unique_student_year_record (student_id, academic_year_id),
-    INDEX idx_record_number (record_number),
-    INDEX idx_status (status)
+    UNIQUE KEY unique_student_record (student_id),       -- Un legajo por estudiante
+    UNIQUE KEY unique_record_number (record_number),     -- DNI único como número de legajo
+    INDEX idx_status (status),
+    INDEX idx_academic_year (academic_year_id)
 );
 
--- ================================================
--- Documentos del legajo (record_documents)
--- ================================================
--- Esta tabla se mantiene igual, ya que pertenece al agregado StudentRecord
 CREATE TABLE record_documents (
     document_id         BINARY(16) PRIMARY KEY,
     record_id           BINARY(16) NOT NULL,
     document_type_id    BINARY(16) NOT NULL,
 
-    -- Información del documento
     title               VARCHAR(200) NOT NULL,
     description         TEXT,
     file_path           VARCHAR(500) NOT NULL,
@@ -62,12 +59,10 @@ CREATE TABLE record_documents (
     file_size           BIGINT NOT NULL,
     mime_type           VARCHAR(100) NOT NULL,
 
-    -- Metadata
     issue_date          DATE,
     expiry_date         DATE,
     issuing_authority   VARCHAR(200),
 
-    -- Auditoría
     status              VARCHAR(20) NOT NULL DEFAULT 'PENDING',
     uploaded_at         TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     uploaded_by         BINARY(16) NOT NULL,
@@ -78,5 +73,6 @@ CREATE TABLE record_documents (
     FOREIGN KEY (uploaded_by) REFERENCES users(user_id) ON DELETE RESTRICT,
 
     INDEX idx_record_id (record_id),
-    INDEX idx_document_type (document_type_id)
+    INDEX idx_document_type (document_type_id),
+    INDEX idx_status (status)
 );

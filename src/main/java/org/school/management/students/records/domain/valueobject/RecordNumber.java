@@ -1,18 +1,22 @@
 package org.school.management.students.records.domain.valueobject;
 
-import java.util.regex.Pattern;
-
+/**
+ * Número de legajo del estudiante.
+ * Igual al DNI del estudiante — 8 dígitos numéricos.
+ * Es único por estudiante y permanente (no cambia entre años).
+ */
 public record RecordNumber(String value) {
-    private static final Pattern PATTERN = Pattern.compile("^LEG-\\d{4}-\\d{6}$");
 
     public RecordNumber {
         if (value == null || value.isBlank()) {
-            throw new IllegalArgumentException("Record number cannot be null or empty");
-        }
-
-        if (!PATTERN.matcher(value).matches()) {
             throw new IllegalArgumentException(
-                    "Invalid record number format. Expected: LEG-YYYY-NNNNNN, got: " + value
+                    "Record number cannot be null or empty"
+            );
+        }
+        value = value.trim();
+        if (!value.matches("^\\d{8}$")) {
+            throw new IllegalArgumentException(
+                    "Invalid record number format. Expected 8 digits (DNI), got: " + value
             );
         }
     }
@@ -21,26 +25,11 @@ public record RecordNumber(String value) {
         return new RecordNumber(value);
     }
 
-    public static RecordNumber create(int year, int sequence) {
-        if (year < 2000 || year > 2100) {
-            throw new IllegalArgumentException("Year must be between 2000 and 2100");
-        }
-
-        if (sequence < 1 || sequence > 999999) {
-            throw new IllegalArgumentException("Sequence must be between 1 and 999999");
-        }
-
-        String formatted = String.format("LEG-%04d-%06d", year, sequence);
-        return new RecordNumber(formatted);
-    }
-
-    public int extractYear() {
-        String yearPart = value.substring(4, 8);
-        return Integer.parseInt(yearPart);
-    }
-
-    public int extractSequence() {
-        String sequencePart = value.substring(9, 15);
-        return Integer.parseInt(sequencePart);
+    /**
+     * Crea el número de legajo a partir del DNI del estudiante.
+     * Es el factory method principal para este dominio.
+     */
+    public static RecordNumber fromDni(String dni) {
+        return new RecordNumber(dni);
     }
 }

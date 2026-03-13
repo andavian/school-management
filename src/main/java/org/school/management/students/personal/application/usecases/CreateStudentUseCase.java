@@ -179,7 +179,7 @@ public class CreateStudentUseCase {
         healthRecordRepository.save(healthRecord);
         log.debug("StudentHealthRecord created — studentId: {}", studentId.value());
 
-        // ── Pasos 10 & 11: Generar número de legajo y crear StudentRecord ──
+// ── Pasos 10 & 11: Crear StudentRecord ────────────────────────────
         var activeRegistry = registryRepository
                 .findActiveRegistryForYear(academicYear.getAcademicYearId())
                 .orElseThrow(() -> new IllegalStateException(
@@ -187,11 +187,8 @@ public class CreateStudentUseCase {
                                 + academicYear.getAcademicYearId().value()
                 ));
 
-        String generatedNumber = registryNumberGenerator.generate(
-                academicYear.getAcademicYearId(),
-                academicYear.getYear().value()
-        );
-        RecordNumber recordNumber = RecordNumber.of(generatedNumber);
+        // El número de legajo ES el DNI del estudiante — único y permanente
+        RecordNumber recordNumber = RecordNumber.fromDni(request.dni());
 
         StudentRecord studentRecord = StudentRecord.create(
                 StudentRecord.builder()
@@ -200,12 +197,13 @@ public class CreateStudentUseCase {
                         .academicYearId(AcademicYearId.of(academicYear.getAcademicYearId().value()))
                         .recordNumber(recordNumber)
                         .registryId(RegistryId.of(activeRegistry.getRegistryId().value()))
-                        .folioNumber(folioNumber)
+                        .folioNumber(folioNumber)  // ← asignado por FolioAssignmentService en paso 5
                         .documents(new ArrayList<>())
         );
 
         studentRecordRepository.save(studentRecord);
-        log.debug("StudentRecord created — number: {}", recordNumber.value());
+        log.debug("StudentRecord created — recordNumber (DNI): {}, folio: {}",
+                recordNumber.value(), folioNumber);
 
         // ── Pasos 12 & 13: Parent + StudentParent ─────────────────────────
         // TODO: implementar cuando el agregado parents/ esté desarrollado
