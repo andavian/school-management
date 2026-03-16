@@ -16,4 +16,6 @@ public interface ParentJpaRepository
     boolean existsByDni(String dni);
 
     boolean existsByEmail(String email);
+
+    boolean existsByCuil(String cuil);
 }

@@ -11,7 +11,6 @@ import java.util.UUID;
  */
 public record CreateParentRequest(
 
-        // ── Identidad ─────────────────────────────────────────────────────
         @NotBlank(message = "El nombre es obligatorio")
         @Size(min = 2, max = 100)
         @Pattern(regexp = "^[a-zA-ZáéíóúÁÉÍÓÚñÑ\\s]+$", message = "Solo letras")
@@ -26,6 +25,10 @@ public record CreateParentRequest(
         @Pattern(regexp = "^\\d{8}$", message = "El DNI debe tener exactamente 8 dígitos")
         String dni,
 
+        @NotBlank(message = "El CUIL es obligatorio")                  // ← NUEVO
+        @Pattern(regexp = "\\d{11}", message = "CUIL must be exactly 11 digits")
+        String cuil,                                                    // ← NUEVO
+
         @Past(message = "La fecha de nacimiento debe ser una fecha pasada")
         LocalDate birthDate,
 
@@ -35,7 +38,6 @@ public record CreateParentRequest(
         @Size(max = 100)
         String nationality,
 
-        // ── Contacto ──────────────────────────────────────────────────────
         @NotBlank(message = "El email es obligatorio para padres")
         @Email(message = "Formato de email inválido")
         @Size(max = 254)
@@ -48,7 +50,6 @@ public record CreateParentRequest(
         @Pattern(regexp = "^[+]?[\\d\\s\\-()]{7,20}$", message = "Teléfono alternativo inválido")
         String phoneAlt,
 
-        // ── Domicilio ─────────────────────────────────────────────────────
         @Size(max = 200)
         String addressStreet,
 
@@ -62,12 +63,11 @@ public record CreateParentRequest(
         @Size(max = 10)
         String addressApartment,
 
-        UUID residencePlaceId,
+        UUID placeId,           // ← renombrado de residencePlaceId → placeId (alineado con BD)
 
         @Size(max = 10)
         String postalCode,
 
-        // ── Información laboral ───────────────────────────────────────────
         @Size(max = 100)
         String occupation,
 

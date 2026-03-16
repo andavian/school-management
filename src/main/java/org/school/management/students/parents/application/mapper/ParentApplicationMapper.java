@@ -20,6 +20,7 @@ public interface ParentApplicationMapper {
                 parent.getParentId().value(),
                 parent.getUserId().value(),
                 parent.getDni().value(),
+                parent.getCuil().formatted(),
                 parent.getFullName().firstName(),
                 parent.getFullName().lastName(),
                 parent.getFullName().getFullName(),

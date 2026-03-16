@@ -33,6 +33,10 @@ public final class ParentWebDto {
             @Pattern(regexp = "^\\d{8}$", message = "El DNI debe tener exactamente 8 dígitos")
             String dni,
 
+            @NotBlank(message = "El CUIL es obligatorio")               // ← NUEVO
+            @Pattern(regexp = "\\d{11}", message = "CUIL debe tener exactamente 11 dígitos")
+            String cuil,
+
             @Past(message = "La fecha de nacimiento debe ser una fecha pasada")
             LocalDate birthDate,
 
@@ -66,7 +70,7 @@ public final class ParentWebDto {
             @Size(max = 10)
             String addressApartment,
 
-            UUID residencePlaceId,
+            UUID placeId,
 
             @Size(max = 10)
             String postalCode,
@@ -123,7 +127,7 @@ public final class ParentWebDto {
             @Size(max = 10)
             String addressApartment,
 
-            UUID residencePlaceId,
+            UUID placeId,
 
             @Size(max = 10)
             String postalCode,
@@ -167,6 +171,7 @@ public final class ParentWebDto {
             UUID parentId,
             UUID userId,
             String dni,
+            String cuil,
             String firstName,
             String lastName,
             String fullName,
@@ -180,7 +185,7 @@ public final class ParentWebDto {
             String addressNumber,
             String addressFloor,
             String addressApartment,
-            UUID residencePlaceId,
+            UUID placeId,
             String postalCode,
             String occupation,
             String workplace,

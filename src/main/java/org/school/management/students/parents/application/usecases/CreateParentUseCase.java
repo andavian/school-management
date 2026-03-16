@@ -58,6 +58,10 @@ public class CreateParentUseCase {
         if (parentRepository.existsByDni(dni)) {
             throw ParentAlreadyExistsException.withDni(request.dni());
         }
+        Cuil cuil = Cuil.of(request.cuil());
+        if (parentRepository.existsByCuil(cuil.value())) {
+            throw ParentAlreadyExistsException.withCuil(request.cuil());
+        }
         if (parentRepository.existsByEmail(email)) {
             throw ParentAlreadyExistsException.withEmail(request.email());
         }
@@ -85,6 +89,7 @@ public class CreateParentUseCase {
                         .parentId(parentId)
                         .userId(userId)
                         .dni(dni)
+                        .cuil(cuil)
                         .fullName(FullName.of(request.firstName(), request.lastName()))
                         .birthDate(request.birthDate())
                         .gender(request.gender() != null
@@ -128,7 +133,7 @@ public class CreateParentUseCase {
     }
 
     private Address buildAddress(CreateParentRequest request) {
-        if (request.addressStreet() == null || request.residencePlaceId() == null) {
+        if (request.addressStreet() == null || request.placeId() == null) {  // ← fix
             return null;
         }
         return new Address(
@@ -136,7 +141,7 @@ public class CreateParentUseCase {
                 request.addressNumber(),
                 request.addressFloor(),
                 request.addressApartment(),
-                PlaceId.of(request.residencePlaceId()),
+                PlaceId.of(request.placeId()),   // ← fix
                 request.postalCode()
         );
     }

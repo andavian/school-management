@@ -19,4 +19,10 @@ public class ParentAlreadyExistsException extends DomainException {
                 "Parent already exists with email: " + email
         );
     }
+
+    public static ParentAlreadyExistsException withCuil(String cuil) {
+        return new ParentAlreadyExistsException(
+                "A parent already exists with CUIL: " + cuil
+        );
+    }
 }

@@ -15,6 +15,7 @@ public record ParentResponse(
 
         // Datos personales
         String dni,
+        String cuil,            // ← NUEVO
         String firstName,
         String lastName,
         String fullName,
@@ -32,7 +33,7 @@ public record ParentResponse(
         String addressNumber,
         String addressFloor,
         String addressApartment,
-        UUID residencePlaceId,
+        UUID placeId,           // ← renombrado de residencePlaceId
         String postalCode,
 
         // Información laboral

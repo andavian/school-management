@@ -23,5 +23,7 @@ public interface ParentRepository {
 
     boolean existsByEmail(Email email);
 
+    boolean existsByCuil(String cuil);    // ← NUEVO
+
     Parent save(Parent parent);
 }

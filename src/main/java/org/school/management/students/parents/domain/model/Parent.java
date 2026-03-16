@@ -38,7 +38,8 @@ public class Parent {
     private final UserId userId;
 
     // Datos personales
-    private final Dni dni;            // inmutable — identificador global
+    private final Dni dni;
+    private final Cuil cuil;
     private FullName fullName;
     private LocalDate birthDate;
     private Gender gender;
@@ -142,15 +143,14 @@ public class Parent {
         Objects.requireNonNull(builder.parentId,  "ParentId cannot be null");
         Objects.requireNonNull(builder.userId,    "UserId cannot be null");
         Objects.requireNonNull(builder.dni,       "Dni cannot be null");
+        Objects.requireNonNull(builder.cuil,      "Cuil cannot be null");   // ← NUEVO
         Objects.requireNonNull(builder.fullName,  "FullName cannot be null");
         Objects.requireNonNull(builder.email,     "Email is mandatory for parents");
         Objects.requireNonNull(builder.phone,     "Phone is mandatory for parents");
         Objects.requireNonNull(builder.createdBy, "CreatedBy cannot be null");
 
         if (builder.birthDate != null && builder.birthDate.isAfter(LocalDate.now())) {
-            throw new InvalidParentDataException(
-                    "Birth date cannot be in the future"
-            );
+            throw new InvalidParentDataException("Birth date cannot be in the future");
         }
 
         return builder.build();

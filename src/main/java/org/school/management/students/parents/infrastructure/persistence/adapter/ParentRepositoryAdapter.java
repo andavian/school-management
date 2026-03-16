@@ -48,6 +48,11 @@ public class ParentRepositoryAdapter implements ParentRepository {
     }
 
     @Override
+    public boolean existsByCuil(String cuil) {          // ← NUEVO
+        return jpaRepository.existsByCuil(cuil);
+    }
+
+    @Override
     public Parent save(Parent parent) {
         return mapper.toDomain(
                 jpaRepository.save(mapper.toEntity(parent))

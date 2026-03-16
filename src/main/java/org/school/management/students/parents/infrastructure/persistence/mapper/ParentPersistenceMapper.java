@@ -33,6 +33,7 @@ public interface ParentPersistenceMapper {
         entity.setParentId(domain.getParentId().value());
         entity.setUserId(domain.getUserId().value());
         entity.setDni(domain.getDni().value());
+        entity.setCuil(domain.getCuil().value());
         entity.setFirstName(domain.getFullName().firstName());
         entity.setLastName(domain.getFullName().lastName());
         entity.setBirthDate(domain.getBirthDate());
@@ -94,6 +95,7 @@ public interface ParentPersistenceMapper {
                 .parentId(ParentId.of(entity.getParentId()))
                 .userId(UserId.from(entity.getUserId()))
                 .dni(Dni.of(entity.getDni()))
+                .cuil(Cuil.of(entity.getCuil()))
                 .fullName(FullName.of(entity.getFirstName(), entity.getLastName()))
                 .birthDate(entity.getBirthDate())
                 .gender(entity.getGender())

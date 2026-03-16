@@ -37,6 +37,9 @@ public class ParentEntity {
     @Column(name = "dni", nullable = false, length = 8, unique = true)
     private String dni;
 
+    @Column(name = "cuil", nullable = false, unique = true, length = 11)
+    private String cuil;
+
     @Column(name = "birth_date")
     private LocalDate birthDate;
 
