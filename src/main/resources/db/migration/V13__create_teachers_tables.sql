@@ -5,6 +5,8 @@ CREATE TABLE teachers (
     -- Datos personales
     first_name          VARCHAR(100) NOT NULL,
     last_name           VARCHAR(100) NOT NULL,
+    dni                 VARCHAR(8) NOT NULL UNIQUE,
+    cuil                VARCHAR(11) NOT NULL UNIQUE,
     email               VARCHAR(254) NOT NULL UNIQUE,
     birth_date          DATE,
     birth_place_id      BINARY(16),

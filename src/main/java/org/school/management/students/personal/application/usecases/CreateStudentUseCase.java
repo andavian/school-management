@@ -29,6 +29,8 @@ import org.school.management.students.health.domain.model.StudentHealthRecord;
 import org.school.management.students.health.domain.repository.StudentHealthRecordRepository;
 import org.school.management.students.health.domain.valueobject.BloodType;
 import org.school.management.students.health.domain.valueobject.HealthRecordId;
+import org.school.management.students.parents.domain.repository.ParentRepository;
+import org.school.management.students.parents.domain.repository.StudentParentRepository;
 import org.school.management.students.personal.application.dto.request.CreateStudentRequest;
 import org.school.management.students.personal.application.dto.response.StudentResponse;
 import org.school.management.students.personal.domain.exception.StudentAlreadyExistsException;
@@ -41,6 +43,13 @@ import org.school.management.students.records.domain.valueobject.RecordId;
 import org.school.management.students.records.domain.valueobject.RecordNumber;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.school.management.students.parents.domain.model.Parent;
+import org.school.management.students.parents.domain.model.StudentParent;
+import org.school.management.students.parents.domain.repository.ParentRepository;
+import org.school.management.students.parents.domain.repository.StudentParentRepository;
+import org.school.management.students.parents.domain.valueobject.ParentId;
+import org.school.management.students.parents.domain.valueobject.ParentRelationship;
+import org.school.management.students.parents.domain.valueobject.StudentParentId;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -62,6 +71,8 @@ public class CreateStudentUseCase {
     private final GradeLevelRepository gradeLevelRepository;
     private final UserRepository userRepository;
     private final QualificationRegistryRepository registryRepository;
+    private final ParentRepository parentRepository;
+    private final StudentParentRepository studentParentRepository;
 
     // ── Domain Services ───────────────────────────────────────────────────
     private final FolioAssignmentService folioAssignmentService;
@@ -206,11 +217,33 @@ public class CreateStudentUseCase {
                 recordNumber.value(), folioNumber);
 
         // ── Pasos 12 & 13: Parent + StudentParent ─────────────────────────
-        // TODO: implementar cuando el agregado parents/ esté desarrollado
-        // - Buscar Parent por DNI: request.parent().dni()
-        // - Si no existe: crear User (password aleatorio seguro) + crear Parent
-        // - Crear StudentParent: relationship, isPrimaryContact, isAuthorizedPickup
-        log.warn("Parent/StudentParent creation pending — parents aggregate not yet implemented");
+        var parentRequest = request.parent();
+        Dni parentDni = Dni.of(parentRequest.dni());
+
+        // Paso 12: Buscar parent por DNI — si no existe, crear User + Parent
+        Parent parent = parentRepository.findByDni(parentDni)
+                .orElseGet(() -> createNewParent(parentRequest, createdBy));
+
+        // Paso 13: Crear StudentParent
+        boolean isPrimary = Boolean.TRUE.equals(parentRequest.isPrimaryContact());
+
+        StudentParent studentParent = StudentParent.create(
+                StudentParent.builder()
+                        .studentParentId(StudentParentId.generate())
+                        .studentId(studentId)
+                        .parentId(parent.getParentId())
+                        .relationship(ParentRelationship.valueOf(parentRequest.relationship()))
+                        .isPrimaryContact(isPrimary)
+                        .isAuthorizedPickup(
+                                !Boolean.FALSE.equals(parentRequest.isAuthorizedPickup())
+                        )
+                        .isEmergencyContact(true)  // siempre true en inscripción inicial
+        );
+        studentParentRepository.save(studentParent);
+        log.debug("StudentParent created — studentId: {}, parentId: {}",
+                studentId.value(), parent.getParentId().value());
+
+
 
         // ── Paso 14: Crear StudentEnrollment ──────────────────────────────
         StudentEnrollment enrollment = StudentEnrollment.create(
@@ -232,5 +265,55 @@ public class CreateStudentUseCase {
                 studentId.value(), request.dni());
 
         return getStudentByIdUseCase.buildResponse(student);
+    }
+
+    private Parent createNewParent(
+            CreateStudentRequest.ParentRequest request,
+            UserId createdBy) {
+
+        log.debug("Parent not found — creating new parent with DNI: {}", request.dni());
+
+        // Generar password aleatorio seguro
+        String rawPassword = generateSecurePassword();
+        PlainPassword plainPassword = PlainPassword.of(rawPassword);
+
+        // Crear User con rol PARENT
+        Role parentRole = Role.create(RoleName.parent());
+        Dni parentDni = Dni.of(request.dni());
+        User parentUser = User.create(
+                parentDni, plainPassword, Set.of(parentRole), passwordEncoder
+        );
+        User savedParentUser = userRepository.save(parentUser);
+
+        // Crear Parent
+        ParentId parentId = ParentId.generate();
+        Parent parent = Parent.create(
+                Parent.builder()
+                        .parentId(parentId)
+                        .userId(savedParentUser.getUserId())
+                        .dni(parentDni)
+                        .fullName(FullName.of(request.firstName(), request.lastName()))
+                        .email(Email.of(request.email()))
+                        .phone(PhoneNumber.of(request.phone()))
+                        .createdBy(createdBy)
+        );
+
+        Parent saved = parentRepository.save(parent);
+
+        // TODO: enviar email con credenciales al padre
+        log.warn("New parent created — pending email notification. parentId: {}",
+                parentId.value());
+
+        return saved;
+    }
+
+    private String generateSecurePassword() {
+        java.security.SecureRandom random = new java.security.SecureRandom();
+        byte[] bytes = new byte[12];
+        random.nextBytes(bytes);
+        return java.util.Base64.getUrlEncoder()
+                .withoutPadding()
+                .encodeToString(bytes)
+                .substring(0, 8) + "Aa1!";
     }
 }

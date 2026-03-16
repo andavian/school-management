@@ -6,6 +6,7 @@ CREATE TABLE parents (
     first_name          VARCHAR(100) NOT NULL,
     last_name           VARCHAR(100) NOT NULL,
     dni                 VARCHAR(8) NOT NULL UNIQUE,
+    cuil                VARCHAR(11) NOT NULL UNIQUE,
     birth_date          DATE,
     gender              VARCHAR(10),
     nationality         VARCHAR(100) DEFAULT 'Argentina',
