@@ -95,33 +95,42 @@ public class JavaMailEmailService implements EmailService {
             String temporaryPassword,
             String activationLink) {
 
-        return """
-                Estimado/a %s %s,
-                
-                Le informamos que se ha creado una cuenta docente en el sistema de gestión escolar del %s.
-                
-                Sus credenciales de acceso son:
-                
-                  Usuario (DNI): %s
-                  Contraseña temporal: %s
-                
-                Para activar su cuenta, por favor ingrese al siguiente enlace:
-                
-                  %s
-                
-                Este enlace es válido por 48 horas. Si no activa su cuenta en ese plazo,
-                comuníquese con la administración del establecimiento.
-                
-                Por seguridad, le recomendamos cambiar su contraseña al ingresar por primera vez.
-                
-                Saludos,
-                Equipo de administración
+        String activationSection = (activationLink != null && !activationLink.isBlank())
+                ? """
+              Para activar su cuenta, ingrese al siguiente enlace:
+              
                 %s
-                
-                ---
-                Este es un mensaje automático. Por favor no responda a este correo.
-                """.formatted(firstName, lastName, schoolName, dni, temporaryPassword,
-                activationLink, schoolName);
+              
+              Este enlace es válido por 48 horas.
+              """.formatted(activationLink)
+                : """
+              Para activar su cuenta, comuníquese con la administración \
+              del establecimiento quien le indicará los pasos a seguir.
+              """;
+
+        return """
+            Estimado/a %s %s,
+            
+            Le informamos que se ha creado una cuenta docente en el sistema \
+            de gestión escolar del %s.
+            
+            Sus credenciales de acceso son:
+            
+              Usuario (DNI): %s
+              Contraseña temporal: %s
+            
+            %s
+            Por seguridad, le recomendamos cambiar su contraseña al ingresar \
+            por primera vez.
+            
+            Saludos,
+            Equipo de administración
+            %s
+            
+            ---
+            Este es un mensaje automático. Por favor no responda a este correo.
+            """.formatted(firstName, lastName, schoolName, dni, temporaryPassword,
+                activationSection, schoolName);
     }
 
     private String buildParentCredentialsBody(

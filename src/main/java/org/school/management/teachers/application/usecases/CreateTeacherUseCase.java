@@ -98,16 +98,13 @@ public class CreateTeacherUseCase {
         // 6. Persistir
         Teacher savedTeacher = teacherRepository.save(teacher);
 
-        String activationLink = frontendUrl + "/activate-account?token="
-                + authResponse.confirmationToken();  // el token ya viene en authResponse
-
         emailService.sendTeacherInvitation(
                 request.email(),
                 request.firstName(),
                 request.lastName(),
                 request.dni(),
-                authResponse.temporaryPassword(),    // viene de CreateTeacherResponse de auth/
-                activationLink
+                authResponse.temporaryPassword(),
+                ""      // activationLink vacío — pendiente cuando se agregue confirmationToken a authResponse
         );
 
         log.info("Teacher created successfully. DNI: {} - ID: {}",
