@@ -15,21 +15,23 @@ Sistema de gestión escolar para el **IPET 132** (Argentina) que permite:
 - ✅ Gestión de geografía argentina (países, provincias, localidades)
 - ✅ Gestión académica completa (años, orientaciones, cursos, materias, legajo)
 - ✅ Módulo de estudiantes — **COMPLETO** (personal, salud, inscripción, legajo, padres)
-- ⏳ Módulo de docentes (en construcción)
-- ⏳ Calificaciones por período y promedio final
+- ✅ Módulo de docentes — **COMPLETO**
+- ✅ Servicio de email — **COMPLETO** (OCI SMTP, texto plano, async)
+- ⏳ Módulo de calificaciones (en diseño)
 
 ### 🎯 Características Principales
 
 - **DNI como username** — sistema adaptado a la realidad argentina (siempre 8 dígitos)
-- **CUIL validado** — dígito verificador ANSES/AFIP con compatibilidad con DNI embebido
+- **CUIL validado** — dígito verificador ANSES/AFIP, obligatorio en students, teachers y parents
 - **Email opcional para estudiantes** — menores sin email propio
-- **Email obligatorio para padres** — notificaciones y credenciales
+- **Email obligatorio para padres y profesores** — notificaciones y credenciales
 - **Records Java 17** — todos los Value Objects son `record` nativo
 - **Token Rotation** — máxima seguridad en refresh tokens
 - **Flujo transaccional de 15 pasos** — creación de estudiante TODO O NADA
 - **BINARY(16) para UUIDs** — conversión transparente via `UuidBinaryConverter` compartido
 - **ProblemDetail (RFC 9457)** — respuestas de error estandarizadas en toda la API
 - **Sin delete físico** — bajas lógicas via `StudentEnrollment`
+- **Email asíncrono** — nunca bloquea ni revierte transacciones de negocio
 
 ---
 
@@ -62,12 +64,13 @@ Sistema de gestión escolar para el **IPET 132** (Argentina) que permite:
 
 ```
 shared/         → Shared Kernel (Dni, Cuil, Email, PhoneNumber, Address, Gender,
-                                 IDs geográficos, UuidBinaryConverter)
+                                 IDs geográficos, UuidBinaryConverter, EmailService)
 auth/           → Autenticación y autorización ✅
 geography/      → Lugares geográficos (País, Provincia, Localidad) ✅
 academic/       → Estructura académica (Años, Cursos, Materias) ✅
 students/       → Gestión de estudiantes ✅ COMPLETO
-teachers/       → Gestión de profesores ⏳
+teachers/       → Gestión de profesores ✅ COMPLETO
+grades/         → Calificaciones ⏳ próximo
 ```
 
 ---
@@ -77,16 +80,17 @@ teachers/       → Gestión de profesores ⏳
 | Tecnología | Versión | Uso |
 |------------|---------|-----|
 | Java | 17 | Records, Value Objects inmutables, pattern matching instanceof |
-| Spring Boot | 3.2.x | Framework principal |
+| Spring Boot | 3.3.4 | Framework principal |
 | Spring Security | 6.x | Auth/Authz + JWT |
 | Spring Data JPA | Boot managed | Persistencia |
 | MySQL | 8 | Producción |
 | H2 | test scope | Tests |
-| jjwt | 0.12.3 | JWT access + refresh tokens |
-| MapStruct | 1.5.5.Final | Mapeo type-safe entre capas (3 capas: persistence/application/web) |
+| jjwt | 0.12.6 | JWT access + refresh tokens |
+| MapStruct | 1.6.2 | Mapeo type-safe entre capas (3 capas: persistence/application/web) |
 | Lombok | Boot managed | Solo modelos complejos (@Builder, @Getter) |
 | Flyway | Boot managed | Migraciones de esquema |
-| SpringDoc OpenAPI | latest | Swagger UI |
+| SpringDoc OpenAPI | 2.5.0 | Swagger UI |
+| spring-boot-starter-mail | Boot managed | SMTP via JavaMailSender (OCI Email Delivery) |
 | JUnit 5 + Mockito | Boot managed | Testing |
 
 ---
@@ -98,126 +102,57 @@ src/main/java/org/school/management/
 │
 ├── shared/                                          # Shared Kernel
 │   ├── person/domain/valueobject/
-│   │   ├── Dni.java                                 # DNI argentino (exactamente 8 dígitos)
-│   │   ├── FullName.java                            # record: firstName + lastName
-│   │   ├── Gender.java                              # Enum puro — usar directo en entidades JPA
-│   │   ├── Nationality.java, PhoneNumber.java, Email.java
-│   │   ├── Cuil.java                                # CUIL con validación dígito verificador ANSES/AFIP
-│   │   ├── CuilType.java
-│   │   └── Address.java                             # Domicilio postal (street, number, PlaceId, CP...)
+│   │   ├── Dni.java, Cuil.java, FullName.java
+│   │   ├── Gender.java, Nationality.java
+│   │   ├── PhoneNumber.java, Email.java
+│   │   └── Address.java
 │   ├── geography/domain/valueobject/
 │   │   └── CountryId.java, ProvinceId.java, PlaceId.java
-│   ├── domain/exception/
-│   │   └── DomainException.java
-│   └── infrastructure/persistence/converter/
-│       └── UuidBinaryConverter.java                 # AttributeConverter UUID ↔ BINARY(16)
+│   ├── domain/
+│   │   ├── exception/DomainException.java
+│   │   └── service/EmailService.java               # Puerto — sin dependencias Spring
+│   └── infrastructure/
+│       ├── persistence/converter/
+│       │   └── UuidBinaryConverter.java            # UUID ↔ BINARY(16)
+│       ├── email/
+│       │   └── JavaMailEmailService.java           # OCI SMTP + @Async
+│       └── config/
+│           └── AsyncConfig.java                    # @EnableAsync
 │
 ├── auth/                                            # BOUNDED CONTEXT: Autenticación ✅
-│   └── domain/model/
-│       └── User.java                                # Implementa UserDetails directamente
 │
 ├── geography/                                       # BOUNDED CONTEXT: Geografía ✅
 │
 ├── academic/                                        # BOUNDED CONTEXT: Académico ✅
 │   └── domain/service/
-│       ├── FolioAssignmentService.java              # assignNextFolio() — @Transactional
-│       └── RegistryNumberGenerator.java             # solo para QualificationRegistry
+│       ├── FolioAssignmentService.java
+│       └── RegistryNumberGenerator.java
 │
-└── students/                                        # BOUNDED CONTEXT: Estudiantes ✅ COMPLETO
-    ├── personal/                                    # ✅ COMPLETO
-    │   ├── domain/
-    │   │   ├── model/StudentPersonalData.java
-    │   │   ├── valueobject/StudentPersonalDataId.java
-    │   │   ├── repository/StudentPersonalDataRepository.java
-    │   │   └── exception/  StudentNotFoundException, StudentAlreadyExistsException,
-    │   │                   InvalidStudentDataException
-    │   ├── application/
-    │   │   ├── dto/request/  CreateStudentRequest.java  # incluye HealthDataRequest + ParentRequest
-    │   │   │                 UpdateStudentRequest.java
-    │   │   ├── dto/response/ StudentResponse.java, StudentSummaryResponse.java
-    │   │   ├── mapper/       StudentPersonalDataApplicationMapper.java
-    │   │   └── usecases/     GetStudentByIdUseCase, GetStudentByDniUseCase,
-    │   │                     SearchStudentsUseCase, UpdateStudentUseCase,
-    │   │                     CreateStudentUseCase  ← orquestador 15 pasos ✅ COMPLETO
-    │   └── infrastructure/
-    │       ├── persistence/  entity, JpaRepository, adapter, PersistenceMapper
-    │       └── web/          controller (5 endpoints), StudentWebDto, mapper, exception handler
-    │
-    ├── health/                                      # ✅ COMPLETO
-    │   ├── domain/
-    │   │   ├── model/StudentHealthRecord.java
-    │   │   ├── valueobject/  HealthRecordId, BloodType (fromString por displayName)
-    │   │   ├── repository/StudentHealthRecordRepository.java
-    │   │   └── exception/HealthRecordNotFoundException
-    │   ├── application/
-    │   │   ├── dto/          UpdateHealthRecordRequest (PATCH semántico), HealthRecordResponse
-    │   │   ├── mapper/       StudentHealthRecordApplicationMapper
-    │   │   └── usecases/     GetHealthRecordByStudentIdUseCase, UpdateHealthRecordUseCase
-    │   └── infrastructure/
-    │       ├── persistence/  entity (emergency_contact_name concatenado), adapter, mapper
-    │       └── web/          HealthRecordWebDto, mapper, controller (GET/PATCH), exception handler
-    │
-    ├── enrollment/                                  # ✅ COMPLETO
-    │   ├── domain/
-    │   │   ├── model/StudentEnrollment.java          # complete(), withdraw(), graduate()
-    │   │   ├── valueobject/  EnrollmentId, EnrollmentStatus, EnrollmentType
-    │   │   ├── repository/StudentEnrollmentRepository.java  # sin delete físico
-    │   │   └── exception/    EnrollmentNotFoundException, EnrollmentAlreadyCompletedException,
-    │   │                     EnrollmentAlreadyWithdrawnException, InvalidEnrollmentException
-    │   ├── application/
-    │   │   ├── dto/          UpdateEnrollmentRequest, EnrollmentResponse
-    │   │   ├── mapper/       StudentEnrollmentApplicationMapper
-    │   │   └── usecases/     GetEnrollmentByStudentIdUseCase, GetActiveEnrollmentUseCase,
-    │   │                     UpdateEnrollmentUseCase (cierre de ciclo + baja)
-    │   └── infrastructure/
-    │       ├── persistence/  entity, JpaRepository (JPQL para checks), adapter, mapper
-    │       └── web/          EnrollmentWebDto, mapper, controller (3 endpoints), exception handler
-    │
-    ├── records/                                     # ✅ COMPLETO
-    │   ├── domain/
-    │   │   ├── model/        StudentRecord.java, RecordDocument.java, DocumentType.java
-    │   │   ├── valueobject/  RecordId, RecordNumber (= DNI), DocumentId, DocumentTypeId,
-    │   │   │                 DocumentStatus, DocumentCategory, RecordStatus
-    │   │   ├── repository/   StudentRecordRepository  # findByStudentId — un legajo por estudiante
-    │   │   └── exception/    RecordNotFoundException, DocumentNotFoundException,
-    │   │                     RecordAlreadyApprovedException, DocumentAlreadyApprovedException,
-    │   │                     IncompleteRecordException, RecordNotReadyForApprovalException
-    │   ├── application/
-    │   │   ├── dto/          AddDocumentRequest, UpdateRecordStatusRequest,
-    │   │   │                 RecordDocumentResponse, StudentRecordResponse
-    │   │   ├── mapper/       StudentRecordApplicationMapper (métodos default)
-    │   │   └── usecases/     GetRecordByStudentIdUseCase, AddDocumentToRecordUseCase,
-    │   │                     ReviewDocumentUseCase, UpdateRecordStatusUseCase
-    │   └── infrastructure/
-    │       ├── persistence/  StudentRecordEntity, RecordDocumentEntity,
-    │       │                 StudentRecordJpaRepository, RecordDocumentJpaRepository,
-    │       │                 StudentRecordPersistenceMapper (default methods),
-    │       │                 StudentRecordRepositoryAdapter (sync manual de documentos)
-    │       └── web/          RecordWebDto, mapper, controller (4 endpoints),
-    │                         RecordExceptionHandler (7 handlers)
-    │
-    └── parents/                                     # ✅ COMPLETO
-        ├── domain/
-        │   ├── model/        Parent.java             # entidad global — un padre, múltiples hijos
-        │   │                 StudentParent.java       # vínculo con flags operativos
-        │   ├── valueobject/  ParentId, StudentParentId,
-        │   │                 ParentRelationship (FATHER, MOTHER, GUARDIAN, GRANDPARENT, OTHER)
-        │   ├── repository/   ParentRepository, StudentParentRepository
-        │   └── exception/    ParentNotFoundException, ParentAlreadyExistsException,
-        │                     DuplicatePrimaryContactException, InvalidParentDataException
-        ├── application/
-        │   ├── dto/          CreateParentRequest, UpdateParentRequest, LinkParentRequest,
-        │   │                 ParentResponse, StudentParentResponse
-        │   ├── mapper/       ParentApplicationMapper (métodos default)
-        │   └── usecases/     GetParentsByStudentIdUseCase, CreateParentUseCase,
-        │                     UpdateParentUseCase, LinkParentToStudentUseCase
-        └── infrastructure/
-            ├── persistence/  ParentEntity, StudentParentEntity,
-            │                 ParentJpaRepository, StudentParentJpaRepository,
-            │                 ParentPersistenceMapper, ParentRepositoryAdapter,
-            │                 StudentParentRepositoryAdapter
-            └── web/          ParentWebDto, ParentWebMapper, ParentController (4 endpoints),
-                              ParentExceptionHandler (5 handlers)
+├── students/                                        # BOUNDED CONTEXT: Estudiantes ✅ COMPLETO
+│   ├── personal/   ✅
+│   ├── health/     ✅
+│   ├── enrollment/ ✅
+│   ├── records/    ✅
+│   └── parents/    ✅ (cuil agregado, placeId corregido)
+│
+└── teachers/                                        # BOUNDED CONTEXT: Profesores ✅ COMPLETO
+    ├── domain/
+    │   ├── model/Teacher.java
+    │   ├── valueobject/ TeacherId, EmploymentStatus, EmploymentType, TeacherSpecialization
+    │   ├── repository/TeacherRepository.java
+    │   └── exception/  TeacherNotFoundException, TeacherAlreadyExistsException,
+    │                   InvalidTeacherDataException
+    ├── application/
+    │   ├── dto/request/  CreateTeacherRequest, UpdateTeacherRequest
+    │   ├── dto/response/ TeacherResponse, TeacherSummaryResponse
+    │   ├── mapper/       TeacherApplicationMapper
+    │   └── usecases/     GetTeacherByIdUseCase, CreateTeacherUseCase,
+    │                     UpdateTeacherUseCase, SearchTeachersUseCase
+    └── infrastructure/
+        ├── persistence/  TeacherEntity, TeacherJpaRepository,
+        │                 TeacherPersistenceMapper, TeacherRepositoryAdapter
+        └── web/          TeacherWebDto, TeacherWebMapper,
+                          TeacherController, TeacherExceptionHandler
 ```
 
 ---
@@ -227,39 +162,41 @@ src/main/java/org/school/management/
 ### ✅ Auth — Autenticación y Autorización
 
 JWT con refresh tokens, rotación de tokens, blacklist, sesiones múltiples por dispositivo.
-`User` implementa `UserDetails` directamente — en controllers usar pattern matching Java 17:
-
-```java
-if (userDetails instanceof User user) { return user.getUserId().value(); }
-```
 
 ### ✅ Geography — Geografía Argentina
 
-Jerarquía País → Provincia → Localidad. Endpoints públicos para autocompletado en formularios.
+Jerarquía País → Provincia → Localidad.
 
 ### ✅ Academic — Estructura Académica
 
 Años lectivos, orientaciones, cursos (1°A–7°B), materias, registro de calificaciones.
-`FolioAssignmentService.assignNextFolio()` — asignación atómica y transaccional de folios.
+IPET 132 usa **2 períodos cuatrimestrales** por año.
+
+### ✅ Email Service
+
+Puerto `EmailService` en `shared/domain/service/` implementado por `JavaMailEmailService`.
+SMTP configurado para **OCI Email Delivery** en prod y **Mailhog** en local.
+Envío `@Async` — nunca bloquea transacciones. Fallos silenciosos (log + catch).
+
+```bash
+# Levantar Mailhog para desarrollo local
+docker run -p 1025:1025 -p 8025:8025 mailhog/mailhog
+# UI: http://localhost:8025
+```
 
 ### ✅ Students — COMPLETO (5 agregados)
 
----
-
 #### Students Personal
 
-**Endpoints:**
+| Método | Path | Rol |
+|--------|------|-----|
+| POST | `/api/admin/students` | ADMIN |
+| GET | `/api/admin/students/{id}` | ADMIN, STAFF |
+| GET | `/api/admin/students/dni/{dni}` | ADMIN, STAFF |
+| GET | `/api/admin/students` | ADMIN, STAFF |
+| PATCH | `/api/admin/students/{id}` | ADMIN, STAFF |
 
-| Método | Path | Rol | Descripción |
-|--------|------|-----|-------------|
-| POST | `/api/admin/students` | ADMIN | Crear estudiante (15 pasos atómicos) |
-| GET | `/api/admin/students/{id}` | ADMIN, STAFF | Obtener por ID |
-| GET | `/api/admin/students/dni/{dni}` | ADMIN, STAFF | Obtener por DNI |
-| GET | `/api/admin/students` | ADMIN, STAFF | Buscar (dni / fullName / residencePlaceId) |
-| PATCH | `/api/admin/students/{id}` | ADMIN, STAFF | Actualizar contacto y domicilio |
-
-**CreateStudentUseCase — 15 pasos completos:**
-
+**CreateStudentUseCase — 15 pasos atómicos:**
 ```
 1-2.  Validar unicidad DNI y CUIL
 3.    Obtener AcademicYear activo
@@ -272,74 +209,64 @@ Años lectivos, orientaciones, cursos (1°A–7°B), materias, registro de calif
 10.   Obtener QualificationRegistry activo
 11.   Crear StudentRecord (recordNumber = DNI)
 12.   Buscar Parent por DNI → si no existe: crear User (PARENT) + crear Parent
-13.   Crear StudentParent (relationship, isPrimaryContact, isAuthorizedPickup)
+13.   Crear StudentParent
 14.   Crear StudentEnrollment
 15.   Commit → retornar StudentResponse
 ```
 
----
-
 #### Students Health
 
-**Decisión de diseño clave:** La tabla `student_health_records` (V10) tiene una sola columna
-`emergency_contact_name VARCHAR(200)`. Se concatena "firstName lastName" en esa columna —
-la separación ocurre en el `@AfterMapping` del PersistenceMapper (split por primer espacio).
-
-| Método | Path | Rol | Descripción |
-|--------|------|-----|-------------|
-| GET | `/api/admin/students/{studentId}/health` | ADMIN, STAFF | Obtener ficha médica |
-| PATCH | `/api/admin/students/{studentId}/health` | ADMIN, STAFF | Actualizar ficha (null conserva valor) |
-
----
+| Método | Path | Rol |
+|--------|------|-----|
+| GET | `/api/admin/students/{studentId}/health` | ADMIN, STAFF |
+| PATCH | `/api/admin/students/{studentId}/health` | ADMIN, STAFF |
 
 #### Students Enrollment
 
-| Método | Path | Rol | Descripción |
-|--------|------|-----|-------------|
-| GET | `/api/admin/students/{studentId}/enrollments` | ADMIN, STAFF | Historial de inscripciones |
-| GET | `/api/admin/students/{studentId}/enrollments/{academicYearId}` | ADMIN, STAFF | Inscripción de un año |
-| PATCH | `/api/admin/students/{studentId}/enrollments/{enrollmentId}` | ADMIN | Cierre de ciclo o baja |
-
-`UpdateEnrollmentUseCase` soporta dos operaciones mutuamente excluyentes:
-- **Cierre de ciclo** — `finalAverage` + `passed` + `completionDate`
-- **Baja** — `withdrawalReasonId` + `withdrawalObservations` + `withdrawalDate`
-
----
+| Método | Path | Rol |
+|--------|------|-----|
+| GET | `/api/admin/students/{studentId}/enrollments` | ADMIN, STAFF |
+| GET | `/api/admin/students/{studentId}/enrollments/{academicYearId}` | ADMIN, STAFF |
+| PATCH | `/api/admin/students/{studentId}/enrollments/{enrollmentId}` | ADMIN |
 
 #### Students Records (Legajo)
 
-**Decisión de diseño clave:** `RecordNumber` = DNI del estudiante. El legajo es único y permanente
-— no cambia entre años académicos. `StudentRecord.findByStudentId()` es la búsqueda principal.
-
-| Método | Path | Rol | Descripción |
-|--------|------|-----|-------------|
-| GET | `/api/admin/students/{studentId}/record` | ADMIN, STAFF | Obtener legajo con documentos |
-| POST | `/api/admin/students/{studentId}/record/documents` | ADMIN, STAFF | Subir documento |
-| PATCH | `/api/admin/students/{studentId}/record/documents/{documentId}` | ADMIN, STAFF | Aprobar/rechazar documento |
-| PATCH | `/api/admin/students/{studentId}/record/status` | ADMIN | Cambiar estado del legajo |
-
-Workflow del legajo: `INCOMPLETE` → `COMPLETE` → `UNDER_REVIEW` → `APPROVED` / `REJECTED`
-
----
+| Método | Path | Rol |
+|--------|------|-----|
+| GET | `/api/admin/students/{studentId}/record` | ADMIN, STAFF |
+| POST | `/api/admin/students/{studentId}/record/documents` | ADMIN, STAFF |
+| PATCH | `/api/admin/students/{studentId}/record/documents/{documentId}` | ADMIN, STAFF |
+| PATCH | `/api/admin/students/{studentId}/record/status` | ADMIN |
 
 #### Students Parents
 
-**Decisiones de diseño clave:**
-- `Parent` es entidad global — puede tener hijos en distintas escuelas del sistema
-- Un padre se identifica por DNI — único e inmutable
-- Solo puede haber un `isPrimaryContact = true` por estudiante
-- Password del padre: aleatorio seguro (pendiente email service para envío)
+| Método | Path | Rol |
+|--------|------|-----|
+| POST | `/api/admin/parents` | ADMIN, STAFF |
+| PATCH | `/api/admin/parents/{parentId}` | ADMIN, STAFF |
+| GET | `/api/admin/students/{studentId}/parents` | ADMIN, STAFF |
+| POST | `/api/admin/students/{studentId}/parents` | ADMIN, STAFF |
+
+### ✅ Teachers — COMPLETO
 
 | Método | Path | Rol | Descripción |
 |--------|------|-----|-------------|
-| POST | `/api/admin/parents` | ADMIN, STAFF | Crear padre/tutor |
-| PATCH | `/api/admin/parents/{parentId}` | ADMIN, STAFF | Actualizar datos del padre |
-| GET | `/api/admin/students/{studentId}/parents` | ADMIN, STAFF | Listar padres de un estudiante |
-| POST | `/api/admin/students/{studentId}/parents` | ADMIN, STAFF | Vincular padre a estudiante |
+| POST | `/api/admin/teachers` | ADMIN | Crear profesor + enviar email credenciales |
+| GET | `/api/admin/teachers/{teacherId}` | ADMIN, STAFF | Obtener por ID |
+| GET | `/api/admin/teachers` | ADMIN, STAFF | Buscar (dni / lastName / todos) |
+| PATCH | `/api/admin/teachers/{teacherId}` | ADMIN, STAFF | Actualizar (PATCH semántico) |
+
+**Flujo de creación:**
+1. Validar unicidad DNI y CUIL
+2. Crear User con rol TEACHER (via `auth/CreateTeacherUseCase`) — genera password temporal
+3. Crear Teacher con `active = false` (requiere activación)
+4. Enviar email con usuario y password temporal (async, no bloquea)
+
+**Estados de empleo:** `ACTIVE` → `INACTIVE` / `RETIRED` (via PATCH)
 
 ---
 
-### Migraciones Flyway
+## 🗄️ Migraciones Flyway
 
 | Migración | Descripción |
 |-----------|-------------|
@@ -349,11 +276,13 @@ Workflow del legajo: `INCOMPLETE` → `COMPLETE` → `UNDER_REVIEW` → `APPROVE
 | `V4` | Tabla `refresh_tokens` |
 | `V5` | `countries`, `provinces`, `places` |
 | `V6` | `academic_years`, `orientations`, `grade_levels`, `subjects`, `qualification_registries` |
-| `V7` | `study_plans`, `evaluation_periods`, `grades` |
+| `V7` | `study_plans`, `evaluation_periods` |
 | `V10` | `student_personal_data`, `student_health_records` |
-| `V11` | `document_types`, `student_records` (record_number = DNI, único por estudiante), `record_documents` |
-| `V12` | `parents`, `student_parents` |
+| `V11` | `document_types`, `student_records`, `record_documents` |
+| `V12` | `parents` (con `cuil`), `student_parents` |
+| `V13` | `teachers` |
 | `V14` | `withdrawal_reasons`, `student_enrollments` |
+| `V15+` | Reservado para `grades/` |
 
 ---
 
@@ -362,18 +291,37 @@ Workflow del legajo: `INCOMPLETE` → `COMPLETE` → `UNDER_REVIEW` → `APPROVE
 ```bash
 # 1. Crear base de datos
 mysql -u root -p
-CREATE DATABASE ipet132_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+CREATE DATABASE school132_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
-# 2. Configurar application-dev.yml con credenciales de BD
+# 2. Configurar application.yml con credenciales de BD y OCI SMTP
 
 # 3. Compilar
 mvn clean install
 
-# 4. Ejecutar en perfil dev (carga seeders automáticamente)
+# 4. Ejecutar en perfil dev
 mvn spring-boot:run -Dspring-boot.run.profiles=dev
+
+# 5. Ejecutar en perfil local (con Mailhog)
+docker run -p 1025:1025 -p 8025:8025 mailhog/mailhog
+mvn spring-boot:run -Dspring-boot.run.profiles=local
 
 # Disponible en: http://localhost:8080
 # Swagger UI:    http://localhost:8080/swagger-ui.html
+# Mailhog UI:    http://localhost:8025
+```
+
+### Configuración OCI Email Delivery
+
+```yaml
+spring:
+  mail:
+    host: smtp.email.${OCI_EMAIL_REGION:us-ashburn-1}.oci.oraclecloud.com
+    port: 587
+    username: ${OCI_SMTP_USERNAME}
+    password: ${OCI_SMTP_PASSWORD}
+    properties:
+      mail.smtp.auth: true
+      mail.smtp.starttls.enable: true
 ```
 
 ---
@@ -396,8 +344,30 @@ mvn spring-boot:run -Dspring-boot.run.profiles=dev
 - **Blacklist** — access tokens revocados hasta expiración
 - **Roles** — `ADMIN`, `TEACHER`, `STUDENT`, `PARENT`, `STAFF`
 - **Password inicial estudiante** — `{DNI}Ipet132!`
-- **Password padre** — aleatorio seguro (pendiente email service)
+- **Password teacher/padre** — aleatorio seguro (enviado por email)
 - **ProblemDetail** — respuestas de error estandarizadas (RFC 9457)
+
+---
+
+## 🧪 Tests
+
+Tests unitarios implementados con JUnit 5 + Mockito + AssertJ.
+
+**Ruta:** `src/test/java/org/school/management/`
+
+| Test | Use Case | Tests |
+|------|----------|-------|
+| `GetTeacherByIdUseCaseTest` | teachers | 3 |
+| `CreateTeacherUseCaseTest` | teachers | 4 |
+| `UpdateTeacherUseCaseTest` | teachers | 4 |
+| `CreateParentUseCaseTest` | parents | 5 |
+| `LinkParentToStudentUseCaseTest` | parents | 6 |
+| **Total** | | **22** |
+
+```bash
+mvn test -Dgroups="unit"      # ejecutar solo unit tests
+mvn test jacoco:report         # reporte de cobertura
+```
 
 ---
 
@@ -406,24 +376,37 @@ mvn spring-boot:run -Dspring-boot.run.profiles=dev
 ### ✅ Implementado
 
 - Auth, Geography, Academic completos
-- **Refactor global** — todos los VOs migrados a `record` Java 17
-- **`UuidBinaryConverter`** en `shared/infrastructure/` — conversión BINARY(16) ↔ UUID
-- **`students/` — COMPLETO** — 5 agregados de punta a punta:
-    - `personal/` — 5 use cases, CreateStudentUseCase 15 pasos
-    - `health/` — PATCH semántico, BloodType por displayName
-    - `enrollment/` — cierre de ciclo, baja lógica, estados terminales
-    - `records/` — legajo por DNI, workflow de aprobación de documentos
-    - `parents/` — entidad global, vínculo estudiante-padre, contacto principal exclusivo
-- Flyway V1–V7, V10–V12, V14
+- `shared/email/` — EmailService + JavaMailEmailService (OCI SMTP) + AsyncConfig
+- **`students/` — COMPLETO** — 5 agregados de punta a punta
+- **`teachers/` — COMPLETO** — domain + application + infrastructure + email
+- **`parents/` — CORREGIDO** — cuil agregado en todas las capas, placeId consistente
+- **22 tests unitarios** — teachers y parents
+- Flyway V1–V7, V10–V14
 
 ### ⏳ Pendiente
 
-- [ ] `teachers/` — domain + application + infrastructure ← **próximo**
-- [ ] Calificaciones por período y promedio final
-- [ ] Email service — credenciales para padres
-- [ ] Tests unitarios e integración
-- [ ] Seeders para `students/` y `parents/`
+- [ ] `grades/` — Calificaciones ← **próximo**
+- [ ] Link de activación en email de teacher (requiere `confirmationToken` en `CreateTeacherResponse`)
+- [ ] Seeder de teachers, students y parents para perfil `dev`
+- [ ] Tests unitarios para `CreateStudentUseCase` (15 pasos)
 - [ ] Rate limiting, auditoría, métricas
+
+---
+
+## 🎯 Próximo — `grades/` (Calificaciones)
+
+Bounded context **separado** de `academic/` — razón de cambio diferente y actores distintos.
+
+**Modelo de negocio IPET 132:**
+- 2 períodos cuatrimestrales por año
+- Calificación continua numérica (1-10) o conceptual (Logrado/En proceso/Pendiente)
+- Nota mínima de aprobación: **7**
+- Instancias de recuperación: Coloquio (dic/feb) y Examen de materia previa
+- Notas de coloquio/examen se asientan con número de libro y folio de actas
+
+**Estados de materia:** `APPROVED` | `COLOQUIO` | `PREVIA` | `PENDING` | `OWES`
+
+> `OWES` solo se asienta en el libro matriz al cerrar folio del alumno (pase/abandono).
 
 ---
 
@@ -431,30 +414,25 @@ mvn spring-boot:run -Dspring-boot.run.profiles=dev
 
 | Decisión | Razón |
 |----------|-------|
-| **RecordNumber = DNI** | Legajo único y permanente por estudiante — compatible con ministerio |
+| **grades/ como BC separado** | Actores distintos (TEACHER vs ADMIN), frecuencia de cambio diferente |
+| **EmailService en shared/domain** | Puerto transversal — teachers y parents lo usan; grades también lo usará |
+| **@Async en JavaMailEmailService** | Email no bloquea ni puede revertir transacciones de negocio |
+| **CUIL obligatorio en parents** | Inconsistencia corregida — identificador fiscal como en students y teachers |
+| **place_id en teachers/parents** | Distinto a residence_place_id en students — respetar nombre de columna de BD |
+| **FQN para nombres duplicados** | Java no soporta alias en imports — nombre completamente calificado en campo |
+| **getFullName() en FullName** | Método explícito del record — nunca usar fullName() directamente |
+| **buildResponse() package-private** | Reutilizable por otros use cases del mismo BC sin exponer al exterior |
+| **RecordNumber = DNI** | Legajo único y permanente — compatible con ministerio |
 | **Un legajo por estudiante** | El DNI no cambia — el legajo tampoco |
-| **RegistryNumberGenerator solo para QualificationRegistry** | Genera REG-YYYY-NNNNNN — nunca para StudentRecord |
-| **Sin @OneToMany en StudentRecordEntity** | Evita problemas con BINARY(16) en colecciones — documentos sincronizados manualmente |
+| **Sin @OneToMany en StudentRecordEntity** | Evita problemas con BINARY(16) — documentos sincronizados manualmente |
 | **Parent es entidad global** | Un padre puede tener hijos en distintas escuelas |
-| **isPrimaryContact exclusivo** | Un solo contacto principal por estudiante — validado en use case |
-| **Password padre aleatorio** | Más seguro que DNI — pendiente email service |
-| **emergency_contact_name concatenado** | Schema V10 tiene columna única — split en @AfterMapping |
-| **Records Java 17 para VOs** | Inmutabilidad nativa, equals/hashCode/toString sin boilerplate |
-| **of() como factory principal** | Estándar del proyecto — `from()` como alias |
+| **isPrimaryContact exclusivo** | Un solo contacto principal por estudiante |
+| **Password aleatorio para padre/teacher** | Más seguro — enviado por email |
 | **UuidBinaryConverter en shared/** | Un solo converter para todos los BCs |
-| **@Id como UUID + @Convert** | `JpaRepository<Entity, UUID>` transparente |
-| **@PrePersist / @PreUpdate** | Timestamps nunca nulos independientemente del dominio |
-| **Gender directo en entidades JPA** | Enum puro del Shared Kernel — sin GenderEntity duplicado |
-| **@AfterMapping o default methods** | Para VOs compuestos que necesitan múltiples columnas |
-| **Sin INSTANCE en mappers Spring** | `componentModel = "spring"` genera bean |
 | **ProblemDetail para errores** | RFC 9457, nativo en Spring 6 |
-| **User implementa UserDetails directo** | Cast via pattern matching Java 17 en `extractUserId()` |
-| **Sin delete físico** | Ningún repositorio de students expone delete — baja lógica via enrollment |
-| **CreateStudentRequest unificado** | Un request para el flujo atómico de 15 pasos |
-| **DTOs en request/ y response/** | Separación clara — nunca en dto/ directamente |
 
 ---
 
 **Última actualización:** Marzo 2026
-**Versión:** 3.0.0
-**Estado:** En desarrollo activo — `students/` ✅ COMPLETO | `teachers/` ⏳ próximo
+**Versión:** 4.0.0
+**Estado:** En desarrollo activo — `students/` ✅ | `teachers/` ✅ | `grades/` ⏳ próximo
