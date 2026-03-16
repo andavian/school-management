@@ -56,5 +56,15 @@ public class TeacherRepositoryAdapter implements TeacherRepository {
         TeacherEntity entity = mapper.toEntity(teacher);
         TeacherEntity saved  = jpaRepository.save(entity);
         return mapper.toDomain(saved);
+
+
+    }
+
+    @Override
+    public List<Teacher> findAll() {
+        return jpaRepository.findAll()
+                .stream()
+                .map(mapper::toDomain)
+                .collect(Collectors.toList());
     }
 }

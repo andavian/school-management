@@ -24,4 +24,6 @@ public interface TeacherRepository {
     List<Teacher> findByLastName(String lastName);
 
     Teacher save(Teacher teacher);
+
+    List<Teacher> findAll();
 }
