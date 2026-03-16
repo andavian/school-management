@@ -3,6 +3,7 @@ package org.school.management.teachers.application.usecases;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.school.management.auth.domain.valueobject.UserId;
+import org.school.management.shared.domain.service.EmailService;
 import org.school.management.shared.geography.domain.valueobject.PlaceId;
 import org.school.management.shared.person.domain.valueobject.*;
 import org.school.management.teachers.application.dto.request.CreateTeacherRequest;
@@ -26,6 +27,7 @@ public class CreateTeacherUseCase {
     // Nombre completamente calificado — evita colisión con esta clase
     private final org.school.management.auth.application.usecases.admin.CreateTeacherUseCase authCreateTeacherUseCase;
     private final GetTeacherByIdUseCase getTeacherByIdUseCase;
+    private final EmailService emailService;
 
     @Transactional
     public TeacherResponse execute(CreateTeacherRequest request, UUID createdByUserId) {
@@ -95,6 +97,18 @@ public class CreateTeacherUseCase {
 
         // 6. Persistir
         Teacher savedTeacher = teacherRepository.save(teacher);
+
+        String activationLink = frontendUrl + "/activate-account?token="
+                + authResponse.confirmationToken();  // el token ya viene en authResponse
+
+        emailService.sendTeacherInvitation(
+                request.email(),
+                request.firstName(),
+                request.lastName(),
+                request.dni(),
+                authResponse.temporaryPassword(),    // viene de CreateTeacherResponse de auth/
+                activationLink
+        );
 
         log.info("Teacher created successfully. DNI: {} - ID: {}",
                 request.dni(), savedTeacher.getTeacherId().asString());

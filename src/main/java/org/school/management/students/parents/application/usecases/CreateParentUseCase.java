@@ -9,6 +9,7 @@ import org.school.management.auth.domain.valueobject.HashedPassword;
 import org.school.management.auth.domain.valueobject.PlainPassword;
 import org.school.management.auth.domain.valueobject.RoleName;
 import org.school.management.auth.domain.valueobject.UserId;
+import org.school.management.shared.domain.service.EmailService;
 import org.school.management.shared.geography.domain.valueobject.PlaceId;
 import org.school.management.shared.person.domain.valueobject.*;
 import org.school.management.students.parents.application.dto.request.CreateParentRequest;
@@ -47,6 +48,7 @@ public class CreateParentUseCase {
     private final UserRepository userRepository;
     private final HashedPassword.PasswordEncoder passwordEncoder;
     private final ParentApplicationMapper mapper;
+    private final EmailService emailService;
 
     public ParentResponse execute(CreateParentRequest request, UUID createdByUserId) {
         log.info("Creating parent with DNI: {}", request.dni());
@@ -110,9 +112,13 @@ public class CreateParentUseCase {
 
         Parent saved = parentRepository.save(parent);
 
-        // TODO: enviar email con credenciales al padre
-        log.warn("Parent created — pending email notification for credentials. parentId: {}",
-                parentId.value());
+        emailService.sendParentCredentials(
+                request.email(),
+                request.firstName(),
+                request.lastName(),
+                request.dni(),
+                rawPassword    // la variable ya existe en el use case
+        );
 
         log.info("Parent created successfully — id: {}, DNI: {}",
                 parentId.value(), request.dni());

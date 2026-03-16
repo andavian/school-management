@@ -52,16 +52,20 @@ spring:
 
 
   mail:
-    host: smtp.gmail.com
+    host: smtp.email.${OCI_EMAIL_REGION:us-ashburn-1}.oci.oraclecloud.com
     port: 587
-    username: ing.elbaum@gmail.com
-    password: tu_password_app # usar app password, no el personal
+    username: ${OCI_SMTP_USERNAME}         # OCID del usuario SMTP de OCI
+    password: ${OCI_SMTP_PASSWORD}         # Auth token generado en OCI
     properties:
       mail:
         smtp:
           auth: true
           starttls:
             enable: true
+            required: true
+        transport:
+          protocol: smtp
+    test-connection: false
 
 
 server:
@@ -151,16 +155,20 @@ spring:
         order_updates: true
 
   mail:
-    host: smtp.gmail.com
+    host: smtp.email.${OCI_EMAIL_REGION:us-ashburn-1}.oci.oraclecloud.com
     port: 587
-    username: ${MAIL_USER}
-    password: ${MAIL_PASSWORD}
+    username: ${OCI_SMTP_USERNAME}         # OCID del usuario SMTP de OCI
+    password: ${OCI_SMTP_PASSWORD}         # Auth token generado en OCI
     properties:
       mail:
         smtp:
           auth: true
           starttls:
             enable: true
+            required: true
+        transport:
+          protocol: smtp
+    test-connection: false
 
   flyway:
     enabled: true
