@@ -23,6 +23,8 @@ import org.school.management.students.records.application.usecases.GetRecordBySt
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -87,10 +89,49 @@ class RecordFinalGradeInRegistryUseCaseTest {
 
     private StudentRecordResponse buildStudentRecordResponse() {
         return new StudentRecordResponse(
-                UUID.randomUUID(), STUDENT_UUID,
-                REGISTRY_UUID, FOLIO_NUMBER,
-                null, null, null,
-                LocalDateTime.now(), LocalDateTime.now()
+                UUID.randomUUID(),          // recordId
+                STUDENT_UUID,               // studentId
+                UUID.randomUUID(),          // academicYearId
+                "12345678",                 // recordNumber
+                REGISTRY_UUID,             // registryId
+                FOLIO_NUMBER,              // folioNumber
+                null,                      // status
+                null,                      // completenessPercentage
+                null,                      // reviewedBy
+                null,                      // reviewedAt
+                null,                      // reviewObservations
+                List.of(),                 // documents
+                0,                         // totalDocuments
+                false,                     // complete
+                false,                     // hasExpiredDocuments
+                false,                     // hasExpiringSoonDocuments
+                Map.of(),                  // documentCountByStatus
+                LocalDateTime.now(),       // createdAt
+                LocalDateTime.now()        // updatedAt
+        );
+    }
+
+    private StudentRecordResponse buildStudentRecordResponseSinFolio() {
+        return new StudentRecordResponse(
+                UUID.randomUUID(),          // recordId
+                STUDENT_UUID,               // studentId
+                UUID.randomUUID(),          // academicYearId
+                "12345678",                 // recordNumber
+                null,                      // registryId  ← null
+                null,                      // folioNumber ← null
+                null,                      // status
+                null,                      // completenessPercentage
+                null,                      // reviewedBy
+                null,                      // reviewedAt
+                null,                      // reviewObservations
+                List.of(),                 // documents
+                0,                         // totalDocuments
+                false,                     // complete
+                false,                     // hasExpiredDocuments
+                false,                     // hasExpiringSoonDocuments
+                Map.of(),                  // documentCountByStatus
+                LocalDateTime.now(),       // createdAt
+                LocalDateTime.now()        // updatedAt
         );
     }
 
@@ -183,12 +224,7 @@ class RecordFinalGradeInRegistryUseCaseTest {
     @DisplayName("execute — legajo sin folio asignado — lanza InvalidGradeException")
     void execute_whenStudentRecordHasNoFolio_thenThrowInvalidGradeException() {
         FinalGrade validated = buildValidatedFinalGrade();
-        StudentRecordResponse recordSinFolio = new StudentRecordResponse(
-                UUID.randomUUID(), STUDENT_UUID,
-                null, null,
-                null, null, null,
-                LocalDateTime.now(), LocalDateTime.now()
-        );
+        StudentRecordResponse recordSinFolio = buildStudentRecordResponseSinFolio();
 
         when(finalGradeRepository.findById(FinalGradeId.from(FINAL_GRADE_UUID)))
                 .thenReturn(Optional.of(validated));
