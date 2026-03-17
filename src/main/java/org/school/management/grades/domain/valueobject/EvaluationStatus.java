@@ -1,4 +1,4 @@
-package org.school.management.academic.domain.valueobject.enums;
+package org.school.management.grades.domain.valueobject;
 
 public enum EvaluationStatus {
     PENDING,    // Pendiente de tomar

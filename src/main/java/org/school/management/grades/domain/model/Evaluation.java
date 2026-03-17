@@ -3,7 +3,7 @@ package org.school.management.grades.domain.model;
 import lombok.Builder;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
-import org.school.management.academic.domain.valueobject.enums.EvaluationStatus;
+import org.school.management.grades.domain.valueobject.EvaluationStatus;
 import org.school.management.grades.domain.valueobject.EvaluationId;
 import org.school.management.grades.domain.valueobject.EvaluationTypeId;
 import org.school.management.academic.domain.valueobject.ids.PeriodId;

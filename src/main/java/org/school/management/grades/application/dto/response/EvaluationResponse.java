@@ -1,6 +1,6 @@
 package org.school.management.grades.application.dto.response;
 
-import org.school.management.academic.domain.valueobject.enums.EvaluationStatus;
+import org.school.management.grades.domain.valueobject.EvaluationStatus;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
