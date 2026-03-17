@@ -42,7 +42,7 @@ public class PeriodGradeEntity {
     private BigDecimal finalPeriodGrade;
 
     @Column(name = "is_passed")
-    private Boolean isPassed;
+    private Boolean passed;
 
     @Column(name = "is_validated", nullable = false)
     private boolean isValidated;

@@ -39,7 +39,7 @@ public interface PeriodGradePersistenceMapper {
                 .averageGrade(entity.getAverageGrade())
                 .adjustedGrade(entity.getAdjustedGrade())
                 .finalPeriodGrade(entity.getFinalPeriodGrade())
-                .isPassed(entity.getIsPassed())
+                .isPassed(entity.getPassed())
                 .isValidated(entity.isValidated())
                 .validatedBy(entity.getValidatedBy())
                 .validatedAt(entity.getValidatedAt())

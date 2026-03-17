@@ -49,7 +49,7 @@ public interface FinalGradePersistenceMapper {
                 .isValidated(entity.isValidated())
                 .validatedBy(entity.getValidatedBy())
                 .validatedAt(entity.getValidatedAt())
-                .isRecordedInRegistry(entity.isRecordedInRegistry())
+                .recordedInRegistry(entity.isRecordedInRegistry())
                 .registryId(
                         entity.getRegistryId() != null
                                 ? RegistryId.of(entity.getRegistryId())
