@@ -14,9 +14,9 @@ spring:
       on-profile: dev
 
   datasource:
-    url: jdbc:mysql://localhost:3306/school132_db?useSSL=false&serverTimezone=America/Argentina/Buenos_Aires
-    username: root
-    password: nlbmBrrt:221209
+    url: jdbc:mysql://${DB_HOST}:${DB_PORT}/${DB_NAME}?useSSL=false&serverTimezone=America/Argentina/Buenos_Aires
+    username: ${DB_USER}
+    password: ${DB_PASSWORD}
     driver-class-name: com.mysql.cj.jdbc.Driver
     hikari:
       maximum-pool-size: 10
@@ -52,7 +52,7 @@ spring:
 
 
   mail:
-    host: smtp.email.${OCI_EMAIL_REGION:us-ashburn-1}.oci.oraclecloud.com
+    host: smtp.email.${OCI_EMAIL_REGION}.oci.oraclecloud.com
     port: 587
     username: ${OCI_SMTP_USERNAME}         # OCID del usuario SMTP de OCI
     password: ${OCI_SMTP_PASSWORD}         # Auth token generado en OCI
@@ -69,7 +69,7 @@ spring:
 
 
 server:
-  port: 8080
+  port: ${SERVER_PORT}
 
 # ============================================
 # Configuración de la aplicación
@@ -100,7 +100,7 @@ app:
   # Configuración JWT mejorada
   security:
     jwt:
-      secret-key: "dev-secret-key-change-in-prod-must-be-256-bits-long"
+      secret-key: ${JWT_SECRET_KEY}
       access-token-expiration: 3600    # 1 hora en segundos
       refresh-token-expiration: 86400  # 24 horas en segundos
       issuer: "school-management-dev"
@@ -131,7 +131,7 @@ spring:
       on-profile: prod
 
   datasource:
-    url: jdbc:mysql://${DB_HOST:prod-db}:${DB_PORT:3306}/${DB_NAME:ipet132_db}?useSSL=true&serverTimezone=UTC
+    url: jdbc:mysql://${DB_HOST}:${DB_PORT}/${DB_NAME}?useSSL=true&serverTimezone=UTC
     username: ${DB_USER}
     password: ${DB_PASSWORD}
     driver-class-name: com.mysql.cj.jdbc.Driver
@@ -155,7 +155,7 @@ spring:
         order_updates: true
 
   mail:
-    host: smtp.email.${OCI_EMAIL_REGION:us-ashburn-1}.oci.oraclecloud.com
+    host: smtp.email.${OCI_EMAIL_REGION}.oci.oraclecloud.com
     port: 587
     username: ${OCI_SMTP_USERNAME}         # OCID del usuario SMTP de OCI
     password: ${OCI_SMTP_PASSWORD}         # Auth token generado en OCI
@@ -193,8 +193,8 @@ server:
 app:
   cors:
     allowed-origins:
-      - "https://${FRONTEND_DOMAIN:tu-frontend.vercel.app}"
-      - "https://admin.${FRONTEND_DOMAIN:tu-frontend.vercel.app}"
+      - "https://${FRONTEND_DOMAIN}"
+      - "https://admin.${FRONTEND_DOMAIN}"
 
     allowed-methods:
       - GET
@@ -268,7 +268,7 @@ spring:
       on-profile: test
 
   datasource:
-    url: jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    url: ${DB_URL}
     username: sa
     password:
     driver-class-name: org.h2.Driver
@@ -288,7 +288,7 @@ spring:
 app:
   security:
     jwt:
-      secret-key: "test-secret-key-for-testing-only"
+      secret-key: ${JWT_SECRET_KEY}
       access-token-expiration: 3600
       refresh-token-expiration: 86400
       issuer: "school-management-test"

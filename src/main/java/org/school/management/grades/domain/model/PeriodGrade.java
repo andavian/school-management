@@ -1,8 +1,8 @@
 package org.school.management.grades.domain.model;
 
 import lombok.Builder;
-import lombok.Value;
-import lombok.With;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
 import org.school.management.academic.domain.valueobject.ids.PeriodId;
 import org.school.management.course.domain.valueobject.StudentCourseSubjectId;
 import org.school.management.grades.domain.valueobject.PeriodGradeId;
@@ -13,28 +13,30 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
-@Value
+@Getter
 @Builder(toBuilder = true)
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
 public class PeriodGrade {
-    PeriodGradeId periodGradeId;
-    StudentCourseSubjectId studentCourseSubjectId;
-    PeriodId periodId;
 
-    @With
-    BigDecimal averageGrade;      // Calculado automáticamente
-    BigDecimal adjustedGrade;            // Ajuste manual del profesor
-    @With
-    BigDecimal finalPeriodGrade;  // Nota final del período
+    private static final BigDecimal MIN_PASSING_GRADE = BigDecimal.valueOf(7);
 
-    Boolean isPassed;
-    @With
-    boolean isValidated;
-    UUID validatedBy;
-    LocalDateTime validatedAt;
+    @EqualsAndHashCode.Include
+    private final PeriodGradeId periodGradeId;
+    private final StudentCourseSubjectId studentCourseSubjectId;
+    private final PeriodId periodId;
 
-    String observations;
-    LocalDateTime createdAt;
-    LocalDateTime updatedAt;
+    private final BigDecimal averageGrade;
+    private final BigDecimal adjustedGrade;
+    private final BigDecimal finalPeriodGrade;
+
+    private final Boolean isPassed;
+    private final boolean isValidated;
+    private final UUID validatedBy;
+    private final LocalDateTime validatedAt;
+
+    private final String observations;
+    private final LocalDateTime createdAt;
+    private final LocalDateTime updatedAt;
 
     public static PeriodGrade create(
             StudentCourseSubjectId studentCourseSubjectId,
@@ -51,24 +53,28 @@ public class PeriodGrade {
     }
 
     public PeriodGrade calculateAverage(List<BigDecimal> evaluationGrades) {
-        if (evaluationGrades == null || evaluationGrades.isEmpty()) {
+        if (evaluationGrades == null || evaluationGrades.isEmpty())
             return this;
-        }
 
-        BigDecimal sum = evaluationGrades.stream()
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        BigDecimal average = evaluationGrades.stream()
+                .reduce(BigDecimal.ZERO, BigDecimal::add)
+                .divide(BigDecimal.valueOf(evaluationGrades.size()), 2, RoundingMode.HALF_UP);
 
-        BigDecimal average = sum.divide(
-                BigDecimal.valueOf(evaluationGrades.size()),
-                2,
-                RoundingMode.HALF_UP
-        );
-
-        return this.withAverageGrade(average)
-                .withFinalPeriodGrade(average);
+        return this.toBuilder()
+                .averageGrade(average)
+                .finalPeriodGrade(average)
+                .updatedAt(LocalDateTime.now())
+                .build();
     }
 
     public PeriodGrade adjustGrade(BigDecimal adjustedGrade, String observations) {
+        if (adjustedGrade == null)
+            throw new IllegalArgumentException("Adjusted grade cannot be null");
+        if (adjustedGrade.compareTo(BigDecimal.ZERO) < 0 || adjustedGrade.compareTo(BigDecimal.TEN) > 0)
+            throw new IllegalArgumentException("Adjusted grade must be between 0 and 10");
+        if (isValidated)
+            throw new IllegalStateException("Cannot adjust a validated period grade");
+
         return this.toBuilder()
                 .adjustedGrade(adjustedGrade)
                 .finalPeriodGrade(adjustedGrade)
@@ -78,17 +84,21 @@ public class PeriodGrade {
     }
 
     public PeriodGrade validate(UUID validatedBy) {
-        if (finalPeriodGrade == null) {
-            throw new IllegalStateException("Cannot validate without final grade");
-        }
-
-        boolean passed = finalPeriodGrade.compareTo(BigDecimal.valueOf(6)) >= 0;
+        if (finalPeriodGrade == null)
+            throw new IllegalStateException("Cannot validate period grade without final grade");
+        if (isValidated)
+            throw new IllegalStateException("Period grade is already validated");
 
         return this.toBuilder()
-                .isPassed(passed)
+                .isPassed(finalPeriodGrade.compareTo(MIN_PASSING_GRADE) >= 0)
                 .isValidated(true)
                 .validatedBy(validatedBy)
                 .validatedAt(LocalDateTime.now())
+                .updatedAt(LocalDateTime.now())
                 .build();
+    }
+
+    public boolean hasGrade() {
+        return finalPeriodGrade != null;
     }
 }

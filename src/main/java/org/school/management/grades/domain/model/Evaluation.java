@@ -1,8 +1,8 @@
 package org.school.management.grades.domain.model;
 
 import lombok.Builder;
-import lombok.Value;
-import lombok.With;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
 import org.school.management.academic.domain.valueobject.enums.EvaluationStatus;
 import org.school.management.academic.domain.valueobject.ids.EvaluationId;
 import org.school.management.academic.domain.valueobject.ids.EvaluationTypeId;
@@ -14,35 +14,37 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
-@Value
+@Getter
 @Builder(toBuilder = true)
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
 public class Evaluation {
-    EvaluationId evaluationId;
-    StudentCourseSubjectId studentCourseSubjectId;
-    PeriodId periodId;
-    EvaluationTypeId evaluationTypeId;
 
-    String title;
-    String description;
-    LocalDate evaluationDate;
+    private static final BigDecimal MIN_PASSING_GRADE = BigDecimal.valueOf(7);
 
-    @With
-    BigDecimal grade;
-    BigDecimal maxGrade;
+    @EqualsAndHashCode.Include
+    private final EvaluationId evaluationId;
+    private final StudentCourseSubjectId studentCourseSubjectId;
+    private final PeriodId periodId;
+    private final EvaluationTypeId evaluationTypeId;
 
-    @With
-    EvaluationStatus status;
-    @With
-    boolean isValidated;
-    UUID validatedBy;
-    LocalDateTime validatedAt;
+    private final String title;
+    private final String description;
+    private final LocalDate evaluationDate;
 
-    String teacherObservations;
-    String adminNotes;
+    private final BigDecimal grade;
+    private final BigDecimal maxGrade;
 
-    LocalDateTime createdAt;
-    LocalDateTime updatedAt;
-    UUID createdBy;
+    private final EvaluationStatus status;
+    private final boolean isValidated;
+    private final UUID validatedBy;
+    private final LocalDateTime validatedAt;
+
+    private final String teacherObservations;
+    private final String adminNotes;
+
+    private final LocalDateTime createdAt;
+    private final LocalDateTime updatedAt;
+    private final UUID createdBy;
 
     public static Evaluation create(
             StudentCourseSubjectId studentCourseSubjectId,
@@ -53,12 +55,17 @@ public class Evaluation {
             LocalDate evaluationDate,
             UUID createdBy
     ) {
+        if (title == null || title.isBlank())
+            throw new IllegalArgumentException("Evaluation title cannot be blank");
+        if (evaluationDate == null)
+            throw new IllegalArgumentException("Evaluation date cannot be null");
+
         return Evaluation.builder()
                 .evaluationId(EvaluationId.generate())
                 .studentCourseSubjectId(studentCourseSubjectId)
                 .periodId(periodId)
                 .evaluationTypeId(evaluationTypeId)
-                .title(title)
+                .title(title.trim())
                 .description(description)
                 .evaluationDate(evaluationDate)
                 .maxGrade(BigDecimal.TEN)
@@ -71,10 +78,12 @@ public class Evaluation {
     }
 
     public Evaluation gradeEvaluation(BigDecimal grade, String observations) {
-        if (grade.compareTo(BigDecimal.ZERO) < 0 ||
-                grade.compareTo(maxGrade) > 0) {
+        if (grade == null)
+            throw new IllegalArgumentException("Grade cannot be null");
+        if (grade.compareTo(BigDecimal.ZERO) < 0 || grade.compareTo(maxGrade) > 0)
             throw new IllegalArgumentException("Grade must be between 0 and " + maxGrade);
-        }
+        if (status == EvaluationStatus.VALIDATED || status == EvaluationStatus.CANCELLED)
+            throw new IllegalStateException("Cannot grade an evaluation in status: " + status);
 
         return this.toBuilder()
                 .grade(grade)
@@ -85,19 +94,35 @@ public class Evaluation {
     }
 
     public Evaluation validate(UUID validatedBy) {
-        if (grade == null) {
+        if (grade == null)
             throw new IllegalStateException("Cannot validate evaluation without grade");
-        }
+        if (isValidated)
+            throw new IllegalStateException("Evaluation is already validated");
 
         return this.toBuilder()
                 .isValidated(true)
                 .validatedBy(validatedBy)
                 .validatedAt(LocalDateTime.now())
                 .status(EvaluationStatus.VALIDATED)
+                .updatedAt(LocalDateTime.now())
+                .build();
+    }
+
+    public Evaluation cancel() {
+        if (isValidated)
+            throw new IllegalStateException("Cannot cancel a validated evaluation");
+
+        return this.toBuilder()
+                .status(EvaluationStatus.CANCELLED)
+                .updatedAt(LocalDateTime.now())
                 .build();
     }
 
     public boolean isPassed() {
-        return grade != null && grade.compareTo(BigDecimal.valueOf(6)) >= 0;
+        return grade != null && grade.compareTo(MIN_PASSING_GRADE) >= 0;
+    }
+
+    public boolean isGraded() {
+        return grade != null;
     }
 }

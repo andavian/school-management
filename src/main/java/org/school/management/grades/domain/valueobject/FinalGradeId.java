@@ -1,42 +1,22 @@
 package org.school.management.grades.domain.valueobject;
 
-
-import lombok.AccessLevel;
-import lombok.Builder;
-import lombok.Value;
-
 import java.util.UUID;
 
-@Value
-@Builder(access = AccessLevel.PRIVATE)
-public class FinalGradeId {
-    UUID value;
+public record FinalGradeId(UUID value) {
 
-    private FinalGradeId(UUID value) {
-        if (value == null) {
-            throw new IllegalArgumentException("UserId cannot be null");
-        }
-        this.value = value;
+    public FinalGradeId {
+        if (value == null) throw new IllegalArgumentException("FinalGradeId cannot be null");
     }
 
-    public static FinalGradeId generate() {
-        return new FinalGradeId(UUID.randomUUID());
-    }
-
+    public static FinalGradeId of(UUID value)  { return new FinalGradeId(value); }
+    public static FinalGradeId generate()       { return new FinalGradeId(UUID.randomUUID()); }
+    public static FinalGradeId from(UUID uuid)  { return new FinalGradeId(uuid); }
     public static FinalGradeId from(String id) {
-        try {
-            return new FinalGradeId(UUID.fromString(id));
-        } catch (IllegalArgumentException e) {
-            throw new IllegalArgumentException("Invalid UserId format: " + id);
+        try { return new FinalGradeId(UUID.fromString(id)); }
+        catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("Invalid FinalGradeId format: " + id);
         }
     }
 
-    public static FinalGradeId from(UUID uuid) {
-        return new FinalGradeId(uuid);
-    }
-
-    public String asString() {
-        return value.toString();
-    }
+    public String asString() { return value.toString(); }
 }
-
