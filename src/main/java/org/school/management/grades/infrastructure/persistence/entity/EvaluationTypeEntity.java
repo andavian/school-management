@@ -1,24 +1,26 @@
 package org.school.management.grades.infrastructure.persistence.entity;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
+import org.school.management.shared.infrastructure.persistence.converter.UuidBinaryConverter;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
+@Getter
+@Setter
+@NoArgsConstructor
 @Entity
 @Table(name = "evaluation_types")
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
-@Builder
 public class EvaluationTypeEntity {
+
     @Id
-    @Column(name = "evaluation_type_id", columnDefinition = "BINARY(16)")
+    @Convert(converter = UuidBinaryConverter.class)
+    @Column(name = "evaluation_type_id", columnDefinition = "BINARY(16)",
+            updatable = false, nullable = false)
     private UUID evaluationTypeId;
 
     @Column(name = "name", nullable = false, unique = true, length = 50)
@@ -34,13 +36,13 @@ public class EvaluationTypeEntity {
     private BigDecimal weightPercentage;
 
     @Column(name = "is_active", nullable = false)
-    private Boolean isActive;
+    private boolean isActive;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
     @PrePersist
-    protected void onCreate() {
+    protected void onPrePersist() {
         if (createdAt == null) createdAt = LocalDateTime.now();
     }
 }

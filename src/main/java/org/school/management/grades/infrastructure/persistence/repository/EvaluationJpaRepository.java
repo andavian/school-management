@@ -14,25 +14,25 @@ import java.util.UUID;
 public interface EvaluationJpaRepository extends JpaRepository<EvaluationEntity, UUID> {
 
     List<EvaluationEntity> findByStudentCourseSubjectId(UUID studentCourseSubjectId);
-
-    @Query("""
-            SELECT e FROM EvaluationEntity e
-            WHERE e.studentCourseSubjectId = :studentCourseSubjectId
-            AND e.periodId = :periodId
-            ORDER BY e.evaluationDate
-            """)
+//
+//    @Query("""
+//            SELECT e FROM EvaluationEntity e
+//            WHERE e.studentCourseSubjectId = :studentCourseSubjectId
+//            AND e.periodId = :periodId
+//            ORDER BY e.evaluationDate
+//            """)
     List<EvaluationEntity> findByStudentCourseSubjectAndPeriod(
             @Param("studentCourseSubjectId") UUID studentCourseSubjectId,
             @Param("periodId") UUID periodId
     );
 
-    @Query("""
-            SELECT e FROM EvaluationEntity e
-            WHERE e.studentCourseSubjectId = :studentCourseSubjectId
-            AND e.periodId = :periodId
-            AND e.isValidated = true
-            ORDER BY e.evaluationDate
-            """)
+//    @Query("""
+//            SELECT e FROM EvaluationEntity e
+//            WHERE e.studentCourseSubjectId = :studentCourseSubjectId
+//            AND e.periodId = :periodId
+//            AND e.isValidated = true
+//            ORDER BY e.evaluationDate
+//            """)
     List<EvaluationEntity> findValidatedEvaluations(
             @Param("studentCourseSubjectId") UUID studentCourseSubjectId,
             @Param("periodId") UUID periodId
@@ -66,9 +66,9 @@ public interface EvaluationJpaRepository extends JpaRepository<EvaluationEntity,
             WHERE e.studentCourseSubjectId IN :studentCourseSubjectIds
             AND e.isValidated = false
             """)
-    List<EvaluationEntity> findUnvalidatedEvaluations(
-            @Param("studentCourseSubjectIds") List<UUID> studentCourseSubjectIds
-    );
+//    List<EvaluationEntity> findUnvalidatedEvaluations(
+//            @Param("studentCourseSubjectIds") List<UUID> studentCourseSubjectIds
+//    );
 
     long countByStudentCourseSubjectIdAndPeriodId(UUID studentCourseSubjectId, UUID periodId);
 }

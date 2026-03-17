@@ -1,30 +1,36 @@
 package org.school.management.grades.infrastructure.persistence.entity;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
+import org.school.management.grades.domain.valueobject.FinalGradeStatus;
+import org.school.management.shared.infrastructure.persistence.converter.UuidBinaryConverter;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
+@Getter
+@Setter
+@NoArgsConstructor
 @Entity
 @Table(name = "final_grades")
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
-@Builder
 public class FinalGradeEntity {
+
     @Id
-    @Column(name = "final_grade_id", columnDefinition = "BINARY(16)")
+    @Convert(converter = UuidBinaryConverter.class)
+    @Column(name = "final_grade_id", columnDefinition = "BINARY(16)",
+            updatable = false, nullable = false)
     private UUID finalGradeId;
 
-    @Column(name = "student_course_subject_id", nullable = false, columnDefinition = "BINARY(16)")
+    @Convert(converter = UuidBinaryConverter.class)
+    @Column(name = "student_course_subject_id",
+            columnDefinition = "BINARY(16)", nullable = false)
     private UUID studentCourseSubjectId;
 
-    @Column(name = "academic_year_id", nullable = false, columnDefinition = "BINARY(16)")
+    @Convert(converter = UuidBinaryConverter.class)
+    @Column(name = "academic_year_id", columnDefinition = "BINARY(16)", nullable = false)
     private UUID academicYearId;
 
     @Column(name = "period_average", precision = 4, scale = 2)
@@ -36,12 +42,14 @@ public class FinalGradeEntity {
     @Column(name = "final_grade", nullable = false, precision = 4, scale = 2)
     private BigDecimal finalGrade;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false, length = 20)
-    private String status;
+    private FinalGradeStatus status;
 
     @Column(name = "is_validated", nullable = false)
-    private Boolean isValidated;
+    private boolean isValidated;
 
+    @Convert(converter = UuidBinaryConverter.class)
     @Column(name = "validated_by", columnDefinition = "BINARY(16)")
     private UUID validatedBy;
 
@@ -49,8 +57,9 @@ public class FinalGradeEntity {
     private LocalDateTime validatedAt;
 
     @Column(name = "recorded_in_registry", nullable = false)
-    private Boolean recordedInRegistry;
+    private boolean recordedInRegistry;
 
+    @Convert(converter = UuidBinaryConverter.class)
     @Column(name = "registry_id", columnDefinition = "BINARY(16)")
     private UUID registryId;
 
@@ -70,13 +79,14 @@ public class FinalGradeEntity {
     private LocalDateTime updatedAt;
 
     @PrePersist
-    protected void onCreate() {
-        if (createdAt == null) createdAt = LocalDateTime.now();
-        if (updatedAt == null) updatedAt = LocalDateTime.now();
+    protected void onPrePersist() {
+        LocalDateTime now = LocalDateTime.now();
+        if (createdAt == null) createdAt = now;
+        if (updatedAt == null) updatedAt = now;
     }
 
     @PreUpdate
-    protected void onUpdate() {
+    protected void onPreUpdate() {
         updatedAt = LocalDateTime.now();
     }
 }
