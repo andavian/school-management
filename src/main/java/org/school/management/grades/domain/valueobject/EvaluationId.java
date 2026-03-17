@@ -1,4 +1,4 @@
-package org.school.management.academic.domain.valueobject.ids;
+package org.school.management.grades.domain.valueobject;
 
 import java.util.UUID;
 

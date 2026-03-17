@@ -1,4 +1,4 @@
-package org.school.management.grades.infra.persistence.entity;
+package org.school.management.grades.infrastructure.persistence.entity;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;

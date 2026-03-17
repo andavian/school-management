@@ -1,6 +1,6 @@
 //package org.school.management.grades.domain.repository;
 //
-//import org.school.management.academic.domain.valueobject.ids.EvaluationTypeId;
+//import org.school.management.grades.domain.valueobject.EvaluationTypeId;
 //
 //import java.util.List;
 //import java.util.Optional;

@@ -1,4 +1,4 @@
-package org.school.management.grades.infra.persistence.entity;
+package org.school.management.grades.infrastructure.persistence.entity;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -11,33 +11,33 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
-@Table(name = "period_grades")
+@Table(name = "final_grades")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class PeriodGradeEntity {
+public class FinalGradeEntity {
     @Id
-    @Column(name = "period_grade_id", columnDefinition = "BINARY(16)")
-    private UUID periodGradeId;
+    @Column(name = "final_grade_id", columnDefinition = "BINARY(16)")
+    private UUID finalGradeId;
 
     @Column(name = "student_course_subject_id", nullable = false, columnDefinition = "BINARY(16)")
     private UUID studentCourseSubjectId;
 
-    @Column(name = "period_id", nullable = false, columnDefinition = "BINARY(16)")
-    private UUID periodId;
+    @Column(name = "academic_year_id", nullable = false, columnDefinition = "BINARY(16)")
+    private UUID academicYearId;
 
-    @Column(name = "average_grade", precision = 4, scale = 2)
-    private BigDecimal averageGrade;
+    @Column(name = "period_average", precision = 4, scale = 2)
+    private BigDecimal periodAverage;
 
-    @Column(name = "adjusted_grade", precision = 4, scale = 2)
-    private BigDecimal adjustedGrade;
+    @Column(name = "final_exam_grade", precision = 4, scale = 2)
+    private BigDecimal finalExamGrade;
 
-    @Column(name = "final_period_grade", precision = 4, scale = 2)
-    private BigDecimal finalPeriodGrade;
+    @Column(name = "final_grade", nullable = false, precision = 4, scale = 2)
+    private BigDecimal finalGrade;
 
-    @Column(name = "is_passed")
-    private Boolean isPassed;
+    @Column(name = "status", nullable = false, length = 20)
+    private String status;
 
     @Column(name = "is_validated", nullable = false)
     private Boolean isValidated;
@@ -47,6 +47,18 @@ public class PeriodGradeEntity {
 
     @Column(name = "validated_at")
     private LocalDateTime validatedAt;
+
+    @Column(name = "recorded_in_registry", nullable = false)
+    private Boolean recordedInRegistry;
+
+    @Column(name = "registry_id", columnDefinition = "BINARY(16)")
+    private UUID registryId;
+
+    @Column(name = "folio_number")
+    private Integer folioNumber;
+
+    @Column(name = "recorded_at")
+    private LocalDateTime recordedAt;
 
     @Column(name = "observations", columnDefinition = "TEXT")
     private String observations;

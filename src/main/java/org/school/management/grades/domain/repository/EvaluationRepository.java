@@ -1,7 +1,7 @@
 package org.school.management.grades.domain.repository;
 
 import org.school.management.grades.domain.model.Evaluation;
-import org.school.management.academic.domain.valueobject.ids.EvaluationId;
+import org.school.management.grades.domain.valueobject.EvaluationId;
 import org.school.management.academic.domain.valueobject.ids.PeriodId;
 import org.school.management.course.domain.valueobject.StudentCourseSubjectId;
 

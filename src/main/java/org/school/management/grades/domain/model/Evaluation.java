@@ -4,8 +4,8 @@ import lombok.Builder;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import org.school.management.academic.domain.valueobject.enums.EvaluationStatus;
-import org.school.management.academic.domain.valueobject.ids.EvaluationId;
-import org.school.management.academic.domain.valueobject.ids.EvaluationTypeId;
+import org.school.management.grades.domain.valueobject.EvaluationId;
+import org.school.management.grades.domain.valueobject.EvaluationTypeId;
 import org.school.management.academic.domain.valueobject.ids.PeriodId;
 import org.school.management.course.domain.valueobject.StudentCourseSubjectId;
 

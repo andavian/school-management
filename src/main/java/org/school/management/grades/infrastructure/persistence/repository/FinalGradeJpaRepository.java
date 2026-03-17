@@ -1,6 +1,6 @@
-package org.school.management.grades.infra.persistence.repository;
+package org.school.management.grades.infrastructure.persistence.repository;
 
-import org.school.management.grades.infra.persistence.entity.FinalGradeEntity;
+import org.school.management.grades.infrastructure.persistence.entity.FinalGradeEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;

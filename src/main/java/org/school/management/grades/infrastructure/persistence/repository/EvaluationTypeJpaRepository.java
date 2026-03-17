@@ -1,6 +1,6 @@
-package org.school.management.grades.infra.persistence.repository;
+package org.school.management.grades.infrastructure.persistence.repository;
 
-import org.school.management.grades.infra.persistence.entity.EvaluationTypeEntity;
+import org.school.management.grades.infrastructure.persistence.entity.EvaluationTypeEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
