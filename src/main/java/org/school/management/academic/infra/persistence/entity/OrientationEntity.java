@@ -33,7 +33,7 @@ public class OrientationEntity {
     private Integer availableFromYear;
 
     @Column(name = "is_active", nullable = false)
-    private Boolean isActive;
+    private Boolean active;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;

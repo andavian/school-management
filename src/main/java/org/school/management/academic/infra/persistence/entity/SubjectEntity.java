@@ -33,7 +33,7 @@ public class SubjectEntity {
     private UUID orientationId;
 
     @Column(name = "is_mandatory", nullable = false)
-    private Boolean isMandatory;
+    private Boolean mandatory;
 
     @Column(name = "weekly_hours", nullable = false)
     private Integer weeklyHours;
@@ -42,7 +42,7 @@ public class SubjectEntity {
     private String description;
 
     @Column(name = "is_active", nullable = false)
-    private Boolean isActive;
+    private Boolean active;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
