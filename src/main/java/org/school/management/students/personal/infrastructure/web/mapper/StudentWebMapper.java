@@ -40,9 +40,7 @@ public interface StudentWebMapper {
     @Mapping(target = "parent",     source = "parent")
     CreateStudentRequest toApplicationRequest(CreateStudentWebRequest webRequest);
 
-    @Mapping(target = "healthData.emergencyContactFirstName", source = "healthData.emergencyContactFirstName")
-    @Mapping(target = "healthData.emergencyContactLastName",  source = "healthData.emergencyContactLastName")
-    @Mapping(target = "healthData.emergencyContactPhone",     source = "healthData.emergencyContactPhone")
+
     CreateStudentRequest.HealthDataRequest toHealthDataRequest(
             CreateStudentWebRequest.HealthDataWebRequest webRequest);
 

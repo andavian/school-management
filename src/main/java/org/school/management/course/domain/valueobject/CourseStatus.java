@@ -1,4 +1,4 @@
-package org.school.management.academic.domain.valueobject.enums;
+package org.school.management.course.domain.valueobject;
 
 public enum CourseStatus {
     ACTIVE("Activo"),
@@ -13,5 +13,9 @@ public enum CourseStatus {
 
     public String getDisplayName() {
         return displayName;
+    }
+
+    public boolean isTerminal() {
+        return this == COMPLETED || this == INACTIVE;
     }
 }

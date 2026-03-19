@@ -10,7 +10,7 @@
 Sistema de gestión escolar para el **IPET 132** (Argentina).
 **Stack:** Java 17 + Spring Boot 3.3.4 + Spring Security 6 + MySQL 8
 **Package raíz:** `org.school.management`
-**Estado actual:** Auth ✅ + Geography ✅ + Academic ✅ + Students ✅ + Teachers ✅ + Email Service ✅
+**Estado actual:** Auth ✅ + Geography ✅ + Academic ✅ + Students ✅ + Teachers ✅ + Email Service ✅ + Grades ✅ + Course ⏳
 
 ---
 
@@ -40,7 +40,8 @@ geography/    → Países, provincias, localidades ✅
 academic/     → Años, cursos, materias, registro de calificaciones ✅
 students/     → Estudiantes, salud, matrícula, legajo, padres ✅ COMPLETO
 teachers/     → Profesores ✅ COMPLETO
-grades/       → Calificaciones ⏳ próximo
+grades/       → Calificaciones ✅ COMPLETO
+course/       → Asignación profesor-materia-curso ⏳ próximo
 ```
 
 **Regla:** Un bounded context **no importa clases completas de otro**.
@@ -511,6 +512,86 @@ teachers/
 - `CreateTeacherUseCase` en `teachers/` orquesta: valida unicidad → crea User (via auth/) → crea Teacher → envía email
 - Email de invitación: texto plano con usuario y password temporal (sin link por ahora)
 
+### `grades/` ✅ COMPLETO
+
+```
+grades/
+├── domain/
+│   ├── model/
+│   │   ├── Evaluation.java       — gradeEvaluation(), validate(), cancel(), isPassed()
+│   │   ├── PeriodGrade.java      — calculateAverage(), adjustGrade(), validate()
+│   │   └── FinalGrade.java       — create(), recordExam(), validate(), recordInRegistry()
+│   ├── valueobject/
+│   │   ├── EvaluationId.java     — record UUID (movido desde academic/)
+│   │   ├── EvaluationTypeId.java — record UUID (movido desde academic/)
+│   │   ├── EvaluationStatus.java — enum (movido desde academic/)
+│   │   ├── FinalGradeId.java     — record UUID
+│   │   ├── PeriodGradeId.java    — record UUID
+│   │   └── FinalGradeStatus.java — PASSED, FAILED, PENDING_EXAM, FREE, ABSENT
+│   ├── repository/
+│   │   ├── EvaluationRepository.java
+│   │   ├── PeriodGradeRepository.java
+│   │   └── FinalGradeRepository.java
+│   └── exception/
+│       ├── GradeNotFoundException (evaluation, periodGrade, finalGrade, etc.)
+│       ├── GradeAlreadyValidatedException (evaluation, periodGrade, finalGrade)
+│       ├── InvalidGradeException (withReason, gradeOutOfRange, notInPendingExamStatus)
+│       └── GradeAlreadyRecordedInRegistryException (forFinalGrade)
+├── application/
+│   ├── dto/request/
+│   │   ├── CreateEvaluationRequest
+│   │   ├── GradeEvaluationRequest
+│   │   └── RecordExamGradeRequest
+│   ├── dto/response/
+│   │   ├── EvaluationResponse
+│   │   ├── PeriodGradeResponse
+│   │   └── FinalGradeResponse
+│   ├── mapper/   GradesApplicationMapper
+│   └── usecases/
+│       ├── CreateEvaluationUseCase        — TEACHER
+│       ├── GradeEvaluationUseCase         — TEACHER
+│       ├── ValidateEvaluationUseCase      — STAFF
+│       ├── CalculatePeriodGradeUseCase    — STAFF
+│       ├── RecordExamGradeUseCase         — STAFF
+│       ├── CalculateFinalGradeUseCase     — ADMIN/STAFF
+│       └── RecordFinalGradeInRegistryUseCase — ADMIN
+└── infrastructure/
+    ├── persistence/
+    │   ├── entity/    EvaluationEntity, PeriodGradeEntity,
+    │   │              FinalGradeEntity, EvaluationTypeEntity
+    │   ├── repository/ EvaluationJpaRepository, PeriodGradeJpaRepository,
+    │   │               FinalGradeJpaRepository, EvaluationTypeJpaRepository
+    │   ├── adapter/   EvaluationRepositoryAdapter, PeriodGradeRepositoryAdapter,
+    │   │              FinalGradeRepositoryAdapter
+    │   └── mapper/    EvaluationPersistenceMapper, PeriodGradePersistenceMapper,
+    │                  FinalGradePersistenceMapper
+    ├── web/
+    │   ├── dto/       GradesWebDto (clase contenedora)
+    │   ├── mapper/    GradesWebMapper
+    │   ├── controller/ GradesController (7 endpoints)
+    │   └── exception/ GradesExceptionHandler
+    └── seeder/        GradesDataSeeder (@Profile("dev"), @Order(10))
+```
+
+**Endpoints grades:**
+| Método | Path | Rol | Descripción |
+|--------|------|-----|-------------|
+| POST | `/api/grades/evaluations` | TEACHER | Crear evaluación |
+| PATCH | `/api/grades/evaluations/{id}/grade` | TEACHER | Cargar nota |
+| PATCH | `/api/grades/evaluations/{id}/validate` | ADMIN, STAFF | Validar evaluación |
+| POST | `/api/grades/period-grades/calculate` | ADMIN, STAFF | Calcular nota de período |
+| POST | `/api/grades/final-grades/exam` | ADMIN, STAFF | Asentar nota de examen/coloquio |
+| POST | `/api/grades/final-grades/calculate` | ADMIN, STAFF | Calcular nota final |
+| PATCH | `/api/grades/final-grades/{id}/registry` | ADMIN | Registrar en libro matriz |
+
+**Notas críticas `grades/`:**
+- `MIN_PASSING_GRADE = 7` — constante en cada modelo de dominio, nunca hardcodear
+- `EvaluationId`, `EvaluationTypeId`, `EvaluationStatus` — movidos de `academic/` a `grades/domain/valueobject/`
+- `RecordFinalGradeInRegistryUseCase` obtiene `registryId` y `folioNumber` del `StudentRecord` via `GetRecordByStudentIdUseCase` — el folio ya fue asignado en `CreateStudentUseCase`
+- JOINs a `StudentCourseSubjectEntity` y `CourseSubjectEntity` en JpaRepositories están comentados hasta implementar `course/`
+- Los métodos `findByEnrollment` y `findPendingValidationByTeacher` en adaptadores retornan `List.of()` como stubs hasta implementar `course/`
+- `GradesDataSeeder` siembra 5 tipos de evaluación con UUIDs fijos: `PARCIAL`, `TRABAJO_PRACTICO`, `COLOQUIO`, `EXAMEN_PREVIO`, `EVALUACION_CONTINUA`
+
 ### `shared/email/` ✅ COMPLETO
 
 **Puerto:** `shared/domain/service/EmailService.java`
@@ -735,7 +816,9 @@ class GetTeacherByIdUseCaseTest {
 | V12 | `parents`, `student_parents` (incluye `cuil` en `parents`) |
 | V13 | `teachers` |
 | V14 | `withdrawal_reasons`, `student_enrollments` |
-| V15+ | Reservado para `grades/` |
+| V15 | `courses`, `course_subjects`, `student_course_subjects` |
+| V17 | `evaluation_types`, `evaluations`, `period_grades`, `final_grades` |
+| V18+ | Reservado para `course/` |
 
 **Convenciones de BD:**
 - PK: `BINARY(16)` — `@Convert(UuidBinaryConverter.class)` en entidades, `@Id` como `UUID`
@@ -785,52 +868,32 @@ docker run -p 1025:1025 -p 8025:8025 mailhog/mailhog
 - **`students/` — COMPLETO** — 5 agregados de punta a punta
 - **`teachers/` — COMPLETO** — domain + application + infrastructure + 4 endpoints
 - **`parents/` — CORREGIDO** — cuil agregado en todas las capas, residencePlaceId → placeId
-- **Tests unitarios** — 22 tests: GetTeacherById, CreateTeacher, UpdateTeacher, CreateParent, LinkParentToStudent
-- Flyway V1–V7, V10–V14
+- **`grades/` — COMPLETO** — domain + application + infrastructure + 7 endpoints + seeder + 19 tests
+- **Tests unitarios** — 41 tests: GetTeacherById, CreateTeacher, UpdateTeacher, CreateParent, LinkParentToStudent, CreateEvaluation, GradeEvaluation, ValidateEvaluation, CalculatePeriodGrade, RecordFinalGradeInRegistry
+- **`StudentCourseSubjectId` — CORREGIDO** — convertido a Java 17 record en `course/domain/valueobject/`
+- Flyway V1–V7, V10–V15, V17
 
 ### ⏳ Pendiente
 
-- [ ] `grades/` — Calificaciones ← **próximo**
+- [ ] `course/` BC — CourseSubject, StudentCourseSubject ← **próximo**
+- [ ] Descomentar JOINs en EvaluationJpaRepository, PeriodGradeJpaRepository, FinalGradeJpaRepository (dependen de course/)
+- [ ] Implementar findByEnrollment y findPendingValidationByTeacher en adaptadores de grades/ (dependen de course/)
 - [ ] Activación de cuenta teacher — link en email (requiere `confirmationToken` en `CreateTeacherResponse`)
 - [ ] Seeder de teachers para perfil `dev`
 - [ ] Seeder de students y parents para perfil `dev`
 - [ ] Tests unitarios para students (CreateStudentUseCase — 15 pasos)
 - [ ] Rate limiting, auditoría, métricas
 
-### 🎯 Próximo paso — `grades/` (bounded context separado)
+### 🎯 Próximo paso — `course/` (bounded context)
 
-**Modelo de negocio IPET 132:**
-- **2 períodos cuatrimestrales** por año
-- **Calificación continua** — notas numéricas (1-10) o conceptuales (Logrado/En proceso/Pendiente) que carga el TEACHER durante el período
-- **Nota de período** — 2 notas cuatrimestrales por materia que asienta el PRECEPTOR/STAFF con número de libro y folio del calificador
-- **Nota mínima de aprobación:** 7
-- **Instancias de recuperación:**
-    - Coloquio (diciembre y febrero) — va separada, con libro y folio de actas
-    - Examen de materia previa — también separado con libro y folio
-- **Promedio** — el sistema calcula desde las notas continuas cuando el profesor lo solicita
+**Responsabilidad:** Asignación de profesores a materias por curso y año, e inscripción de alumnos a esas materias.
 
-**Estados de materia (`SubjectStatus`):**
+**Modelos planificados:**
+- `CourseSubject` — materia asignada a un curso con profesor y horario
+- `StudentCourseSubject` — inscripción del alumno a una materia cursada
 
-| Estado | Descripción | Va al libro matriz |
-|--------|-------------|-------------------|
-| `APPROVED` | Nota período ≥ 7 o aprueba coloquio/examen | ✅ Sí |
-| `COLOQUIO` | Nota período < 7, va a instancia diciembre/febrero | ✅ Sí |
-| `PREVIA` | No aprueba coloquio — queda con examen pendiente | ✅ Sí |
-| `PENDING` | En curso — período no cerrado | ❌ No |
-| `OWES` | **Solo al cerrar folio** — pase o abandono | ⚠️ Solo al cerrar folio |
-
-> **CRÍTICO:** `OWES` (adeuda) NO se asienta en el libro matriz durante el ciclo normal. Solo aparece cuando se cierra el folio del alumno por pase a otra institución o abandono. El cierre de folio es un evento de dominio ligado a `StudentEnrollment.withdraw()`.
-
-**Actores:**
-
-| Actor | Acción |
-|-------|--------|
-| TEACHER | Carga notas continuas, solicita promedio |
-| STAFF/PRECEPTOR | Asienta notas de período y exámenes con libro/folio |
-| ADMIN | Controla y cierra para libro matriz |
-
-**Agregados planificados:**
-1. `Grade` — calificación continua (teacher)
-2. `PeriodGrade` — nota cuatrimestral con libro/folio (preceptor)
-3. `ExamGrade` — coloquio o examen previo con libro/folio (preceptor)
-4. `SubjectStatus` — estado final por materia/estudiante/año (derivado + persistido)
+**Dependencias que desbloquea:**
+- `EvaluationJpaRepository.findPendingValidationByTeacher()` — JOIN a CourseSubjectEntity
+- `FinalGradeJpaRepository.findByEnrollmentAndYear()` — JOIN a StudentCourseSubjectEntity
+- `PeriodGradeJpaRepository.findByEnrollment()` — JOIN a StudentCourseSubjectEntity
+- `PeriodGradeRepository.findByEnrollment()` y `FinalGradeRepository.findByEnrollmentAndYear()` en adaptadores

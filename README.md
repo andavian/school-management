@@ -17,7 +17,8 @@ Sistema de gestión escolar para el **IPET 132** (Argentina) que permite:
 - ✅ Módulo de estudiantes — **COMPLETO** (personal, salud, inscripción, legajo, padres)
 - ✅ Módulo de docentes — **COMPLETO**
 - ✅ Servicio de email — **COMPLETO** (OCI SMTP, texto plano, async)
-- ⏳ Módulo de calificaciones (en diseño)
+- ✅ Módulo de calificaciones — **COMPLETO** (evaluaciones, notas de período, nota final, libro matriz)
+- ⏳ Módulo de cursos — asignación profesor-materia-curso (próximo)
 
 ### 🎯 Características Principales
 
@@ -70,7 +71,8 @@ geography/      → Lugares geográficos (País, Provincia, Localidad) ✅
 academic/       → Estructura académica (Años, Cursos, Materias) ✅
 students/       → Gestión de estudiantes ✅ COMPLETO
 teachers/       → Gestión de profesores ✅ COMPLETO
-grades/         → Calificaciones ⏳ próximo
+grades/         → Calificaciones ✅ COMPLETO
+course/         → Asignación profesor-materia-curso ⏳ próximo
 ```
 
 ---
@@ -135,24 +137,48 @@ src/main/java/org/school/management/
 │   ├── records/    ✅
 │   └── parents/    ✅ (cuil agregado, placeId corregido)
 │
-└── teachers/                                        # BOUNDED CONTEXT: Profesores ✅ COMPLETO
+├── teachers/                                        # BOUNDED CONTEXT: Profesores ✅ COMPLETO
+│   ├── domain/
+│   │   ├── model/Teacher.java
+│   │   ├── valueobject/ TeacherId, EmploymentStatus, EmploymentType, TeacherSpecialization
+│   │   ├── repository/TeacherRepository.java
+│   │   └── exception/  TeacherNotFoundException, TeacherAlreadyExistsException,
+│   │                   InvalidTeacherDataException
+│   ├── application/
+│   │   ├── dto/request/  CreateTeacherRequest, UpdateTeacherRequest
+│   │   ├── dto/response/ TeacherResponse, TeacherSummaryResponse
+│   │   ├── mapper/       TeacherApplicationMapper
+│   │   └── usecases/     GetTeacherByIdUseCase, CreateTeacherUseCase,
+│   │                     UpdateTeacherUseCase, SearchTeachersUseCase
+│   └── infrastructure/
+│       ├── persistence/  TeacherEntity, TeacherJpaRepository,
+│       │                 TeacherPersistenceMapper, TeacherRepositoryAdapter
+│       └── web/          TeacherWebDto, TeacherWebMapper,
+│                         TeacherController, TeacherExceptionHandler
+│
+└── grades/                                          # BOUNDED CONTEXT: Calificaciones ✅ COMPLETO
     ├── domain/
-    │   ├── model/Teacher.java
-    │   ├── valueobject/ TeacherId, EmploymentStatus, EmploymentType, TeacherSpecialization
-    │   ├── repository/TeacherRepository.java
-    │   └── exception/  TeacherNotFoundException, TeacherAlreadyExistsException,
-    │                   InvalidTeacherDataException
+    │   ├── model/        Evaluation, PeriodGrade, FinalGrade
+    │   ├── valueobject/  EvaluationId, EvaluationTypeId, EvaluationStatus (movidos de academic/)
+    │   │                 FinalGradeId, PeriodGradeId, FinalGradeStatus
+    │   ├── repository/   EvaluationRepository, PeriodGradeRepository, FinalGradeRepository
+    │   └── exception/    GradeNotFoundException, GradeAlreadyValidatedException,
+    │                     InvalidGradeException, GradeAlreadyRecordedInRegistryException
     ├── application/
-    │   ├── dto/request/  CreateTeacherRequest, UpdateTeacherRequest
-    │   ├── dto/response/ TeacherResponse, TeacherSummaryResponse
-    │   ├── mapper/       TeacherApplicationMapper
-    │   └── usecases/     GetTeacherByIdUseCase, CreateTeacherUseCase,
-    │                     UpdateTeacherUseCase, SearchTeachersUseCase
+    │   ├── dto/request/  CreateEvaluationRequest, GradeEvaluationRequest,
+    │   │                 RecordExamGradeRequest
+    │   ├── dto/response/ EvaluationResponse, PeriodGradeResponse, FinalGradeResponse
+    │   ├── mapper/       GradesApplicationMapper
+    │   └── usecases/     CreateEvaluationUseCase, GradeEvaluationUseCase,
+    │                     ValidateEvaluationUseCase, CalculatePeriodGradeUseCase,
+    │                     RecordExamGradeUseCase, CalculateFinalGradeUseCase,
+    │                     RecordFinalGradeInRegistryUseCase
     └── infrastructure/
-        ├── persistence/  TeacherEntity, TeacherJpaRepository,
-        │                 TeacherPersistenceMapper, TeacherRepositoryAdapter
-        └── web/          TeacherWebDto, TeacherWebMapper,
-                          TeacherController, TeacherExceptionHandler
+        ├── persistence/  EvaluationEntity, PeriodGradeEntity, FinalGradeEntity,
+        │                 EvaluationTypeEntity + JpaRepositories + Adapters + Mappers
+        ├── web/          GradesWebDto, GradesWebMapper,
+        │                 GradesController (7 endpoints), GradesExceptionHandler
+        └── seeder/       GradesDataSeeder (@Profile("dev"), @Order(10))
 ```
 
 ---
@@ -264,6 +290,32 @@ docker run -p 1025:1025 -p 8025:8025 mailhog/mailhog
 
 **Estados de empleo:** `ACTIVE` → `INACTIVE` / `RETIRED` (via PATCH)
 
+### ✅ Grades — COMPLETO
+
+| Método | Path | Rol | Descripción |
+|--------|------|-----|-------------|
+| POST | `/api/grades/evaluations` | TEACHER | Crear evaluación |
+| PATCH | `/api/grades/evaluations/{id}/grade` | TEACHER | Cargar nota |
+| PATCH | `/api/grades/evaluations/{id}/validate` | ADMIN, STAFF | Validar evaluación |
+| POST | `/api/grades/period-grades/calculate` | ADMIN, STAFF | Calcular nota de período |
+| POST | `/api/grades/final-grades/exam` | ADMIN, STAFF | Asentar nota de examen/coloquio |
+| POST | `/api/grades/final-grades/calculate` | ADMIN, STAFF | Calcular nota final |
+| PATCH | `/api/grades/final-grades/{id}/registry` | ADMIN | Registrar en libro matriz |
+
+**Flujo de calificación:**
+1. TEACHER crea evaluación y carga nota → estado `GRADED`
+2. STAFF valida la nota → estado `VALIDATED`
+3. STAFF calcula nota de período (promedio de evaluaciones validadas)
+4. Sistema calcula nota final desde períodos validados → `PASSED` o `PENDING_EXAM`
+5. Si `PENDING_EXAM`: STAFF asienta nota de coloquio/examen → `PASSED` o `FAILED`
+6. ADMIN registra nota final en el folio ya asignado al alumno en el libro matriz
+
+**Notas clave:**
+- Nota mínima de aprobación: **7** (`MIN_PASSING_GRADE` constante en cada modelo)
+- El folio del alumno se obtiene de `StudentRecord` — fue asignado en `CreateStudentUseCase`
+- `EvaluationId`, `EvaluationTypeId`, `EvaluationStatus` viven en `grades/domain/valueobject/`
+- Seeder puebla 5 tipos de evaluación con UUIDs fijos para perfil `dev`
+
 ---
 
 ## 🗄️ Migraciones Flyway
@@ -282,7 +334,9 @@ docker run -p 1025:1025 -p 8025:8025 mailhog/mailhog
 | `V12` | `parents` (con `cuil`), `student_parents` |
 | `V13` | `teachers` |
 | `V14` | `withdrawal_reasons`, `student_enrollments` |
-| `V15+` | Reservado para `grades/` |
+| `V15` | `courses`, `course_subjects`, `student_course_subjects` |
+| `V17` | `evaluation_types`, `evaluations`, `period_grades`, `final_grades` |
+| `V18+` | Reservado para `course/` |
 
 ---
 
@@ -362,7 +416,12 @@ Tests unitarios implementados con JUnit 5 + Mockito + AssertJ.
 | `UpdateTeacherUseCaseTest` | teachers | 4 |
 | `CreateParentUseCaseTest` | parents | 5 |
 | `LinkParentToStudentUseCaseTest` | parents | 6 |
-| **Total** | | **22** |
+| `CreateEvaluationUseCaseTest` | grades | 3 |
+| `GradeEvaluationUseCaseTest` | grades | 4 |
+| `ValidateEvaluationUseCaseTest` | grades | 4 |
+| `CalculatePeriodGradeUseCaseTest` | grades | 3 |
+| `RecordFinalGradeInRegistryUseCaseTest` | grades | 5 |
+| **Total** | | **41** |
 
 ```bash
 mvn test -Dgroups="unit"      # ejecutar solo unit tests
@@ -380,33 +439,29 @@ mvn test jacoco:report         # reporte de cobertura
 - **`students/` — COMPLETO** — 5 agregados de punta a punta
 - **`teachers/` — COMPLETO** — domain + application + infrastructure + email
 - **`parents/` — CORREGIDO** — cuil agregado en todas las capas, placeId consistente
-- **22 tests unitarios** — teachers y parents
-- Flyway V1–V7, V10–V14
+- **`grades/` — COMPLETO** — domain + application + infrastructure + 7 endpoints + seeder + 19 tests
+- **41 tests unitarios** — teachers, parents y grades
+- **`StudentCourseSubjectId` — CORREGIDO** — convertido a Java 17 record
+- Flyway V1–V7, V10–V15, V17
 
 ### ⏳ Pendiente
 
-- [ ] `grades/` — Calificaciones ← **próximo**
-- [ ] Link de activación en email de teacher (requiere `confirmationToken` en `CreateTeacherResponse`)
+- [ ] `course/` BC — CourseSubject, StudentCourseSubject ← **próximo**
+- [ ] Descomentar JOINs en JpaRepositories de grades/ (dependen de course/)
+- [ ] Activación de cuenta teacher — link en email
 - [ ] Seeder de teachers, students y parents para perfil `dev`
 - [ ] Tests unitarios para `CreateStudentUseCase` (15 pasos)
 - [ ] Rate limiting, auditoría, métricas
 
 ---
 
-## 🎯 Próximo — `grades/` (Calificaciones)
+## 🎯 Próximo — `course/` BC
 
-Bounded context **separado** de `academic/` — razón de cambio diferente y actores distintos.
+Bounded context que gestiona la asignación de profesores a materias por curso y año, y la inscripción de alumnos a esas materias.
 
-**Modelo de negocio IPET 132:**
-- 2 períodos cuatrimestrales por año
-- Calificación continua numérica (1-10) o conceptual (Logrado/En proceso/Pendiente)
-- Nota mínima de aprobación: **7**
-- Instancias de recuperación: Coloquio (dic/feb) y Examen de materia previa
-- Notas de coloquio/examen se asientan con número de libro y folio de actas
+**Modelos planificados:** `CourseSubject` (materia-curso-profesor) y `StudentCourseSubject` (inscripción del alumno).
 
-**Estados de materia:** `APPROVED` | `COLOQUIO` | `PREVIA` | `PENDING` | `OWES`
-
-> `OWES` solo se asienta en el libro matriz al cerrar folio del alumno (pase/abandono).
+**Desbloquea:** JOINs comentados en grades/ JpaRepositories y stubs en adaptadores.
 
 ---
 
@@ -415,24 +470,26 @@ Bounded context **separado** de `academic/` — razón de cambio diferente y act
 | Decisión | Razón |
 |----------|-------|
 | **grades/ como BC separado** | Actores distintos (TEACHER vs ADMIN), frecuencia de cambio diferente |
+| **EvaluationId/TypeId/Status en grades/** | Pertenecen exclusivamente al dominio de calificaciones — movidos desde academic/ |
+| **MIN_PASSING_GRADE = 7 como constante** | Regla de negocio IPET 132 — nunca hardcodear el umbral |
+| **FolioAssignmentService NO en grades/** | El folio ya fue asignado en CreateStudentUseCase — grades lo lee via GetRecordByStudentIdUseCase |
+| **RecordFinalGradeInRegistry recibe studentId** | Resuelve registryId + folioNumber del StudentRecord sin duplicar lógica |
+| **Stubs List.of() en adaptadores grades/** | JOINs a course/ comentados — falla silenciosa segura hasta implementar course/ |
+| **GradesDataSeeder con UUIDs fijos** | Referencias estables entre entornos |
+| **StudentCourseSubjectId como record** | Corregido desde @Value Lombok — consistencia con el patrón del proyecto |
+| **Campos boolean sin prefijo is en entidades JPA** | Lombok genera setters incorrectos con prefijo is — usar nombre semántico sin prefijo |
 | **EmailService en shared/domain** | Puerto transversal — teachers y parents lo usan; grades también lo usará |
 | **@Async en JavaMailEmailService** | Email no bloquea ni puede revertir transacciones de negocio |
 | **CUIL obligatorio en parents** | Inconsistencia corregida — identificador fiscal como en students y teachers |
 | **place_id en teachers/parents** | Distinto a residence_place_id en students — respetar nombre de columna de BD |
 | **FQN para nombres duplicados** | Java no soporta alias en imports — nombre completamente calificado en campo |
-| **getFullName() en FullName** | Método explícito del record — nunca usar fullName() directamente |
-| **buildResponse() package-private** | Reutilizable por otros use cases del mismo BC sin exponer al exterior |
 | **RecordNumber = DNI** | Legajo único y permanente — compatible con ministerio |
-| **Un legajo por estudiante** | El DNI no cambia — el legajo tampoco |
 | **Sin @OneToMany en StudentRecordEntity** | Evita problemas con BINARY(16) — documentos sincronizados manualmente |
-| **Parent es entidad global** | Un padre puede tener hijos en distintas escuelas |
-| **isPrimaryContact exclusivo** | Un solo contacto principal por estudiante |
-| **Password aleatorio para padre/teacher** | Más seguro — enviado por email |
 | **UuidBinaryConverter en shared/** | Un solo converter para todos los BCs |
 | **ProblemDetail para errores** | RFC 9457, nativo en Spring 6 |
 
 ---
 
 **Última actualización:** Marzo 2026
-**Versión:** 4.0.0
-**Estado:** En desarrollo activo — `students/` ✅ | `teachers/` ✅ | `grades/` ⏳ próximo
+**Versión:** 5.0.0
+**Estado:** En desarrollo activo — `students/` ✅ | `teachers/` ✅ | `grades/` ✅ | `course/` ⏳ próximo

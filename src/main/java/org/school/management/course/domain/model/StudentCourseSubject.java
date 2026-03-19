@@ -1,82 +1,121 @@
 package org.school.management.course.domain.model;
 
 import lombok.Builder;
-import lombok.Value;
-import lombok.With;
-import org.school.management.academic.domain.valueobject.enums.SubjectEnrollmentStatus;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
 import org.school.management.course.domain.valueobject.StudentCourseSubjectId;
+import org.school.management.course.domain.valueobject.SubjectEnrollmentStatus;
 
-import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
-@Value
+@Getter
 @Builder(toBuilder = true)
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
 public class StudentCourseSubject {
-    StudentCourseSubjectId id;
-    UUID enrollmentId;
-    UUID courseSubjectId;
 
-    @With
-    SubjectEnrollmentStatus status;
+    @EqualsAndHashCode.Include
+    private final StudentCourseSubjectId studentCourseSubjectId;
 
-    int totalClasses;
-    int attendedClasses;
-    @With
-    BigDecimal attendancePercentage;
+    private final UUID enrollmentId;
+    private final UUID courseSubjectId;
 
-    LocalDateTime createdAt;
-    LocalDateTime updatedAt;
+    private SubjectEnrollmentStatus status;
+
+    // Solo total_classes está en BD — asistencia individual no se persiste aquí
+    private int totalClasses;
+
+    private final LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
+
+    // -------------------------------------------------------------------------
+    // Factory method
+    // -------------------------------------------------------------------------
 
     public static StudentCourseSubject enroll(
             UUID enrollmentId,
             UUID courseSubjectId
     ) {
+        LocalDateTime now = LocalDateTime.now();
         return StudentCourseSubject.builder()
-                .id(StudentCourseSubjectId.generate())
+                .studentCourseSubjectId(StudentCourseSubjectId.generate())
                 .enrollmentId(enrollmentId)
                 .courseSubjectId(courseSubjectId)
                 .status(SubjectEnrollmentStatus.ENROLLED)
                 .totalClasses(0)
-                .attendedClasses(0)
-                .attendancePercentage(BigDecimal.ZERO)
-                .createdAt(LocalDateTime.now())
-                .updatedAt(LocalDateTime.now())
+                .createdAt(now)
+                .updatedAt(now)
                 .build();
     }
 
-    public StudentCourseSubject recordAttendance(boolean attended) {
-        int newTotal = totalClasses + 1;
-        int newAttended = attended ? attendedClasses + 1 : attendedClasses;
-        BigDecimal newPercentage = BigDecimal.valueOf(newAttended)
-                .multiply(BigDecimal.valueOf(100))
-                .divide(BigDecimal.valueOf(newTotal), 2, RoundingMode.HALF_UP);
+    // -------------------------------------------------------------------------
+    // Comportamiento de dominio
+    // -------------------------------------------------------------------------
 
-        return this.toBuilder()
-                .totalClasses(newTotal)
-                .attendedClasses(newAttended)
-                .attendancePercentage(newPercentage)
-                .updatedAt(LocalDateTime.now())
-                .build();
-    }
-
-    public StudentCourseSubject markAsFree() {
-        if (attendancePercentage.compareTo(BigDecimal.valueOf(75)) < 0) {
-            return this.withStatus(SubjectEnrollmentStatus.FREE);
+    public void startAttending() {
+        if (this.status != SubjectEnrollmentStatus.ENROLLED) {
+            throw new IllegalStateException(
+                    "Cannot start attending from status: " + this.status);
         }
-        throw new IllegalStateException("Cannot mark as free: attendance >= 75%");
+        this.status = SubjectEnrollmentStatus.ATTENDING;
+        this.updatedAt = LocalDateTime.now();
     }
 
-    public StudentCourseSubject pass() {
-        return this.withStatus(SubjectEnrollmentStatus.PASSED);
+    public void recordClass() {
+        if (this.status.isTerminal()) {
+            throw new IllegalStateException(
+                    "Cannot record class for a subject in status: " + this.status);
+        }
+        this.totalClasses++;
+        this.updatedAt = LocalDateTime.now();
     }
 
-    public StudentCourseSubject fail() {
-        return this.withStatus(SubjectEnrollmentStatus.FAILED);
+    public void markAsFree() {
+        if (this.status.isTerminal()) {
+            throw new IllegalStateException(
+                    "Cannot mark as free a subject already in status: " + this.status);
+        }
+        this.status = SubjectEnrollmentStatus.FREE;
+        this.updatedAt = LocalDateTime.now();
     }
 
-    public boolean meetsAttendanceRequirement() {
-        return attendancePercentage.compareTo(BigDecimal.valueOf(75)) >= 0;
+    public void pass() {
+        if (this.status.isTerminal()) {
+            throw new IllegalStateException(
+                    "Cannot pass a subject already in status: " + this.status);
+        }
+        this.status = SubjectEnrollmentStatus.PASSED;
+        this.updatedAt = LocalDateTime.now();
+    }
+
+    public void fail() {
+        if (this.status.isTerminal()) {
+            throw new IllegalStateException(
+                    "Cannot fail a subject already in status: " + this.status);
+        }
+        this.status = SubjectEnrollmentStatus.FAILED;
+        this.updatedAt = LocalDateTime.now();
+    }
+
+    public void pendingExam() {
+        if (this.status.isTerminal()) {
+            throw new IllegalStateException(
+                    "Cannot set pending exam for a subject in status: " + this.status);
+        }
+        this.status = SubjectEnrollmentStatus.PENDING_EXAM;
+        this.updatedAt = LocalDateTime.now();
+    }
+
+    public void withdraw() {
+        if (this.status.isTerminal()) {
+            throw new IllegalStateException(
+                    "Cannot withdraw from a subject already in status: " + this.status);
+        }
+        this.status = SubjectEnrollmentStatus.WITHDRAWN;
+        this.updatedAt = LocalDateTime.now();
+    }
+
+    public boolean isActive() {
+        return this.status.isActive();
     }
 }
