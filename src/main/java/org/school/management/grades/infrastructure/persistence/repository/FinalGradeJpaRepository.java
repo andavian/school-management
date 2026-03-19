@@ -19,12 +19,12 @@ public interface FinalGradeJpaRepository extends JpaRepository<FinalGradeEntity,
 
     List<FinalGradeEntity> findByAcademicYearId(UUID academicYearId);
 
-//    @Query("""
-//            SELECT fg FROM FinalGradeEntity fg
-//            JOIN StudentCourseSubjectEntity scs ON fg.studentCourseSubjectId = scs.studentCourseSubjectId
-//            WHERE scs.enrollmentId = :enrollmentId
-//            AND fg.academicYearId = :academicYearId
-//            """)
+    @Query("""
+            SELECT fg FROM FinalGradeEntity fg
+            JOIN StudentCourseSubjectEntity scs ON fg.studentCourseSubjectId = scs.studentCourseSubjectId
+            WHERE scs.enrollmentId = :enrollmentId
+            AND fg.academicYearId = :academicYearId
+            """)
     List<FinalGradeEntity> findByEnrollmentAndYear(
             @Param("enrollmentId") UUID enrollmentId,
             @Param("academicYearId") UUID academicYearId

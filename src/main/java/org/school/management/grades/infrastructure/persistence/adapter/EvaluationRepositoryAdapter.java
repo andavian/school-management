@@ -72,8 +72,10 @@ public class EvaluationRepositoryAdapter implements EvaluationRepository {
 
     @Override
     public List<Evaluation> findPendingValidationByTeacher(UUID teacherId) {
-        // Query comentada en JpaRepository hasta implementar course/
-        // Retorna lista vacía como placeholder seguro
-        return List.of();
+        return jpaRepository
+                .findPendingValidationByTeacher(teacherId)
+                .stream()
+                .map(mapper::toDomain)
+                .toList();
     }
 }

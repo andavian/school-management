@@ -49,9 +49,11 @@ public class FinalGradeRepositoryAdapter implements FinalGradeRepository {
     @Override
     public List<FinalGrade> findByEnrollmentAndYear(UUID enrollmentId,
                                                     AcademicYearId academicYearId) {
-        // Query comentada en JpaRepository hasta implementar course/
-        // Retorna lista vacía como placeholder seguro
-        return List.of();
+        return jpaRepository
+                .findByEnrollmentAndYear(enrollmentId, academicYearId.value())
+                .stream()
+                .map(mapper::toDomain)
+                .toList();
     }
 
     @Override

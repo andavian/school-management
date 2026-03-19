@@ -26,23 +26,23 @@ public interface PeriodGradeJpaRepository extends JpaRepository<PeriodGradeEntit
             """)
     List<PeriodGradeEntity> findUnvalidatedByPeriod(@Param("periodId") UUID periodId);
 
-//    @Query("""
-//            SELECT pg FROM PeriodGradeEntity pg
-//            WHERE pg.studentCourseSubjectId IN :studentCourseSubjectIds
-//            AND pg.isValidated = true
-//            ORDER BY pg.periodId
-//            """)
-//    List<PeriodGradeEntity> findValidatedGrades(
-//            @Param("studentCourseSubjectIds") List<UUID> studentCourseSubjectIds
-//    );
+    @Query("""
+            SELECT pg FROM PeriodGradeEntity pg
+            WHERE pg.studentCourseSubjectId IN :studentCourseSubjectIds
+            AND pg.isValidated = true
+            ORDER BY pg.periodId
+            """)
+    List<PeriodGradeEntity> findValidatedGrades(
+            @Param("studentCourseSubjectIds") List<UUID> studentCourseSubjectIds
+    );
 
-//    @Query("""
-//            SELECT pg FROM PeriodGradeEntity pg
-//            JOIN StudentCourseSubjectEntity scs ON pg.studentCourseSubjectId = scs.studentCourseSubjectId
-//            WHERE scs.enrollmentId = :enrollmentId
-//            ORDER BY pg.periodId
-//            """)
-//    List<PeriodGradeEntity> findByEnrollment(@Param("enrollmentId") UUID enrollmentId);
+    @Query("""
+            SELECT pg FROM PeriodGradeEntity pg
+            JOIN StudentCourseSubjectEntity scs ON pg.studentCourseSubjectId = scs.studentCourseSubjectId
+            WHERE scs.enrollmentId = :enrollmentId
+            ORDER BY pg.periodId
+            """)
+    List<PeriodGradeEntity> findByEnrollment(@Param("enrollmentId") UUID enrollmentId);
 
     boolean existsByStudentCourseSubjectIdAndPeriodId(
             UUID studentCourseSubjectId, UUID periodId

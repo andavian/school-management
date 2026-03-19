@@ -66,8 +66,10 @@ public class PeriodGradeRepositoryAdapter implements PeriodGradeRepository {
 
     @Override
     public List<PeriodGrade> findByEnrollment(UUID enrollmentId) {
-        // Query comentada en JpaRepository hasta implementar course/
-        // Retorna lista vacía como placeholder seguro
-        return List.of();
+        return jpaRepository
+                .findByEnrollment(enrollmentId)
+                .stream()
+                .map(mapper::toDomain)
+                .toList();
     }
 }
