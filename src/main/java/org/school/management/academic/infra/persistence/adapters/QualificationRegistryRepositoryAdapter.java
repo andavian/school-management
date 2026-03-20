@@ -37,7 +37,7 @@ public class QualificationRegistryRepositoryAdapter implements QualificationRegi
 
     @Override
     public Optional<QualificationRegistry> findById(RegistryId id) {
-        return jpaRepository.findById(id.getValue())
+        return jpaRepository.findById(id.value())
                 .map(mapper::toDomain);
     }
 
@@ -49,13 +49,13 @@ public class QualificationRegistryRepositoryAdapter implements QualificationRegi
 
     @Override
     public Optional<QualificationRegistry> findActiveRegistryForYear(AcademicYearId academicYearId) {
-        return jpaRepository.findActiveByAcademicYear(academicYearId.getValue())
+        return jpaRepository.findActiveByAcademicYear(academicYearId.value())
                 .map(mapper::toDomain);
     }
 
    @Override
     public List<QualificationRegistry> findByAcademicYear(AcademicYearId academicYearId) {
-        return jpaRepository.findByAcademicYearId(academicYearId.getValue()).stream()
+        return jpaRepository.findByAcademicYearId(academicYearId.value()).stream()
                 .map(mapper::toDomain)
                 .collect(Collectors.toList());
     }
@@ -81,14 +81,14 @@ public class QualificationRegistryRepositoryAdapter implements QualificationRegi
 
     @Override
     public int getAvailableFolios(RegistryId id) {
-        Integer available = jpaRepository.getAvailableFolios(id.getValue());
+        Integer available = jpaRepository.getAvailableFolios(id.value());
         return available != null ? available : 0;
     }
 
     @Override
     @Transactional
     public int incrementFolio(RegistryId id) {
-        return jpaRepository.incrementFolio(id.getValue());
+        return jpaRepository.incrementFolio(id.value());
     }
 
     @Override
@@ -100,7 +100,7 @@ public class QualificationRegistryRepositoryAdapter implements QualificationRegi
 
     @Override
     public long countByAcademicYear(AcademicYearId academicYearId) {
-        return jpaRepository.countByAcademicYearId(academicYearId.getValue());
+        return jpaRepository.countByAcademicYearId(academicYearId.value());
     }
 
     @Override
@@ -112,7 +112,7 @@ public class QualificationRegistryRepositoryAdapter implements QualificationRegi
     @Override
     @Transactional
     public void delete(RegistryId id) {
-        jpaRepository.deleteById(id.getValue());
+        jpaRepository.deleteById(id.value());
     }
 
     @Override
@@ -121,7 +121,7 @@ public class QualificationRegistryRepositoryAdapter implements QualificationRegi
         Optional<AcademicYearId> currentYearId = academicYearRepository.findCurrentYear()
                 .map(AcademicYear::getAcademicYearId);
 
-        return currentYearId.flatMap(academicYearId -> jpaRepository.findActiveByAcademicYear(academicYearId.getValue())
+        return currentYearId.flatMap(academicYearId -> jpaRepository.findActiveByAcademicYear(academicYearId.value())
                 .map(mapper::toDomain));
 
     }

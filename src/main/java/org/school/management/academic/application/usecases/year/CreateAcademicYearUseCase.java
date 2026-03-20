@@ -26,13 +26,13 @@ public class CreateAcademicYearUseCase {
         log.info("Creating academic year: {}", request.year());
 
 
-        if (academicYearRepository.existsByYear(Year.of(request.year()).getValue())) {
+        if (academicYearRepository.existsByYear(Year.of(request.year()).value())) {
             throw new AcademicYearAlreadyExistsException(
                     "Academic year " + request.year() + " already exists"
             );
         }
 
-        if (academicYearRepository.existsByYear(Year.of(request.year()).getValue())) {
+        if (academicYearRepository.existsByYear(Year.of(request.year()).value())) {
             throw new AcademicYearAlreadyExistsException(
                     "Academic year " + request.year() + " already exists"
             );

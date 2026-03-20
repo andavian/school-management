@@ -8,7 +8,9 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @EnableScheduling
 public class SchoolManagementApplication {
 
+
 	public static void main(String[] args) {
+
 		SpringApplication.run(SchoolManagementApplication.class, args);
 	}
 

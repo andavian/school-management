@@ -1,6 +1,6 @@
 package org.school.management.geography.application.dto.response;
 
-import lombok.Builder;
+
 
 
 public record GeographyStatisticsResponse(

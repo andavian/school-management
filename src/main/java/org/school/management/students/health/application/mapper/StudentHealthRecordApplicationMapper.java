@@ -31,7 +31,7 @@ public interface StudentHealthRecordApplicationMapper {
     @Mapping(target = "emergencyContactLastName",
             expression = "java(record.getEmergencyContactName().lastName())")
     @Mapping(target = "emergencyContactFullName",
-            expression = "java(record.getEmergencyContactName().fullName())")
+            expression = "java(record.getEmergencyContactName().firstNameFirst())")
     @Mapping(target = "emergencyContactPhone",
             expression = "java(record.getEmergencyContactPhone().value())")
     @Mapping(target = "hasCompleteHealthInfo",

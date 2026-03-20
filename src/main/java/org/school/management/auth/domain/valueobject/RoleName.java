@@ -20,9 +20,29 @@ public record RoleName(String name) {
     }
 
     // Factory methods
-    public static RoleName of(String value) { return new RoleName(value); }
-    public static RoleName admin() { return new RoleName("ADMIN"); }
-    // ... el resto de tus factories ...
+    public static RoleName of(String value) {
+        return new RoleName(value);
+    }
+
+    public static RoleName admin() {
+        return new RoleName("ADMIN");
+    }
+
+    public static RoleName teacher() {
+        return new RoleName("TEACHER");
+    }
+
+    public static RoleName student() {
+        return new RoleName("STUDENT");
+    }
+
+    public static RoleName parent() {
+        return new RoleName("PARENT");
+    }
+
+    public static RoleName staff() {
+        return new RoleName("STAFF");
+    }
 
     // Métodos de negocio
     public boolean isAdmin() { return "ADMIN".equals(name); }

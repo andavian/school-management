@@ -36,7 +36,7 @@ public interface AcademicYearMapper {
     // --- CUSTOM MAPPERS (Value Objects) ---
 
     default UUID mapAcademicYearId(AcademicYearId id) {
-        return id != null ? id.getValue() : null;
+        return id != null ? id.value() : null;
     }
 
     default AcademicYearId mapAcademicYearId(UUID uuid) {
@@ -44,7 +44,7 @@ public interface AcademicYearMapper {
     }
 
     default Integer mapYear(Year year) {
-        return year != null ? year.getValue() : null;
+        return year != null ? year.value() : null;
     }
 
     default Year mapYear(Integer value) {

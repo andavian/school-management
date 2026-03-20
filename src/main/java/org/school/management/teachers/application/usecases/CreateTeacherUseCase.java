@@ -18,7 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.UUID;
 
-@Service
+@Service("personalCreateTeachertUseCase")
 @RequiredArgsConstructor
 @Slf4j
 public class CreateTeacherUseCase {

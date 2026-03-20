@@ -60,20 +60,20 @@ public class Country {
      * Obtener nombre del país como String
      */
     public String getNameAsString() {
-        return name.getValue();
+        return name.value();
     }
 
     /**
      * Obtener código ISO como String
      */
     public String getIsoCodeAsString() {
-        return isoCode.getValue();
+        return isoCode.value();
     }
 
     /**
      * Obtener código telefónico como String (con +)
      */
     public String getPhoneCodeAsString() {
-        return phoneCode != null ? phoneCode.getValue() : null;
+        return phoneCode != null ? phoneCode.value() : null;
     }
 }

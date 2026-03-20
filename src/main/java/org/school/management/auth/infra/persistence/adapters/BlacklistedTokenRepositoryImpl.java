@@ -32,7 +32,7 @@ public class BlacklistedTokenRepositoryImpl implements BlacklistedTokenRepositor
 
     @Override
     public Optional<BlacklistedToken> findById(BlacklistedTokenId id) {
-        return jpaRepository.findById(id.getValue())
+        return jpaRepository.findById(id.value())
                 .map(mapper::toDomain);
     }
 

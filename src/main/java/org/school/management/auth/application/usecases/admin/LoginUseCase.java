@@ -12,7 +12,9 @@ import org.school.management.auth.domain.repository.UserRepository;
 import org.school.management.auth.domain.valueobject.PlainPassword;
 import org.school.management.auth.domain.valueobject.HashedPassword;
 import org.school.management.auth.infra.security.JwtTokenProvider;
+import org.school.management.auth.infra.security.UserPrincipal;
 import org.school.management.shared.person.domain.valueobject.Dni;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -54,16 +56,17 @@ public class LoginUseCase {
             throw new UserNotActiveException("Cuenta inactiva. Contacte al administrador.");
         }
 
+        UserDetails userPrincipal = new UserPrincipal(user);
         // Generar tokens JWT
-        String accessToken = jwtTokenProvider.generateAccessToken(user);
-        String refreshToken = jwtTokenProvider.generateRefreshToken(user);
+        String accessToken = jwtTokenProvider.generateAccessToken(userPrincipal);
+        String refreshToken = jwtTokenProvider.generateRefreshToken(userPrincipal);
 
         // Guardar última conexión
         User updatedUser = userRepository.save(user);
 
         log.info("Login exitoso para DNI: {} con roles: {}",
                 request.dni(),
-                user.getRoles().stream().map(role -> role.getName().getName()).toList());
+                user.getRoles().stream().map(role -> role.getName().name()).toList());
 
 
         return mapper.toLoginResponse(updatedUser, accessToken, refreshToken);

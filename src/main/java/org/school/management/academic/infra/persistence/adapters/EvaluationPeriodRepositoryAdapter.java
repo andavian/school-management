@@ -35,13 +35,13 @@ public class EvaluationPeriodRepositoryAdapter implements EvaluationPeriodReposi
 
     @Override
     public Optional<EvaluationPeriod> findById(PeriodId id) {
-        return jpaRepository.findById(id.getValue())
+        return jpaRepository.findById(id.value())
                 .map(mapper::toDomain);
     }
 
     @Override
     public List<EvaluationPeriod> findByAcademicYear(AcademicYearId academicYearId) {
-        return jpaRepository.findByAcademicYearIdOrderByPeriodNumberAsc(academicYearId.getValue()).stream()
+        return jpaRepository.findByAcademicYearIdOrderByPeriodNumberAsc(academicYearId.value()).stream()
                 .map(mapper::toDomain)
                 .collect(Collectors.toList());
     }
@@ -49,7 +49,7 @@ public class EvaluationPeriodRepositoryAdapter implements EvaluationPeriodReposi
     @Override
     public Optional<EvaluationPeriod> findByAcademicYearAndNumber(AcademicYearId academicYearId, int periodNumber) {
         // Implementa el método del contrato (usando el nombre JPA que sí existe)
-        return jpaRepository.findByAcademicYearIdAndPeriodNumber(academicYearId.getValue(), periodNumber)
+        return jpaRepository.findByAcademicYearIdAndPeriodNumber(academicYearId.value(), periodNumber)
                 .map(mapper::toDomain);
     }
 
@@ -60,14 +60,14 @@ public class EvaluationPeriodRepositoryAdapter implements EvaluationPeriodReposi
 
     @Override
     public Optional<EvaluationPeriod> findCurrentPeriod(AcademicYearId academicYearId) {
-          return jpaRepository.findCurrentPeriod(academicYearId.getValue())
+          return jpaRepository.findCurrentPeriod(academicYearId.value())
                 .map(mapper::toDomain);
     }
 
     @Override
     public Optional<EvaluationPeriod> findCurrentPeriod(AcademicYearId academicYearId, LocalDate date) {
 
-        return jpaRepository.findByDate(academicYearId.getValue(), date)
+        return jpaRepository.findByDate(academicYearId.value(), date)
                 .map(mapper::toDomain);
     }
 
@@ -80,7 +80,7 @@ public class EvaluationPeriodRepositoryAdapter implements EvaluationPeriodReposi
 
     @Override
     public List<EvaluationPeriod> findUpcomingPeriods(AcademicYearId academicYearId, LocalDate today) {
-        return jpaRepository.findUpcomingPeriods(academicYearId.getValue(), today).stream()
+        return jpaRepository.findUpcomingPeriods(academicYearId.value(), today).stream()
                 .map(mapper::toDomain)
                 .collect(Collectors.toList());
     }
@@ -88,7 +88,7 @@ public class EvaluationPeriodRepositoryAdapter implements EvaluationPeriodReposi
     @Override
     public Optional<EvaluationPeriod> findByDate(AcademicYearId academicYearId, LocalDate date) {
         // Implementa el método del contrato
-        return jpaRepository.findByDate(academicYearId.getValue(), date)
+        return jpaRepository.findByDate(academicYearId.value(), date)
                 .map(mapper::toDomain);
     }
 
@@ -104,20 +104,20 @@ public class EvaluationPeriodRepositoryAdapter implements EvaluationPeriodReposi
     public boolean existsByAcademicYearAndPeriodNumber(AcademicYearId academicYearId, int periodNumber) {
         // Implementa el método del contrato
         return jpaRepository.existsByAcademicYearIdAndPeriodNumber(
-                academicYearId.getValue(),
+                academicYearId.value(),
                 periodNumber
         );
     }
 
     @Override
     public int getMaxPeriodNumber(AcademicYearId academicYearId) {
-        Integer max = jpaRepository.findMaxPeriodNumber(academicYearId.getValue());
+        Integer max = jpaRepository.findMaxPeriodNumber(academicYearId.value());
         return max != null ? max : 0;
     }
 
     @Override
     @Transactional // Sobreescribir para permitir escritura
     public void delete(PeriodId id) {
-        jpaRepository.deleteById(id.getValue());
+        jpaRepository.deleteById(id.value());
     }
 }

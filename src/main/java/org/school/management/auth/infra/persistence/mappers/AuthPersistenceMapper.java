@@ -23,7 +23,7 @@ public abstract class AuthPersistenceMapper {
     // 1. HELPERS BÁSICOS (@Named)
     @Named("userIdToUuid")
     protected UUID userIdToUuid(UserId userId) {
-        return userId != null ? userId.getValue() : null;
+        return userId != null ? userId.value() : null;
     }
 
     @Named("dniToString")
@@ -33,7 +33,7 @@ public abstract class AuthPersistenceMapper {
 
     @Named("hashedPasswordToString")
     protected String hashedPasswordToString(HashedPassword password) {
-        return password != null ? password.getValue() : null;
+        return password != null ? password.value() : null;
     }
 
     // 2. HELPERS PARA COLECCIONES
@@ -84,8 +84,8 @@ public abstract class AuthPersistenceMapper {
     public RoleEntity roleToRoleEntity(Role role) {
         if (role == null) return null;
         RoleEntity entity = new RoleEntity();
-        entity.setRoleId(role.getRoleId().getValue());
-        entity.setName(role.getName().getName());
+        entity.setRoleId(role.getRoleId().value());
+        entity.setName(role.getName().name());
         entity.setCreatedAt(role.getCreatedAt());
         return entity;
     }

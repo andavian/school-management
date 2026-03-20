@@ -24,11 +24,11 @@ public record FullName (
         );
     }
 
-    public String getFullName() {
+    public String firstNameFirst() {
         return firstName + " " + lastName;
     }
 
-    public String getLastNameFirst() {
+    public String lastNameFirst() {
         return lastName + ", " + firstName;
     }
 
@@ -41,6 +41,6 @@ public record FullName (
 
     @Override
     public String toString() {
-        return getFullName();
+        return firstNameFirst();
     }
 }

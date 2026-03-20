@@ -57,15 +57,15 @@ public class Subject {
     }
 
     public String getCodeAsString() {
-        return code.getValue();
+        return code.value();
     }
 
     public int getYearLevelValue() {
-        return yearLevel.getValue();
+        return yearLevel.value();
     }
 
     public int getWeeklyHoursValue() {
-        return weeklyHours.getValue();
+        return weeklyHours.value();
     }
 
 

@@ -53,7 +53,7 @@ public class UserRepositoryImpl implements UserRepository {
                     savedUser.getUserId().asString(),
                     savedUser.getDni().value(),
                     savedUser.getRoles().stream()
-                            .map(r->r.getName().getName())
+                            .map(r->r.getName().name())
                             .collect(Collectors.joining(",")));
 
             return savedUser;
@@ -153,7 +153,7 @@ public class UserRepositoryImpl implements UserRepository {
         log.debug("Buscando usuario por ID: {}", id.asString());
 
         try {
-            return userJpaRepository.findById(id.getValue())
+            return userJpaRepository.findById(id.value())
                     .map(entity -> {
                         log.debug("Usuario encontrado: DNI {}", entity.getDni());
                         return mapper.toDomain(entity);

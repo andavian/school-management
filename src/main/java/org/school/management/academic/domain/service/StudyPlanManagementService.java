@@ -92,8 +92,8 @@ public class StudyPlanManagementService {
         if (!plan.getYearLevel().equals(subject.getYearLevel())) {
             throw new IncompatibleSubjectException(
                     String.format("Subject is for year %d but plan is for year %d",
-                            subject.getYearLevel().getValue(),
-                            plan.getYearLevel().getValue())
+                            subject.getYearLevel().value(),
+                            plan.getYearLevel().value())
             );
         }
 

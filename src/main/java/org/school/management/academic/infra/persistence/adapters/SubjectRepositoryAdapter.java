@@ -34,7 +34,7 @@ public class SubjectRepositoryAdapter implements SubjectRepository {
 
     @Override
     public Optional<Subject> findById(SubjectId id) {
-        return jpaRepository.findById(id.getValue())
+        return jpaRepository.findById(id.value())
                 .map(mapper::toDomain);
     }
 
@@ -69,7 +69,7 @@ public class SubjectRepositoryAdapter implements SubjectRepository {
     @Override
     // IMPLEMENTACIÓN SINCRONIZADA con la interfaz (usa YearLevel VO)
     public List<Subject> findByYearLevel(YearLevel yearLevel) {
-        return jpaRepository.findByYearLevel(yearLevel.getValue()).stream()
+        return jpaRepository.findByYearLevel(yearLevel.value()).stream()
                 .map(mapper::toDomain)
                 .collect(Collectors.toList());
     }
@@ -78,7 +78,7 @@ public class SubjectRepositoryAdapter implements SubjectRepository {
     // IMPLEMENTACIÓN SINCRONIZADA con la interfaz (usa YearLevel VO)
     public List<Subject> findCommonSubjects(YearLevel yearLevel) {
         // Usamos la query JPA que busca materias sin orientationId
-        return jpaRepository.findCommonSubjects(yearLevel.getValue()).stream()
+        return jpaRepository.findCommonSubjects(yearLevel.value()).stream()
                 .map(mapper::toDomain)
                 .collect(Collectors.toList());
     }
@@ -86,7 +86,7 @@ public class SubjectRepositoryAdapter implements SubjectRepository {
     @Override
     // IMPLEMENTACIÓN CORREGIDA (de List.of())
     public List<Subject> findByOrientation(OrientationId orientationId) {
-        return jpaRepository.findByOrientationId(orientationId.getValue()).stream()
+        return jpaRepository.findByOrientationId(orientationId.value()).stream()
                 .map(mapper::toDomain)
                 .collect(Collectors.toList());
     }
@@ -95,8 +95,8 @@ public class SubjectRepositoryAdapter implements SubjectRepository {
     // IMPLEMENTACIÓN SINCRONIZADA con la interfaz (usa YearLevel VO)
     public List<Subject> findByYearLevelAndOrientation(YearLevel yearLevel, OrientationId orientationId) {
         return jpaRepository.findByYearLevelAndOrientation(
-                        yearLevel.getValue(),
-                        orientationId != null ? orientationId.getValue() : null
+                        yearLevel.value(),
+                        orientationId != null ? orientationId.value() : null
                 ).stream()
                 .map(mapper::toDomain)
                 .collect(Collectors.toList());
@@ -106,8 +106,8 @@ public class SubjectRepositoryAdapter implements SubjectRepository {
     // IMPLEMENTACIÓN DEL NUEVO MÉTODO DE CONTRATO
     public List<Subject> findAvailableForGradeLevel(YearLevel yearLevel, OrientationId orientationId) {
         return jpaRepository.findAvailableForGradeLevel(
-                        yearLevel.getValue(),
-                        orientationId != null ? orientationId.getValue() : null
+                        yearLevel.value(),
+                        orientationId != null ? orientationId.value() : null
                 ).stream()
                 .map(mapper::toDomain)
                 .collect(Collectors.toList());
@@ -122,12 +122,12 @@ public class SubjectRepositoryAdapter implements SubjectRepository {
 
     @Override
     public long countByYearLevel(YearLevel yearLevel) {
-        return jpaRepository.countByYearLevel(yearLevel.getValue());
+        return jpaRepository.countByYearLevel(yearLevel.value());
     }
 
     @Override
     public long countByOrientation(OrientationId orientationId) {
-        return jpaRepository.countByOrientationId(orientationId.getValue());
+        return jpaRepository.countByOrientationId(orientationId.value());
     }
 
     // --- Métodos de Base ---
@@ -140,6 +140,6 @@ public class SubjectRepositoryAdapter implements SubjectRepository {
     @Override
     @Transactional
     public void delete(SubjectId id) {
-        jpaRepository.deleteById(id.getValue());
+        jpaRepository.deleteById(id.value());
     }
 }

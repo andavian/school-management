@@ -26,7 +26,7 @@ public interface QualificationRegistryMapper {
     QualificationRegistry toDomain(QualificationRegistryEntity entity);
 
     default UUID mapQualificationRegistryId(RegistryId id) {
-        return id != null ? id.getValue() : null;
+        return id != null ? id.value() : null;
     }
 
     default RegistryId mapQualificationRegistryId(UUID uuid) {
@@ -34,7 +34,7 @@ public interface QualificationRegistryMapper {
     }
 
     default UUID mapAcademicYearId(AcademicYearId id) {
-        return id != null ? id.getValue() : null;
+        return id != null ? id.value() : null;
     }
 
     default AcademicYearId mapAcademicYearId(UUID uuid) {
@@ -50,7 +50,7 @@ public interface QualificationRegistryMapper {
     }
 
     default String mapRegistryNumber(RegistryNumber number) {
-        return number != null ? number.getValue() : null;
+        return number != null ? number.value() : null;
     }
 
     default RegistryNumber mapRegistryNumber(String number) {

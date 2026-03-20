@@ -72,7 +72,8 @@ academic/       → Estructura académica (Años, Cursos, Materias) ✅
 students/       → Gestión de estudiantes ✅ COMPLETO
 teachers/       → Gestión de profesores ✅ COMPLETO
 grades/         → Calificaciones ✅ COMPLETO
-course/         → Asignación profesor-materia-curso ⏳ próximo
+course/         → Asignación profesor-materia-curso ✅ COMPLETO
+attendance/     → Asistencia diaria y por materia ⏳ próximo
 ```
 
 ---
@@ -421,7 +422,9 @@ Tests unitarios implementados con JUnit 5 + Mockito + AssertJ.
 | `ValidateEvaluationUseCaseTest` | grades | 4 |
 | `CalculatePeriodGradeUseCaseTest` | grades | 3 |
 | `RecordFinalGradeInRegistryUseCaseTest` | grades | 5 |
-| **Total** | | **41** |
+| `CreateCourseSubjectUseCaseTest` | course | 4 |
+| `EnrollStudentInCourseUseCaseTest` | course | 5 |
+| **Total** | | **50** |
 
 ```bash
 mvn test -Dgroups="unit"      # ejecutar solo unit tests
@@ -439,29 +442,30 @@ mvn test jacoco:report         # reporte de cobertura
 - **`students/` — COMPLETO** — 5 agregados de punta a punta
 - **`teachers/` — COMPLETO** — domain + application + infrastructure + email
 - **`parents/` — CORREGIDO** — cuil agregado en todas las capas, placeId consistente
-- **`grades/` — COMPLETO** — domain + application + infrastructure + 7 endpoints + seeder + 19 tests
-- **41 tests unitarios** — teachers, parents y grades
-- **`StudentCourseSubjectId` — CORREGIDO** — convertido a Java 17 record
-- Flyway V1–V7, V10–V15, V17
+- **`grades/` — COMPLETO** — domain + application + infrastructure + 7 endpoints + seeder + 19 tests + stubs desbloqueados
+- **`course/` — COMPLETO** — domain + application + infrastructure + 5 endpoints + seeder + 9 tests
+- **Seeders dev** — Academic, Course, Grades, Teacher (3 docentes), StudentAndParent (4 alumnos + 4 padres)
+- **50 tests unitarios** — teachers (11), parents (11), grades (19), course (9)
+- Flyway V1–V7, V10–V15, V17, V19, V20
 
 ### ⏳ Pendiente
 
-- [ ] `course/` BC — CourseSubject, StudentCourseSubject ← **próximo**
-- [ ] Descomentar JOINs en JpaRepositories de grades/ (dependen de course/)
-- [ ] Activación de cuenta teacher — link en email
-- [ ] Seeder de teachers, students y parents para perfil `dev`
+- [ ] `attendance/` BC — DailyAttendance, CourseAttendance, AttendanceSummary ← **próximo**
+- [ ] Activación de cuenta teacher — link en email con confirmationToken
 - [ ] Tests unitarios para `CreateStudentUseCase` (15 pasos)
 - [ ] Rate limiting, auditoría, métricas
 
 ---
 
-## 🎯 Próximo — `course/` BC
+## 🎯 Próximo — `attendance/` BC
 
-Bounded context que gestiona la asignación de profesores a materias por curso y año, y la inscripción de alumnos a esas materias.
+Control de asistencia diaria (preceptor) y por materia (profesor) con cálculo automático de resúmenes y detección de alumnos en riesgo de quedar libres.
 
-**Modelos planificados:** `CourseSubject` (materia-curso-profesor) y `StudentCourseSubject` (inscripción del alumno).
+**Reglas IPET 132:** 85% mínimo | ABSENT/JUSTIFIED=1.0 | LATE/WITHDRAWN=0.2 | libre si faltas ponderadas > 15%
 
-**Desbloquea:** JOINs comentados en grades/ JpaRepositories y stubs en adaptadores.
+**Modelos:** `DailyAttendance` (lista del día) + `CourseAttendance` (por materia) + `AttendanceSummary` (resumen por período)
+
+**Migración:** `V21__create_attendance_tables.sql`
 
 ---
 
@@ -474,17 +478,24 @@ Bounded context que gestiona la asignación de profesores a materias por curso y
 | **MIN_PASSING_GRADE = 7 como constante** | Regla de negocio IPET 132 — nunca hardcodear el umbral |
 | **FolioAssignmentService NO en grades/** | El folio ya fue asignado en CreateStudentUseCase — grades lo lee via GetRecordByStudentIdUseCase |
 | **RecordFinalGradeInRegistry recibe studentId** | Resuelve registryId + folioNumber del StudentRecord sin duplicar lógica |
-| **Stubs List.of() en adaptadores grades/** | JOINs a course/ comentados — falla silenciosa segura hasta implementar course/ |
 | **GradesDataSeeder con UUIDs fijos** | Referencias estables entre entornos |
 | **StudentCourseSubjectId como record** | Corregido desde @Value Lombok — consistencia con el patrón del proyecto |
+| **CourseStatus y SubjectEnrollmentStatus en course/** | Mismo patrón que EvaluationStatus → grades/; pertenecen al BC que los usa |
+| **StudentCourseSubject sin attendedClasses** | Campo no existe en BD — solo total_classes en course_subjects |
+| **attendance/ como BC separado** | Actores distintos (preceptor vs profesor); volumen alto; razón de cambio diferente a course/ |
+| **AttendanceStatus con peso de falta** | Encapsula regla de negocio en el enum — ABSENT=1.0, LATE=0.2, WITHDRAWN=0.2 |
+| **MIN_ATTENDANCE_PERCENTAGE = 85** | Regla IPET 132 — constante en AttendanceSummary, nunca hardcodear |
+| **recalculate() en AttendanceSummary** | Recalcula en cada carga/corrección — consistencia garantizada en la transacción |
+| **Seeders resuelven place_id en runtime** | Geography usa UUIDs dinámicos — searchByName() + filter exact match |
+| **UserEntity.dni como username** | findByDni() — el campo `dni` es el identificador de login en UserEntity |
+| **auth.infra (no auth.infrastructure)** | El paquete de auth usa `infra` — excepción al estándar `infrastructure` del resto del proyecto |
 | **Campos boolean sin prefijo is en entidades JPA** | Lombok genera setters incorrectos con prefijo is — usar nombre semántico sin prefijo |
-| **EmailService en shared/domain** | Puerto transversal — teachers y parents lo usan; grades también lo usará |
+| **EmailService en shared/domain** | Puerto transversal — teachers y parents lo usan |
 | **@Async en JavaMailEmailService** | Email no bloquea ni puede revertir transacciones de negocio |
-| **CUIL obligatorio en parents** | Inconsistencia corregida — identificador fiscal como en students y teachers |
-| **place_id en teachers/parents** | Distinto a residence_place_id en students — respetar nombre de columna de BD |
-| **FQN para nombres duplicados** | Java no soporta alias en imports — nombre completamente calificado en campo |
+| **CUIL obligatorio en parents** | Identificador fiscal — consistente con students y teachers |
+| **place_id en teachers/parents** | Distinto a residence_place_id en students — respetar columna de BD |
+| **FQN para nombres duplicados** | Java no soporta alias en imports — nombre completamente calificado |
 | **RecordNumber = DNI** | Legajo único y permanente — compatible con ministerio |
-| **Sin @OneToMany en StudentRecordEntity** | Evita problemas con BINARY(16) — documentos sincronizados manualmente |
 | **UuidBinaryConverter en shared/** | Un solo converter para todos los BCs |
 | **ProblemDetail para errores** | RFC 9457, nativo en Spring 6 |
 

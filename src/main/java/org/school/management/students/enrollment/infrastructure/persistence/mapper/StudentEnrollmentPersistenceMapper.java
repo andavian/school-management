@@ -18,7 +18,14 @@ import org.school.management.students.personal.domain.valueobject.StudentPersona
  */
 @Mapper(
         componentModel = "spring",
-        nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE
+        nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE,
+imports = {
+EnrollmentId.class,
+StudentPersonalDataId.class,
+AcademicYearId.class,
+GradeLevelId.class,
+WithdrawalReasonId.class
+        }
 )
 public interface StudentEnrollmentPersistenceMapper {
 

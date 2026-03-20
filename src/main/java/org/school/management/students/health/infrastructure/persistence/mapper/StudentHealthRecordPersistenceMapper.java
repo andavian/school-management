@@ -19,7 +19,13 @@ import org.school.management.students.personal.domain.valueobject.StudentPersona
  *   reconstruido separando por primer espacio en @AfterMapping
  * - bloodType: almacenado como nombre del enum (A_POSITIVE), convertido a/desde displayName en use cases
  */
-@Mapper(componentModel = "spring", nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
+@Mapper(componentModel = "spring",
+        nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE,
+imports={
+        BloodType.class,
+        HealthRecordId.class,
+        StudentPersonalDataId.class
+})
 public interface StudentHealthRecordPersistenceMapper {
 
     // ── Domain → Entity ──────────────────────────────────────────────────
@@ -31,7 +37,7 @@ public interface StudentHealthRecordPersistenceMapper {
     @Mapping(target = "bloodType",
             expression = "java(domain.getBloodType() != null ? domain.getBloodType().name() : null)")
     @Mapping(target = "emergencyContactName",
-            expression = "java(domain.getEmergencyContactName().fullName())")
+            expression = "java(domain.getEmergencyContactName().firstNameFirst())")
     @Mapping(target = "emergencyContactPhone",
             expression = "java(domain.getEmergencyContactPhone().value())")
     StudentHealthRecordEntity toEntity(StudentHealthRecord domain);

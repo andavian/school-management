@@ -29,7 +29,7 @@ public interface StudentPersonalDataApplicationMapper {
     @Mapping(target = "cuil",           expression = "java(student.getCuil().formatted())")
     @Mapping(target = "firstName",      expression = "java(student.getFullName().firstName())")
     @Mapping(target = "lastName",       expression = "java(student.getFullName().lastName())")
-    @Mapping(target = "fullName",       expression = "java(student.getFullName().fullName())")
+    @Mapping(target = "fullName",       expression = "java(student.getFullName().firstNameFirst())")
     @Mapping(target = "age",            expression = "java(student.calculateAge())")
     @Mapping(target = "isAdult",        expression = "java(student.isAdult())")
     @Mapping(target = "gender",         expression = "java(student.getGender().name())")
@@ -51,7 +51,7 @@ public interface StudentPersonalDataApplicationMapper {
 
     @Mapping(target = "studentId",  expression = "java(student.getStudentId().value())")
     @Mapping(target = "dni",        expression = "java(student.getDni().value())")
-    @Mapping(target = "fullName",   expression = "java(student.getFullName().fullName())")
+    @Mapping(target = "fullName",   expression = "java(student.getFullName().firstNameFirst())")
     @Mapping(target = "age",        expression = "java(student.calculateAge())")
     @Mapping(target = "email",      expression = "java(student.getEmail() != null ? student.getEmail().value() : null)")
     @Mapping(target = "phone",      expression = "java(student.getPhone() != null ? student.getPhone().value() : null)")

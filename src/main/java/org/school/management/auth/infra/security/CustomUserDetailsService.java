@@ -21,10 +21,11 @@ public class CustomUserDetailsService implements UserDetailsService {
         log.debug("Cargando usuario por DNI: {}", username);
 
         try {
-            // Username ahora es el DNI
             Dni dni = Dni.of(username);
 
             return userRepository.findByDni(dni)
+                    // Mapeamos la entidad User al record UserPrincipal (Adapter)
+                    .map(UserPrincipal::new)
                     .orElseThrow(() -> {
                         log.warn("Usuario no encontrado con DNI: {}", username);
                         return new UsernameNotFoundException("Usuario no encontrado con DNI: " + username);

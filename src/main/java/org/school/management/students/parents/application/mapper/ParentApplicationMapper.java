@@ -23,7 +23,7 @@ public interface ParentApplicationMapper {
                 parent.getCuil().formatted(),
                 parent.getFullName().firstName(),
                 parent.getFullName().lastName(),
-                parent.getFullName().getFullName(),
+                parent.getFullName().firstNameFirst(),
                 parent.getBirthDate(),
                 parent.getGender() != null ? parent.getGender().name() : null,
                 parent.getNationality() != null ? parent.getNationality().value() : null,

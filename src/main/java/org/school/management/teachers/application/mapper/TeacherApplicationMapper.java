@@ -25,7 +25,7 @@ public interface TeacherApplicationMapper {
     @Mapping(target = "userId",           expression = "java(teacher.getUserId().value())")
     @Mapping(target = "firstName",        expression = "java(teacher.getFullName().firstName())")
     @Mapping(target = "lastName",         expression = "java(teacher.getFullName().lastName())")
-    @Mapping(target = "fullName",         expression = "java(teacher.getFullName().fullName())")
+    @Mapping(target = "fullName",         expression = "java(teacher.getFullName().firstNameFirst())")
     @Mapping(target = "dni",              expression = "java(teacher.getDni().value())")
     @Mapping(target = "cuil",             expression = "java(teacher.getCuil().formatted())")
     @Mapping(target = "email",            expression = "java(teacher.getEmail().value())")
@@ -53,10 +53,10 @@ public interface TeacherApplicationMapper {
 
     // ── Teacher → TeacherSummaryResponse ──────────────────────────────────
 
-    @Mapping(target = "teacherId",        expression = "java(teacher.getTeacherId().value())")
+    @Mapping(target = "teacherId",        expression = "java(teacher.getTeacherId().asString())")
     @Mapping(target = "firstName",        expression = "java(teacher.getFullName().firstName())")
     @Mapping(target = "lastName",         expression = "java(teacher.getFullName().lastName())")
-    @Mapping(target = "fullName",         expression = "java(teacher.getFullName().fullName())")
+    @Mapping(target = "fullName",         expression = "java(teacher.getFullName().firstNameFirst())")
     @Mapping(target = "dni",              expression = "java(teacher.getDni().value())")
     @Mapping(target = "email",            expression = "java(teacher.getEmail().value())")
     @Mapping(target = "phone",            expression = "java(teacher.getPhone() != null ? teacher.getPhone().value() : null)")

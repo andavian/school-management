@@ -22,7 +22,7 @@ import java.util.stream.Collectors;
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Builder
-public class User implements UserDetails {
+public class User {
 
     @EqualsAndHashCode.Include
     private UserId userId;
@@ -85,7 +85,7 @@ public class User implements UserDetails {
             throw new UserNotActiveException("User is not active");
         }
 
-        boolean matches = this.password.matches(plainPassword.getValue(), encoder);
+        boolean matches = this.password.matches(plainPassword.value(), encoder);
         if (matches) {
             recordLogin();
         }
@@ -95,7 +95,7 @@ public class User implements UserDetails {
 
     public void changePassword(PlainPassword currentPassword, PlainPassword newPassword,
                                HashedPassword.PasswordEncoder encoder) {
-        if (!this.password.matches(currentPassword.getValue(), encoder)) {
+        if (!this.password.matches(currentPassword.value(), encoder)) {
             throw new InvalidPasswordException("Current password is incorrect");
         }
 
@@ -133,32 +133,4 @@ public class User implements UserDetails {
         return new HashSet<>(roles);
     }
 
-    @Override
-    public Collection<? extends GrantedAuthority> getAuthorities() {
-        return roles.stream()
-                .map(role -> role.getName().toAuthority())
-                .collect(Collectors.toList());
-    }
-
-    @Override
-    public String getUsername() {
-        return dni.value();
-    }
-
-    @Override
-    public String getPassword() {
-        return password.getValue();
-    }
-
-    @Override
-    public boolean isAccountNonExpired() { return true; }
-
-    @Override
-    public boolean isAccountNonLocked() { return active; } // Usa "active"
-
-    @Override
-    public boolean isCredentialsNonExpired() { return true; }
-
-    @Override
-    public boolean isEnabled() { return active; } // Usa "active"
 }

@@ -38,11 +38,11 @@ public interface AcademicApplicationMapper {
 
     // Custom mappings
     default String mapAcademicYearId(AcademicYearId id) {
-        return id != null ? id.getValue().toString() : null;
+        return id != null ? id.value().toString() : null;
     }
 
     default Integer mapYear(Year year) {
-        return year != null ? year.getValue() : null;
+        return year != null ? year.value() : null;
     }
 
     default String mapStatus(AcademicYearStatus status) {
@@ -54,7 +54,7 @@ public interface AcademicApplicationMapper {
     OrientationResponse toOrientationResponse(Orientation domain);
 
     default String mapOrientationId(OrientationId id) {
-        return id != null ? id.getValue().toString() : null;
+        return id != null ? id.value().toString() : null;
     }
 
     // ========================================================================
@@ -74,7 +74,7 @@ public interface AcademicApplicationMapper {
     GradeLevelResponse toGradeLevelResponse(GradeLevel domain);
 
     default String mapGradeLevelId(GradeLevelId id) {
-        return id != null ? id.getValue().toString() : null;
+        return id != null ? id.value().toString() : null;
     }
 
     default String mapShift(Shift shift) {
@@ -97,15 +97,15 @@ public interface AcademicApplicationMapper {
     SubjectResponse toSubjectResponse(Subject domain);
 
     default String mapSubjectId(SubjectId id) {
-        return id != null ? id.getValue().toString() : null;
+        return id != null ? id.value().toString() : null;
     }
 
     default String mapSubjectId(SubjectCode code) {
-        return code != null ? code.getValue() : null;
+        return code != null ? code.value() : null;
     }
 
     default Integer mapWheeklyHours(WeeklyHours hours){
-        return hours != null ? hours.getValue() : null;
+        return hours != null ? hours.value() : null;
     }
 
     // ========================================================================
@@ -120,7 +120,7 @@ public interface AcademicApplicationMapper {
     StudyPlanResponse toStudyPlanResponse(StudyPlan domain);
 
     default String mapStudyPlanId(StudyPlanId id) {
-        return id != null ? id.getValue().toString() : null;
+        return id != null ? id.value().toString() : null;
     }
 
     // ========================================================================
@@ -133,11 +133,11 @@ public interface AcademicApplicationMapper {
     EvaluationPeriodResponse toEvaluationPeriodResponse(EvaluationPeriod domain);
 
     default String mapEvaluationPeriodId(PeriodId id) {
-        return id != null ? id.getValue().toString() : null;
+        return id != null ? id.value().toString() : null;
     }
 
     default Integer mapPeriodNumber(PeriodNumber number) {
-        return number != null ? number.getValue() : null;
+        return number != null ? number.value() : null;
     }
 
     // ========================================================================
@@ -155,7 +155,7 @@ public interface AcademicApplicationMapper {
     QualificationRegistryResponse toQualificationRegistryResponse(QualificationRegistry domain);
 
     default String mapQualificationRegistryId(RegistryId id) {
-        return id != null ? id.getValue().toString() : null;
+        return id != null ? id.value().toString() : null;
     }
 
     default String mapRegistryStatus(RegistryStatus status) {
@@ -163,6 +163,6 @@ public interface AcademicApplicationMapper {
     }
 
     default String mapRegistryNumber(RegistryNumber number) {
-        return number != null ? number.getValue() : null;
+        return number != null ? number.value() : null;
     }
 }

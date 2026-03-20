@@ -32,7 +32,7 @@ public class OrientationRepositoryAdapter implements OrientationRepository {
 
     @Override
     public Optional<Orientation> findById(OrientationId id) {
-        return jpaRepository.findById(id.getValue())
+        return jpaRepository.findById(id.value())
                 .map(mapper::toDomain);
     }
 
@@ -86,6 +86,6 @@ public class OrientationRepositoryAdapter implements OrientationRepository {
     @Override
     @Transactional // Sobreescribe para escritura
     public void delete(OrientationId id) {
-        jpaRepository.deleteById(id.getValue());
+        jpaRepository.deleteById(id.value());
     }
 }

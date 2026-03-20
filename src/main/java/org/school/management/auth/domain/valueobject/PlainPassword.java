@@ -1,5 +1,7 @@
 package org.school.management.auth.domain.valueobject;
 
+import java.util.regex.Pattern;
+
 public record PlainPassword(String value) {
 
     private static final int MIN_LENGTH = 8;

@@ -17,18 +17,19 @@ public interface OrientationMapper {
 
     @Mapping(target = "orientationId", source = "orientationId")
     @Mapping(target = "code", source = "code.value")
+    @Mapping(target = "active", source = "isActive")
     OrientationEntity toEntity(Orientation domain);
 
     @InheritInverseConfiguration
     Orientation toDomain(OrientationEntity entity);
 
     default UUID mapOrientationId(OrientationId id) {
-        return id != null ? id.getValue() : null;
+        return id != null ? id.value() : null;
     }
 
 
     default Integer mapAvailableFromYear(YearLevel yearLevel) {
-        return yearLevel != null ? yearLevel.getValue() : null;
+        return yearLevel != null ? yearLevel.value() : null;
     }
 
     default YearLevel mapAvailableFromYear(Integer value) {

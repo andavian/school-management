@@ -42,19 +42,19 @@ public class PlaceRepositoryAdapter implements PlaceRepository {
 
     @Override
     public Optional<Place> findById(PlaceId placeId) {
-        return jpaRepository.findById(placeId.getValue())
+        return jpaRepository.findById(placeId.value())
                 .map(mapper::toPlaceDomain);
     }
 
     @Override
     public Optional<Place> findByNameAndProvince(String name, ProvinceId provinceId) {
-        return jpaRepository.findByNameAndProvinceId(name, provinceId.getValue())
+        return jpaRepository.findByNameAndProvinceId(name, provinceId.value())
                 .map(mapper::toPlaceDomain);
     }
 
     @Override
     public Optional<PlaceWithHierarchy> findByIdWithHierarchy(PlaceId placeId) {
-        return jpaRepository.findByIdWithHierarchy(placeId.getValue())
+        return jpaRepository.findByIdWithHierarchy(placeId.value())
                 .map(mapper::toPlaceWithHierarchy);
     }
 
@@ -67,7 +67,7 @@ public class PlaceRepositoryAdapter implements PlaceRepository {
 
     @Override
     public List<Place> findByProvinceId(ProvinceId provinceId) {
-        return jpaRepository.findByProvinceId(provinceId.getValue()).stream()
+        return jpaRepository.findByProvinceId(provinceId.value()).stream()
                 .map(mapper::toPlaceDomain)
                 .collect(Collectors.toList());
     }
@@ -83,7 +83,7 @@ public class PlaceRepositoryAdapter implements PlaceRepository {
     @Override
     public List<Place> findByProvinceIdAndType(ProvinceId provinceId, PlaceType type) {
         PlaceEntity.PlaceTypeEnum entityType = mapper.toPlaceTypeEntity(type);
-        return jpaRepository.findByProvinceIdAndType(provinceId.getValue(), entityType).stream()
+        return jpaRepository.findByProvinceIdAndType(provinceId.value(), entityType).stream()
                 .map(mapper::toPlaceDomain)
                 .collect(Collectors.toList());
     }
@@ -104,7 +104,7 @@ public class PlaceRepositoryAdapter implements PlaceRepository {
 
     @Override
     public List<Place> searchByNameInProvince(String namePattern, ProvinceId provinceId) {
-        return jpaRepository.searchByNameInProvince(namePattern, provinceId.getValue()).stream()
+        return jpaRepository.searchByNameInProvince(namePattern, provinceId.value()).stream()
                 .map(mapper::toPlaceDomain)
                 .collect(Collectors.toList());
     }
@@ -121,9 +121,9 @@ public class PlaceRepositoryAdapter implements PlaceRepository {
             String namePattern,
             ProvinceId provinceId
     ) {
-        return jpaRepository.searchByNameInProvince(namePattern, provinceId.getValue()).stream()
+        return jpaRepository.searchByNameInProvince(namePattern, provinceId.value()).stream()
                 .map(PlaceEntity::getPlaceId)
-                .map(placeId -> jpaRepository.findByIdWithHierarchy(placeId))
+                .map(jpaRepository::findByIdWithHierarchy)
                 .filter(Optional::isPresent)
                 .map(Optional::get)
                 .map(mapper::toPlaceWithHierarchy)
@@ -132,12 +132,12 @@ public class PlaceRepositoryAdapter implements PlaceRepository {
 
     @Override
     public boolean existsByNameAndProvince(String name, ProvinceId provinceId) {
-        return jpaRepository.existsByNameAndProvinceId(name, provinceId.getValue());
+        return jpaRepository.existsByNameAndProvinceId(name, provinceId.value());
     }
 
     @Override
     public long countByProvince(ProvinceId provinceId) {
-        return jpaRepository.countByProvinceId(provinceId.getValue());
+        return jpaRepository.countByProvinceId(provinceId.value());
     }
 
     @Override
@@ -150,6 +150,6 @@ public class PlaceRepositoryAdapter implements PlaceRepository {
     @Transactional
     public void delete(PlaceId placeId) {
         log.debug("Deleting place: {}", placeId);
-        jpaRepository.deleteById(placeId.getValue());
+        jpaRepository.deleteById(placeId.value());
     }
 }

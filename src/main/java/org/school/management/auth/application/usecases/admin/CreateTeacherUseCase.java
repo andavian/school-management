@@ -12,13 +12,15 @@ import org.school.management.auth.domain.repository.UserRepository;
 import org.school.management.auth.domain.valueobject.HashedPassword;
 import org.school.management.auth.domain.valueobject.PlainPassword;
 import org.school.management.auth.infra.security.JwtTokenProvider;
+import org.school.management.auth.infra.security.UserPrincipal;
 import org.school.management.shared.person.domain.valueobject.Dni;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.security.SecureRandom;
 
-@Service
+@Service("authCreateTeacherUseCase")
 @RequiredArgsConstructor
 @Slf4j
 public class CreateTeacherUseCase {
@@ -51,8 +53,10 @@ public class CreateTeacherUseCase {
         // Guardar
         User savedTeacher = userRepository.save(teacher);
 
+        UserDetails userPrincipal = new UserPrincipal(savedTeacher);
+
         // Generar token de confirmación
-        String confirmationToken = jwtTokenProvider.generateConfirmationToken(savedTeacher);
+        String confirmationToken = jwtTokenProvider.generateConfirmationToken(userPrincipal);
 
         // Enviar email de invitación
         boolean invitationSent = sendTeacherInvitation(savedTeacher, confirmationToken);
@@ -63,7 +67,7 @@ public class CreateTeacherUseCase {
         return new CreateTeacherResponse(
                 savedTeacher.getUserId().asString(),
                 savedTeacher.getDni().value(),
-                temporaryPassword.getValue(),
+                temporaryPassword.value(),
                 invitationSent
         );
     }

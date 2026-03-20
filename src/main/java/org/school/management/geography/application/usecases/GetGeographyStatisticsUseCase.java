@@ -29,12 +29,11 @@ public class GetGeographyStatisticsUseCase {
         long citiesCount = placeRepository.countByType(PlaceType.CIUDAD);
         long localitiesCount = placeRepository.countByType(PlaceType.LOCALIDAD);
 
-        return GeographyStatisticsResponse.builder()
-                .totalCountries(totalCountries)
-                .totalProvinces(totalProvinces)
-                .totalPlaces(totalPlaces)
-                .citiesCount(citiesCount)
-                .localitiesCount(localitiesCount)
-                .build();
+        return new GeographyStatisticsResponse (
+                totalCountries,
+                totalProvinces,
+                totalPlaces,
+                citiesCount,
+                localitiesCount);
     }
 }

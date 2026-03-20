@@ -55,13 +55,13 @@ public class Province {
      * Obtener nombre como String
      */
     public String getNameAsString() {
-        return name.getValue();
+        return name.value();
     }
 
     /**
      * Obtener código como String
      */
     public String getCodeAsString() {
-        return code != null ? code.getValue() : null;
+        return code != null ? code.value() : null;
     }
 }

@@ -36,7 +36,7 @@ public class GradeLevelValidationService {
             OrientationId orientationId) {
 
         log.debug("Validating grade level creation: {}{} - Orientation: {}",
-                yearLevel.getValue(), division.getValue(), orientationId);
+                yearLevel.value(), division.value(), orientationId);
 
         // 1. Verificar que no exista ya
         boolean exists = gradeLevelRepository.existsByAcademicYearAndYearLevelAndDivision(
@@ -46,7 +46,7 @@ public class GradeLevelValidationService {
         if (exists) {
             throw new GradeLevelAlreadyExistsException(
                     String.format("Grade level %d%s already exists for this academic year",
-                            yearLevel.getValue(), division.getValue())
+                            yearLevel.value(), division.value())
             );
         }
 
@@ -54,7 +54,7 @@ public class GradeLevelValidationService {
         if (yearLevel.requiresOrientation()) {
             if (orientationId == null) {
                 throw new InvalidOrientationForYearLevelException(
-                        "Year level " + yearLevel.getValue() + " requires an orientation"
+                        "Year level " + yearLevel.value() + " requires an orientation"
                 );
             }
 
@@ -70,17 +70,17 @@ public class GradeLevelValidationService {
                 );
             }
 
-            if (orientation.getAvailableFromYear().getValue() > yearLevel.getValue()) {
+            if (orientation.getAvailableFromYear().value() > yearLevel.value()) {
                 throw new InvalidOrientationForYearLevelException(
                         String.format("Orientation %s is only available from year %d",
-                                orientation.getName(), orientation.getAvailableFromYear().getValue())
+                                orientation.getName(), orientation.getAvailableFromYear().value())
                 );
             }
         } else {
             // 1°-3° no deben tener orientación
             if (orientationId != null) {
                 throw new InvalidOrientationForYearLevelException(
-                        "Year level " + yearLevel.getValue() + " should not have an orientation"
+                        "Year level " + yearLevel.value() + " should not have an orientation"
                 );
             }
         }

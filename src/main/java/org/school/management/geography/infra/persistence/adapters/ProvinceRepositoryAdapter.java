@@ -36,13 +36,13 @@ public class ProvinceRepositoryAdapter implements ProvinceRepository {
 
     @Override
     public Optional<Province> findById(ProvinceId provinceId) {
-        return jpaRepository.findById(provinceId.getValue())
+        return jpaRepository.findById(provinceId.value())
                 .map(mapper::toProvinceDomain);
     }
 
     @Override
     public Optional<Province> findByNameAndCountry(String name, CountryId countryId) {
-        return jpaRepository.findByNameAndCountryId(name, countryId.getValue())
+        return jpaRepository.findByNameAndCountryId(name, countryId.value())
                 .map(mapper::toProvinceDomain);
     }
 
@@ -61,7 +61,7 @@ public class ProvinceRepositoryAdapter implements ProvinceRepository {
 
     @Override
     public List<Province> findByCountryId(CountryId countryId) {
-        return jpaRepository.findByCountryId(countryId.getValue()).stream()
+        return jpaRepository.findByCountryId(countryId.value()).stream()
                 .map(mapper::toProvinceDomain)
                 .collect(Collectors.toList());
     }
@@ -75,7 +75,7 @@ public class ProvinceRepositoryAdapter implements ProvinceRepository {
 
     @Override
     public boolean existsByNameAndCountry(String name, CountryId countryId) {
-        return jpaRepository.existsByNameAndCountryId(name, countryId.getValue());
+        return jpaRepository.existsByNameAndCountryId(name, countryId.value());
     }
 
     @Override
@@ -85,13 +85,13 @@ public class ProvinceRepositoryAdapter implements ProvinceRepository {
 
     @Override
     public long countByCountry(CountryId countryId) {
-        return jpaRepository.countByCountryId(countryId.getValue());
+        return jpaRepository.countByCountryId(countryId.value());
     }
 
     @Override
     @Transactional
     public void delete(ProvinceId provinceId) {
         log.debug("Deleting province: {}", provinceId);
-        jpaRepository.deleteById(provinceId.getValue());
+        jpaRepository.deleteById(provinceId.value());
     }
 }

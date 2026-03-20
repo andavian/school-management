@@ -47,7 +47,7 @@ public class RegistryNumberGenerator {
         RegistryNumber registryNumberVo = RegistryNumber.generate(year, sequence);
 
         // 3. Devolvemos el valor crudo (String) para el consumo en la capa de aplicación/persistencia
-        String registryNumber = registryNumberVo.getValue();
+        String registryNumber = registryNumberVo.value();
 
         log.info("Generated registry number: {}", registryNumber);
         return registryNumber;

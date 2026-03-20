@@ -57,7 +57,7 @@ public interface AuthApplicationMapper {
             return Set.of();
         }
         return roles.stream()
-                .map(role -> role.getName().getName()) // Extrae el String del RoleName dentro de Role
+                .map(role -> role.getName().name()) // Extrae el String del RoleName dentro de Role
                 .collect(Collectors.toSet());
     }
 

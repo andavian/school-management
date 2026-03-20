@@ -15,7 +15,7 @@ import org.school.management.shared.person.domain.valueobject.Dni;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-@Service
+@Service("authCreateStudentUseCase")
 @RequiredArgsConstructor
 @Slf4j
 public class CreateStudentUseCase {

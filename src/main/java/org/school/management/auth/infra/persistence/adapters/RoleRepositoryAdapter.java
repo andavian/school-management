@@ -30,12 +30,12 @@ public class RoleRepositoryAdapter implements RoleRepository {
 
     @Override
     public Optional<Role> findById(RoleId id) {
-        return roleJpaRepository.findById(id.getValue()).map(mapper::roleToRoleDomain);
+        return roleJpaRepository.findById(id.value()).map(mapper::roleToRoleDomain);
     }
 
     @Override
     public Optional<Role> findByName(RoleName name) {
-        return roleJpaRepository.findByName(name.getName()).map(mapper::roleToRoleDomain);
+        return roleJpaRepository.findByName(name.name()).map(mapper::roleToRoleDomain);
     }
 
     @Override
@@ -47,6 +47,6 @@ public class RoleRepositoryAdapter implements RoleRepository {
 
     @Override
     public void delete(RoleId id) {
-        roleJpaRepository.deleteById(id.getValue());
+        roleJpaRepository.deleteById(id.value());
     }
 }

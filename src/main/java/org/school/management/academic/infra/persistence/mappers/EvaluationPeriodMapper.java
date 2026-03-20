@@ -31,7 +31,7 @@ public interface EvaluationPeriodMapper {
     EvaluationPeriod toDomain(EvaluationPeriodEntity entity);
 
     default UUID mapEvaluationPeriodId(PeriodId id) {
-        return id != null ? id.getValue() : null;
+        return id != null ? id.value() : null;
     }
 
     default PeriodId mapEvaluationPeriodId(UUID uuid) {
@@ -39,7 +39,7 @@ public interface EvaluationPeriodMapper {
     }
 
     default UUID mapAcademicYearId(AcademicYearId id) {
-        return id != null ? id.getValue() : null;
+        return id != null ? id.value() : null;
     }
 
     default AcademicYearId mapAcademicYearId(UUID uuid) {
@@ -47,7 +47,7 @@ public interface EvaluationPeriodMapper {
     }
 
     default Integer mapPeriodNumber(PeriodNumber number) {
-        return number != null ? number.getValue() : null;
+        return number != null ? number.value() : null;
     }
 
     default PeriodNumber mapPeriodNumber(Integer value) {

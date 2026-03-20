@@ -91,7 +91,7 @@ public class Place {
      * Obtener nombre como String
      */
     public String getNameAsString() {
-        return name.getValue();
+        return name.value();
     }
 
     /**
@@ -112,7 +112,7 @@ public class Place {
      * Obtener código postal como String
      */
     public String getPostalCodeAsString() {
-        return postalCode != null ? postalCode.getValue() : null;
+        return postalCode != null ? postalCode.value() : null;
     }
 
     /**
@@ -120,10 +120,10 @@ public class Place {
      */
     public String getFullDescription() {
         StringBuilder sb = new StringBuilder();
-        sb.append(name.getValue());
+        sb.append(name.value());
         sb.append(" (").append(type.getDisplayName()).append(")");
         if (postalCode != null) {
-            sb.append(" - CP: ").append(postalCode.getValue());
+            sb.append(" - CP: ").append(postalCode.value());
         }
         return sb.toString();
     }

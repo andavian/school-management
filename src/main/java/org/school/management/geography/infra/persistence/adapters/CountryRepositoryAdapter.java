@@ -36,13 +36,13 @@ public class CountryRepositoryAdapter implements CountryRepository {
 
     @Override
     public Optional<Country> findById(CountryId countryId) {
-        return jpaRepository.findById(countryId.getValue())
+        return jpaRepository.findById(countryId.value())
                 .map(mapper::toCountryDomain);
     }
 
     @Override
     public Optional<Country> findByIsoCode(IsoCode isoCode) {
-        return jpaRepository.findByIsoCode(isoCode.getValue())
+        return jpaRepository.findByIsoCode(isoCode.value())
                 .map(mapper::toCountryDomain);
     }
 
@@ -61,7 +61,7 @@ public class CountryRepositoryAdapter implements CountryRepository {
 
     @Override
     public boolean existsByIsoCode(IsoCode isoCode) {
-        return jpaRepository.existsByIsoCode(isoCode.getValue());
+        return jpaRepository.existsByIsoCode(isoCode.value());
     }
 
     @Override

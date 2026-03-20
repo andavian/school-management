@@ -64,7 +64,7 @@ public class JwtTokenProvider {
         Instant expiration = now.plus(expirationSeconds, ChronoUnit.SECONDS);
 
         // Claims estándar mejorados
-        claims.put("userId", userId.getValue().toString());
+        claims.put("userId", userId.value().toString());
         claims.put("tokenType", tokenType);
         claims.put("iss", issuer);
         claims.put("iat", now.getEpochSecond());
@@ -86,32 +86,48 @@ public class JwtTokenProvider {
     // ============================================
     // Tokens tipados
     // ============================================
-    public String generateAccessToken(User user) {
+    public String generateAccessToken(UserDetails userDetails) {
         Map<String, Object> claims = new HashMap<>();
-        claims.put("roles", user.getAuthorities().stream()
+        claims.put("roles", userDetails.getAuthorities().stream()
                 .map(GrantedAuthority::getAuthority)
                 .collect(Collectors.toList()));
-        claims.put("isCurrent", user.getActive());
+        claims.put("isCurrent", userDetails.isEnabled());
 
-        return buildToken(user.getUserId(), user.getUsername(), claims, accessTokenExpirationSeconds, "ACCESS");
+        UserId userId = (userDetails instanceof UserPrincipal principal)
+                ? principal.user().getUserId()
+                : null;
+
+        assert userId != null;
+        return buildToken(userId, userDetails.getUsername(), claims, accessTokenExpirationSeconds, "ACCESS");
     }
 
-    public String generateRefreshToken(User user) {
+    public String generateRefreshToken(UserDetails userDetails) {
         Map<String, Object> claims = new HashMap<>();
         // 👇 Limitar claims: solo lo básico
-        claims.put("userId", user.getUserId().getValue().toString());
-        claims.put("jti", UUID.randomUUID().toString());
+        UserId userId = (userDetails instanceof UserPrincipal principal)
+                ? principal.user().getUserId()
+                : null;
 
-        return buildToken(user.getUserId(), user.getUsername(), claims, refreshTokenExpirationSeconds, "REFRESH");
+        assert userId != null;
+        return buildToken(userId, userDetails.getUsername(), claims, refreshTokenExpirationSeconds, "REFRESH");
     }
 
-    public String generateConfirmationToken(User user) {
+    public String generateConfirmationToken(UserDetails userDetails) {
         Map<String, Object> claims = new HashMap<>();
         claims.put("purpose", "account_confirmation");
-        claims.put("userId", user.getUserId().getValue().toString());
 
-        // Token de confirmación válido por 15 minutos
-        return buildToken(user.getUserId(), user.getUsername(), claims, 900, "CONFIRMATION");
+        // Extraemos el UserId de forma segura a través del adaptador UserPrincipal
+        UserId userId = (userDetails instanceof UserPrincipal principal)
+                ? principal.user().getUserId()
+                : null;
+
+        if (userId != null) {
+            claims.put("userId", userId.value().toString());
+        }
+
+        // Usamos los métodos de la interfaz UserDetails para el subject
+        assert userId != null;
+        return buildToken(userId, userDetails.getUsername(), claims, 900, "CONFIRMATION");
     }
 
     // ============================================

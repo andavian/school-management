@@ -34,7 +34,7 @@ public class AcademicYearRepositoryAdapter implements AcademicYearRepository {
 
     @Override
     public Optional<AcademicYear> findById(AcademicYearId id) {
-        return jpaRepository.findById(id.getValue())
+        return jpaRepository.findById(id.value())
                 .map(mapper::toDomain);
     }
 
@@ -109,8 +109,8 @@ public class AcademicYearRepositoryAdapter implements AcademicYearRepository {
     @Transactional
     public void delete(AcademicYearId id) {
 
-        if (jpaRepository.existsById(id.getValue())) {
-            jpaRepository.deleteById(id.getValue());
+        if (jpaRepository.existsById(id.value())) {
+            jpaRepository.deleteById(id.value());
         }
     }
 

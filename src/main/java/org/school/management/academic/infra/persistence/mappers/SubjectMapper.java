@@ -21,6 +21,8 @@ public interface SubjectMapper {
     @Mapping(target = "yearLevel", source = "yearLevel")
     @Mapping(target = "orientationId", source = "orientationId")
     @Mapping(target = "code", source = "code.value")
+    @Mapping(target = "active", source = "isActive")
+    @Mapping(target = "mandatory", source = "isMandatory")
     SubjectEntity toEntity(Subject domain);
 
     @InheritInverseConfiguration
@@ -28,7 +30,7 @@ public interface SubjectMapper {
 
 
     default UUID mapSubjectId(SubjectId id) {
-        return id != null ? id.getValue() : null;
+        return id != null ? id.value() : null;
     }
 
     default SubjectId mapSubjectId(UUID uuid) {
@@ -36,7 +38,7 @@ public interface SubjectMapper {
     }
 
     default Integer mapYearLevel(YearLevel yearLevel) {
-        return yearLevel != null ? yearLevel.getValue() : null;
+        return yearLevel != null ? yearLevel.value() : null;
     }
 
     default YearLevel mapYearLevel(Integer value) {
@@ -44,7 +46,7 @@ public interface SubjectMapper {
     }
 
     default Integer mapWeeklyHours(WeeklyHours value) {
-        return value != null ? value.getValue() : null;
+        return value != null ? value.value() : null;
     }
 
     default WeeklyHours mapWeeklyHours(Integer value) {
@@ -54,7 +56,7 @@ public interface SubjectMapper {
 
 
     default UUID mapOrientationId(OrientationId id) {
-        return id != null ? id.getValue() : null;
+        return id != null ? id.value() : null;
     }
 
     default OrientationId mapOrientationId(UUID uuid) {

@@ -40,7 +40,7 @@ public class StudyPlanRepositoryAdapter implements StudyPlanRepository {
 
     @Override
     public Optional<StudyPlan> findById(StudyPlanId id) {
-        return jpaRepository.findById(id.getValue())
+        return jpaRepository.findById(id.value())
                 .map(mapper::toDomain);
     }
 
@@ -59,7 +59,7 @@ public class StudyPlanRepositoryAdapter implements StudyPlanRepository {
 
     @Override
     public List<StudyPlan> findByYearLevel(YearLevel yearLevel) {
-        return jpaRepository.findByYearLevel(yearLevel.getValue()).stream()
+        return jpaRepository.findByYearLevel(yearLevel.value()).stream()
                 .map(mapper::toDomain)
                 .collect(Collectors.toList());
     }
@@ -67,8 +67,8 @@ public class StudyPlanRepositoryAdapter implements StudyPlanRepository {
     @Override
     public Optional<StudyPlan> findByYearLevelAndOrientation(YearLevel yearLevel, OrientationId orientationId) {
         return jpaRepository.findByYearLevelAndOrientationId(
-                yearLevel.getValue(),
-                orientationId != null ? orientationId.getValue() : null
+                yearLevel.value(),
+                orientationId != null ? orientationId.value() : null
         ).map(mapper::toDomain);
     }
 
@@ -81,14 +81,14 @@ public class StudyPlanRepositoryAdapter implements StudyPlanRepository {
 
     @Override
     public List<StudyPlan> findByYearLevelAndOrientationIdIsNull(YearLevel yearLevel) {
-        return jpaRepository.findByYearLevelAndOrientationIdIsNull(yearLevel.getValue()).stream()
+        return jpaRepository.findByYearLevelAndOrientationIdIsNull(yearLevel.value()).stream()
                 .map(mapper::toDomain)
                 .collect(Collectors.toList());
     }
 
     @Override
     public List<StudyPlan> findByOrientation(OrientationId orientationId) {
-        return jpaRepository.findByOrientationId(orientationId.getValue()).stream()
+        return jpaRepository.findByOrientationId(orientationId.value()).stream()
                 .map(mapper::toDomain)
                 .collect(Collectors.toList());
     }
@@ -96,8 +96,8 @@ public class StudyPlanRepositoryAdapter implements StudyPlanRepository {
     @Override
     public List<StudyPlan> findApplicableForGradeLevel(YearLevel yearLevel, OrientationId orientationId) {
         return jpaRepository.findApplicableForGradeLevel(
-                        yearLevel.getValue(),
-                        orientationId != null ? orientationId.getValue() : null
+                        yearLevel.value(),
+                        orientationId != null ? orientationId.value() : null
                 ).stream()
                 .map(mapper::toDomain)
                 .collect(Collectors.toList());
@@ -105,7 +105,7 @@ public class StudyPlanRepositoryAdapter implements StudyPlanRepository {
 
     @Override
     public long countByYearLevel(YearLevel yearLevel) {
-        return jpaRepository.countByYearLevel(yearLevel.getValue());
+        return jpaRepository.countByYearLevel(yearLevel.value());
     }
 
     @Override
@@ -116,7 +116,7 @@ public class StudyPlanRepositoryAdapter implements StudyPlanRepository {
     @Override
     @Transactional
     public void delete(StudyPlanId id) {
-        jpaRepository.deleteById(id.getValue());
+        jpaRepository.deleteById(id.value());
     }
 
     @Override
@@ -126,8 +126,8 @@ public class StudyPlanRepositoryAdapter implements StudyPlanRepository {
         if (!hasSubject(planId, subjectId)) {
             StudyPlanSubjectEntity entity = StudyPlanSubjectEntity.builder()
                     .studyPlanSubjectId(UUID.randomUUID())
-                    .studyPlanId(planId.getValue())
-                    .subjectId(subjectId.getValue())
+                    .studyPlanId(planId.value())
+                    .subjectId(subjectId.value())
                     .build();
             subjectJpaRepository.save(entity);
         }
@@ -138,15 +138,15 @@ public class StudyPlanRepositoryAdapter implements StudyPlanRepository {
     public void removeSubject(StudyPlanId planId, SubjectId subjectId) {
         // ... (lógica original) ...
         subjectJpaRepository.findByStudyPlanIdAndSubjectId(
-                planId.getValue(),
-                subjectId.getValue()
+                planId.value(),
+                subjectId.value()
         ).ifPresent(subjectJpaRepository::delete);
     }
 
     @Override
     public List<SubjectId> findSubjectIds(StudyPlanId planId) {
         // ... (lógica original) ...
-        return subjectJpaRepository.findSubjectIdsByStudyPlanId(planId.getValue()).stream()
+        return subjectJpaRepository.findSubjectIdsByStudyPlanId(planId.value()).stream()
                 // Asumo que tienes un constructor SubjectId(UUID) o un mapper
                 // Usaré SubjectId::new según tu código, asumiendo que es un constructor válido
                 .map(SubjectId::new)
@@ -157,14 +157,14 @@ public class StudyPlanRepositoryAdapter implements StudyPlanRepository {
     public boolean hasSubject(StudyPlanId planId, SubjectId subjectId) {
         // ... (lógica original) ...
         return subjectJpaRepository.existsByStudyPlanIdAndSubjectId(
-                planId.getValue(),
-                subjectId.getValue()
+                planId.value(),
+                subjectId.value()
         );
     }
 
     @Override
     public List<SubjectId> findMandatorySubjectIds(StudyPlanId planId) {
-        return subjectJpaRepository.findMandatorySubjects(planId.getValue()).stream()
+        return subjectJpaRepository.findMandatorySubjects(planId.value()).stream()
                 .map(StudyPlanSubjectEntity::getSubjectId)
                 .map(SubjectId::new) // Asumo constructor SubjectId(UUID)
                 .collect(Collectors.toList());
@@ -172,25 +172,25 @@ public class StudyPlanRepositoryAdapter implements StudyPlanRepository {
 
     @Override
     public List<StudyPlanId> findStudyPlanIdsBySubject(SubjectId subjectId) {
-        return subjectJpaRepository.findStudyPlanIdsBySubjectId(subjectId.getValue()).stream()
+        return subjectJpaRepository.findStudyPlanIdsBySubjectId(subjectId.value()).stream()
                 .map(StudyPlanId::new)
                 .collect(Collectors.toList());
     }
 
     @Override
     public long countSubjects(StudyPlanId planId) {
-        return subjectJpaRepository.countByStudyPlanId(planId.getValue());
+        return subjectJpaRepository.countByStudyPlanId(planId.value());
     }
 
     @Override
     @Transactional
     public void deleteSubjectLinksByStudyPlan(StudyPlanId planId) {
-        subjectJpaRepository.deleteByStudyPlanId(planId.getValue());
+        subjectJpaRepository.deleteByStudyPlanId(planId.value());
     }
 
     @Override
     @Transactional
     public void deleteSubjectLinksBySubject(SubjectId subjectId) {
-        subjectJpaRepository.deleteBySubjectId(subjectId.getValue());
+        subjectJpaRepository.deleteBySubjectId(subjectId.value());
     }
 }

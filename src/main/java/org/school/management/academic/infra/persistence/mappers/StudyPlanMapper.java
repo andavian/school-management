@@ -25,7 +25,7 @@ public interface StudyPlanMapper {
     StudyPlan toDomain(StudyPlanEntity entity);
 
     default UUID mapStudyPlanId(StudyPlanId id) {
-        return id != null ? id.getValue() : null;
+        return id != null ? id.value() : null;
     }
 
     default StudyPlanId mapStudyPlanId(UUID uuid) {
@@ -33,7 +33,7 @@ public interface StudyPlanMapper {
     }
 
     default Integer mapYearLevel(YearLevel yearLevel) {
-        return yearLevel != null ? yearLevel.getValue() : null;
+        return yearLevel != null ? yearLevel.value() : null;
     }
 
     default YearLevel mapYearLevel(Integer value) {
@@ -41,7 +41,7 @@ public interface StudyPlanMapper {
     }
 
     default UUID mapOrientationId(OrientationId id) {
-        return id != null ? id.getValue() : null;
+        return id != null ? id.value() : null;
     }
 
     default OrientationId mapOrientationId(UUID uuid) {

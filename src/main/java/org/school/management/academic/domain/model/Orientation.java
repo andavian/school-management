@@ -59,10 +59,10 @@ public class Orientation {
     }
 
     public String getCodeAsString() {
-        return code.getValue();
+        return code.value();
     }
 
     public int getAvailableFromYearValue() {
-        return availableFromYear.getValue();
+        return availableFromYear.value();
     }
 }

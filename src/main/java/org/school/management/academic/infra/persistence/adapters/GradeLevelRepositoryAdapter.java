@@ -37,7 +37,7 @@ public class GradeLevelRepositoryAdapter implements GradeLevelRepository {
 
     @Override
     public Optional<GradeLevel> findById(GradeLevelId id) {
-        return jpaRepository.findById(id.getValue())
+        return jpaRepository.findById(id.value())
                 .map(mapper::toDomain);
     }
 
@@ -47,15 +47,15 @@ public class GradeLevelRepositoryAdapter implements GradeLevelRepository {
             YearLevel yearLevel,
             Division division) {
         return jpaRepository.findByAcademicYearIdAndYearLevelAndDivision(
-                academicYearId.getValue(),
-                yearLevel.getValue(),
-                division.getValue()
+                academicYearId.value(),
+                yearLevel.value(),
+                division.value()
         ).map(mapper::toDomain);
     }
 
     @Override
     public List<GradeLevel> findByAcademicYear(AcademicYearId academicYearId) {
-        return jpaRepository.findByAcademicYearId(academicYearId.getValue()).stream()
+        return jpaRepository.findByAcademicYearId(academicYearId.value()).stream()
                 .map(mapper::toDomain)
                 .collect(Collectors.toList());
     }
@@ -63,8 +63,8 @@ public class GradeLevelRepositoryAdapter implements GradeLevelRepository {
     @Override
       public List<GradeLevel> findByAcademicYearAndYearLevel(AcademicYearId academicYearId, YearLevel yearLevel) {
         return jpaRepository.findByAcademicYearAndYearLevel(
-                        academicYearId.getValue(),
-                        yearLevel.getValue() // Acceso al valor para la capa de persistencia
+                        academicYearId.value(),
+                        yearLevel.value() // Acceso al valor para la capa de persistencia
                 ).stream()
                 .map(mapper::toDomain)
                 .collect(Collectors.toList());
@@ -72,7 +72,7 @@ public class GradeLevelRepositoryAdapter implements GradeLevelRepository {
 
     @Override
     public List<GradeLevel> findByOrientation(OrientationId orientationId) {
-        return jpaRepository.findByOrientationId(orientationId.getValue()).stream()
+        return jpaRepository.findByOrientationId(orientationId.value()).stream()
                 .map(mapper::toDomain)
                 .collect(Collectors.toList());
     }
@@ -86,7 +86,7 @@ public class GradeLevelRepositoryAdapter implements GradeLevelRepository {
 
     @Override
     public List<GradeLevel> findActiveByAcademicYear(AcademicYearId academicYearId) {
-        return jpaRepository.findByAcademicYearIdAndIsActiveTrue(academicYearId.getValue()).stream()
+        return jpaRepository.findByAcademicYearIdAndIsActiveTrue(academicYearId.value()).stream()
                 .map(mapper::toDomain)
                 .collect(Collectors.toList());
     }
@@ -104,9 +104,9 @@ public class GradeLevelRepositoryAdapter implements GradeLevelRepository {
             YearLevel yearLevel,
             OrientationId orientationId) {
         return jpaRepository.findByYearLevelAndOrientation(
-                        academicYearId.getValue(),
-                        yearLevel.getValue(),
-                        orientationId != null ? orientationId.getValue() : null
+                        academicYearId.value(),
+                        yearLevel.value(),
+                        orientationId != null ? orientationId.value() : null
                 ).stream()
                 .map(mapper::toDomain)
                 .collect(Collectors.toList());
@@ -125,20 +125,20 @@ public class GradeLevelRepositoryAdapter implements GradeLevelRepository {
             YearLevel yearLevel,
             Division division) {
         return jpaRepository.existsByAcademicYearIdAndYearLevelAndDivision(
-                academicYearId.getValue(),
-                yearLevel.getValue(),
-                division.getValue()
+                academicYearId.value(),
+                yearLevel.value(),
+                division.value()
         );
     }
 
     @Override
     public long countByAcademicYear(AcademicYearId academicYearId) {
-        return jpaRepository.countByAcademicYearId(academicYearId.getValue());
+        return jpaRepository.countByAcademicYearId(academicYearId.value());
     }
 
     @Override
     @Transactional
     public void delete(GradeLevelId id) {
-        jpaRepository.deleteById(id.getValue());
+        jpaRepository.deleteById(id.value());
     }
 }

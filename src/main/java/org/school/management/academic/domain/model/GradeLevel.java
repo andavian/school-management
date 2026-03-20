@@ -77,7 +77,7 @@ public class GradeLevel {
     }
 
     public String getDisplayName() {
-        return yearLevel.getDisplayName() + " " + division.getValue();
+        return yearLevel.getDisplayName() + " " + division.value();
     }
 
     public String getFullDisplayName(String orientationName) {
@@ -89,14 +89,15 @@ public class GradeLevel {
     }
 
     public int getYearLevelValue() {
-        return yearLevel.getValue();
+        return yearLevel.value();
     }
 
     public String getDivisionValue() {
-        return division.getValue();
+        return division.value();
     }
 
     public boolean hasOrientation() {
         return orientationId != null;
     }
+
 }

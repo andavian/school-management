@@ -29,6 +29,7 @@ public interface GradeLevelMapper {
     @Mapping(target = "shift", source = "shift")
     @Mapping(target = "yearLevel", source = "yearLevel")
     @Mapping(target = "division", source = "division")
+    @Mapping(target = "active", source = "isActive")
     GradeLevelEntity toEntity(GradeLevel domain);
 
     @InheritInverseConfiguration
@@ -36,7 +37,7 @@ public interface GradeLevelMapper {
 
 
     default UUID mapGradeLevelId(GradeLevelId id) {
-        return id != null ? id.getValue() : null;
+        return id != null ? id.value() : null;
     }
 
     default GradeLevelId mapGradeLevelId(UUID uuid) {
@@ -44,7 +45,7 @@ public interface GradeLevelMapper {
     }
 
     default UUID mapAcademicYearId(AcademicYearId id) {
-        return id != null ? id.getValue() : null;
+        return id != null ? id.value() : null;
     }
 
     default AcademicYearId mapAcademicYearId(UUID uuid) {
@@ -52,7 +53,7 @@ public interface GradeLevelMapper {
     }
 
     default Integer mapYearLevel(YearLevel yearLevel) {
-        return yearLevel != null ? yearLevel.getValue() : null;
+        return yearLevel != null ? yearLevel.value() : null;
     }
 
     default YearLevel mapYearLevel(Integer value) {
@@ -60,7 +61,7 @@ public interface GradeLevelMapper {
     }
 
     default String mapDivision(Division division) {
-        return division != null ? division.getValue() : null;
+        return division != null ? division.value() : null;
     }
 
     default Division mapDivision(String value) {
@@ -68,7 +69,7 @@ public interface GradeLevelMapper {
     }
 
     default UUID mapOrientationId(OrientationId id) {
-        return id != null ? id.getValue() : null;
+        return id != null ? id.value() : null;
     }
 
     default OrientationId mapOrientationId(UUID uuid) {
