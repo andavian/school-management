@@ -10,7 +10,7 @@
 Sistema de gestión escolar para el **IPET 132** (Argentina).
 **Stack:** Java 17 + Spring Boot 3.3.4 + Spring Security 6 + MySQL 8
 **Package raíz:** `org.school.management`
-**Estado actual:** Auth ✅ + Geography ✅ + Academic ✅ + Students ✅ + Teachers ✅ + Email Service ✅ + Grades ✅ + Course ⏳
+**Estado actual:** Auth ✅ + Geography ✅ + Academic ✅ + Students ✅ + Teachers ✅ + Email Service ✅ + Grades ✅ + Course ✅ + Attendance ✅
 
 ---
 
@@ -42,13 +42,15 @@ students/     → Estudiantes, salud, matrícula, legajo, padres ✅ COMPLETO
 teachers/     → Profesores ✅ COMPLETO
 grades/       → Calificaciones ✅ COMPLETO
 course/       → Asignación profesor-materia-curso ✅ COMPLETO
-attendance/   → Asistencia diaria y por materia ⏳ próximo
+attendance/   → Asistencia diaria y por materia ✅ COMPLETO
 ```
 
 **Regla:** Un bounded context **no importa clases completas de otro**.
 Solo se comparten IDs (ej: `GradeLevelId`, `PlaceId`) o tipos del Shared Kernel.
 
-**Excepción documentada:** Los controllers importan `User` de `auth/` únicamente para el cast de `@AuthenticationPrincipal` en `extractUserId()`. Es un cruce de infraestructura aceptado — no lógica de negocio.
+**Excepción documentada 1:** Los controllers importan `User` de `auth/` únicamente para el cast de `@AuthenticationPrincipal` en `extractUserId()`. Es un cruce de infraestructura aceptado — no lógica de negocio.
+
+**Excepción documentada 2:** `ActivateTeacherAccountUseCase` (en `auth/`) importa `TeacherRepository` de `teachers/` para activar ambos agregados en la misma transacción. Es el único use case de `auth/` con esta dependencia cruzada — aceptado por la necesidad de atomicidad.
 
 ### 3. Screaming Architecture
 
@@ -125,7 +127,7 @@ shared/
 
 **`EmailService.java`** (puerto del dominio)
 - `sendEmail(to, subject, body)` — genérico texto plano
-- `sendTeacherInvitation(to, firstName, lastName, dni, temporaryPassword, activationLink)` — invitación docente
+- `sendTeacherInvitation(to, firstName, lastName, dni, temporaryPassword, activationLink)` — invitación docente con link
 - `sendParentCredentials(to, firstName, lastName, dni, temporaryPassword)` — credenciales padre
 - Implementado por `JavaMailEmailService` con `@Async` — nunca bloquea el flujo transaccional
 - Fallos de email son silenciosos (log + catch) — nunca rompen la transacción principal
@@ -409,8 +411,35 @@ auth/
 **Notas `auth/`:**
 - `User` implementa `UserDetails` directamente
 - `RoleName.student()`, `.admin()`, `.teacher()`, `.parent()`, `.staff()` — factory methods por rol
-- `CreateTeacherUseCase` en `auth/` crea el User con rol TEACHER y genera password temporal
-- `CreateTeacherResponse` tiene: `userId`, `dni`, `temporaryPassword`, `invitationSent`
+- `CreateTeacherUseCase` en `auth/` crea el User con rol TEACHER, genera password temporal y envía email real
+- `CreateTeacherResponse` tiene: `userId`, `dni`, `temporaryPassword`, `invitationSent`, `confirmationToken`
+- `ActivateTeacherAccountUseCase` activa **tanto** el `User` como el `Teacher` en la misma transacción
+- `JwtTokenProvider.generateConfirmationToken()` genera JWT de tipo CONFIRMATION (duración configurable, default 48h)
+- Duración configurable via `app.security.jwt.confirmation-token-expiration` (segundos)
+- `POST /api/auth/activate-account` — endpoint público, recibe `{ token, newPassword }`
+
+**Flujo de activación de cuenta teacher:**
+```
+POST /api/admin/teachers
+  └─ teachers/CreateTeacherUseCase
+       ├─ auth/CreateTeacherUseCase
+       │    ├─ crea User (active=false)
+       │    ├─ genera confirmationToken JWT (48h)
+       │    ├─ EmailService.sendTeacherInvitation(link con token) ← ASYNC
+       │    └─ retorna CreateTeacherResponse con confirmationToken
+       ├─ Teacher.create(...)
+       ├─ teacher.assignActivationToken(confirmationToken)
+       └─ teacherRepository.save(teacher)
+
+POST /api/auth/activate-account { token, newPassword }
+  └─ ActivateTeacherAccountUseCase
+       ├─ valida token JWT (purpose=account_confirmation, type=CONFIRMATION)
+       ├─ extrae DNI del token → busca User
+       ├─ user.resetPassword(newPassword) + user.activate()
+       ├─ userRepository.save(user)
+       ├─ teacherRepository.findByDni() → teacher.activate(now)
+       └─ teacherRepository.save(teacher)  ← Teacher.active=true, activationToken=null
+```
 
 ### `geography/` ✅ completado
 
@@ -472,6 +501,7 @@ teachers/
 ├── domain/
 │   ├── model/       Teacher
 │   │                — activate(LocalDateTime), deactivate(), retire()
+│   │                — assignActivationToken(String) ← asigna token post-create
 │   │                — updateContactInfo(), updatePersonalInfo(), updateProfessionalInfo()
 │   │                — isPendingActivation(), isRetired()
 │   ├── valueobject/ TeacherId (of/from/generate)
@@ -489,7 +519,7 @@ teachers/
 │   ├── dto/response/TeacherResponse, TeacherSummaryResponse
 │   ├── mapper/      TeacherApplicationMapper (recibe PlaceResponse como parámetros)
 │   └── usecases/    GetTeacherByIdUseCase (buildResponse() package-private reutilizable)
-│                    CreateTeacherUseCase (delega User en auth/CreateTeacherUseCase)
+│                    CreateTeacherUseCase (delega User en auth/ → asigna token → persiste)
 │                    UpdateTeacherUseCase (PATCH semántico por sección)
 │                    SearchTeachersUseCase (dni exacto | lastName parcial | todos)
 └── infrastructure/
@@ -502,16 +532,17 @@ teachers/
 **Endpoints teachers:**
 | Método | Path | Rol | Descripción |
 |--------|------|-----|-------------|
-| POST | `/api/admin/teachers` | ADMIN | Crear profesor |
+| POST | `/api/admin/teachers` | ADMIN | Crear profesor + enviar email con link activación |
 | GET | `/api/admin/teachers/{teacherId}` | ADMIN, STAFF | Obtener por ID |
 | GET | `/api/admin/teachers` | ADMIN, STAFF | Buscar (dni / lastName / todos) |
 | PATCH | `/api/admin/teachers/{teacherId}` | ADMIN, STAFF | Actualizar datos |
 
 **Notas `teachers/`:**
 - Password inicial: aleatorio seguro generado en `auth/CreateTeacherUseCase`
-- Cuenta inicia con `active = false` — requiere activación (pendiente link de activación)
-- `CreateTeacherUseCase` en `teachers/` orquesta: valida unicidad → crea User (via auth/) → crea Teacher → envía email
-- Email de invitación: texto plano con usuario y password temporal (sin link por ahora)
+- Cuenta inicia con `active = false` — se activa via `POST /api/auth/activate-account`
+- `Teacher.assignActivationToken(token)` — se llama después de `create()`, antes de `save()`
+- El email de invitación incluye el link real con el JWT de activación (48h)
+- `TeacherPersistenceMapper` debe mapear: `active`, `activationToken`, `activationSentAt`, `activatedAt`
 
 ### `grades/` ✅ COMPLETO
 
@@ -588,9 +619,7 @@ grades/
 **Notas críticas `grades/`:**
 - `MIN_PASSING_GRADE = 7` — constante en cada modelo de dominio, nunca hardcodear
 - `EvaluationId`, `EvaluationTypeId`, `EvaluationStatus` — movidos de `academic/` a `grades/domain/valueobject/`
-- `RecordFinalGradeInRegistryUseCase` obtiene `registryId` y `folioNumber` del `StudentRecord` via `GetRecordByStudentIdUseCase` — el folio ya fue asignado en `CreateStudentUseCase`
-- JOINs a `StudentCourseSubjectEntity` y `CourseSubjectEntity` — **descomentados** luego de implementar `course/`
-- `findByEnrollment` y `findPendingValidationByTeacher` en adaptadores — **implementados** con llamadas reales al JPA repository
+- `RecordFinalGradeInRegistryUseCase` obtiene `registryId` y `folioNumber` del `StudentRecord` via `GetRecordByStudentIdUseCase`
 - `GradesDataSeeder` siembra 5 tipos de evaluación con UUIDs fijos: `PARCIAL`, `TRABAJO_PRACTICO`, `COLOQUIO`, `EXAMEN_PREVIO`, `EVALUACION_CONTINUA`
 
 ### `course/` ✅ COMPLETO
@@ -631,11 +660,110 @@ course/
 | GET | `/api/courses/enrollments/{enrollmentId}/courses` | ADMIN, STAFF, TEACHER | Materias del alumno |
 
 **Decisiones clave `course/`:**
-- `CourseStatus` y `SubjectEnrollmentStatus` viven en `course/domain/valueobject/` — mismo patrón que `EvaluationStatus` → `grades/`
+- `CourseStatus` y `SubjectEnrollmentStatus` viven en `course/domain/valueobject/`
 - `StudentCourseSubject` no tiene `attendedClasses` — no está en BD; solo `total_classes`
-- `CourseSubject.assignTeacher()` y `updateSchedule()` son métodos mutables — el modelo no es inmutable por diseño
-- Tabla `courses` existe en BD pero no se implementó como entidad — se usa `course_subjects` como la tabla real de asignación
+- `CourseSubject.assignTeacher()` y `updateSchedule()` son métodos mutables — diseño intencional
+- Tabla `courses` existe en BD pero no se implementó como entidad — se usa `course_subjects`
 - Tests: `CreateCourseSubjectUseCaseTest` (4 tests) + `EnrollStudentInCourseUseCaseTest` (5 tests)
+
+### `attendance/` ✅ COMPLETO
+
+```
+attendance/
+├── domain/
+│   ├── model/
+│   │   ├── DailyAttendance.java    — create(), justify(), correct()
+│   │   │                             Lista del día tomada por preceptor/STAFF
+│   │   ├── CourseAttendance.java   — create(), correct()
+│   │   │                             Asistencia por clase, tomada por TEACHER
+│   │   └── AttendanceSummary.java  — create(), recalculate(List<CourseAttendance>)
+│   │                                 MIN_ATTENDANCE_PERCENTAGE = 85.0
+│   │                                 Libre si weightedAbsences/totalClasses > 0.15
+│   ├── valueobject/
+│   │   ├── DailyAttendanceId.java    — record UUID (of/from/generate)
+│   │   ├── CourseAttendanceId.java   — record UUID (of/from/generate)
+│   │   ├── AttendanceSummaryId.java  — record UUID (of/from/generate)
+│   │   └── AttendanceStatus.java     — enum con absenceWeight
+│   │                                   PRESENT=0.0, ABSENT=1.0, JUSTIFIED=1.0,
+│   │                                   LATE=0.2, WITHDRAWN=0.2
+│   │                                   canBeJustified() → solo ABSENT
+│   ├── repository/
+│   │   ├── DailyAttendanceRepository
+│   │   ├── CourseAttendanceRepository
+│   │   └── AttendanceSummaryRepository
+│   └── exception/
+│       ├── AttendanceAlreadyRecordedException (forDailyAttendance, forCourseAttendance)
+│       └── AttendanceNotFoundException (dailyById, courseById, summaryByStudentAndPeriod)
+├── application/
+│   ├── dto/request/
+│   │   ├── RecordDailyAttendanceRequest
+│   │   ├── RecordCourseAttendanceRequest
+│   │   ├── JustifyAbsenceRequest
+│   │   └── CorrectAttendanceRequest
+│   ├── dto/response/
+│   │   ├── DailyAttendanceResponse
+│   │   ├── CourseAttendanceResponse
+│   │   └── AttendanceSummaryResponse
+│   ├── mapper/   AttendanceApplicationMapper
+│   └── usecases/
+│       ├── RecordDailyAttendanceUseCase    — STAFF
+│       ├── RecordCourseAttendanceUseCase   — TEACHER (recalcula summary en cada carga)
+│       ├── JustifyAbsenceUseCase           — STAFF (ABSENT → JUSTIFIED)
+│       ├── CorrectAttendanceUseCase        — correctDaily() + correctCourse()
+│       ├── GetAttendanceSummaryUseCase     — ADMIN, STAFF, TEACHER
+│       └── GetAtRiskStudentsUseCase        — ADMIN, STAFF
+└── infrastructure/
+    ├── persistence/
+    │   ├── entity/   DailyAttendanceEntity, CourseAttendanceEntity,
+    │   │             AttendanceSummaryEntity (con @PrePersist/@PreUpdate)
+    │   ├── repository/ DailyAttendanceJpaRepository, CourseAttendanceJpaRepository,
+    │   │               AttendanceSummaryJpaRepository
+    │   ├── adapter/  DailyAttendanceRepositoryAdapter, CourseAttendanceRepositoryAdapter,
+    │   │             AttendanceSummaryRepositoryAdapter
+    │   └── mapper/   DailyAttendancePersistenceMapper, CourseAttendancePersistenceMapper,
+    │                 AttendanceSummaryPersistenceMapper (default methods)
+    └── web/
+        ├── dto/       AttendanceWebDto (clase contenedora con 8 records)
+        ├── mapper/    AttendanceWebMapper
+        ├── controller/ AttendanceController (8 endpoints, /api/attendance)
+        └── exception/ AttendanceExceptionHandler
+```
+
+**Endpoints attendance:**
+| Método | Path | Rol | Descripción |
+|--------|------|-----|-------------|
+| POST | `/api/attendance/daily` | ADMIN, STAFF | Registrar asistencia diaria del curso |
+| PATCH | `/api/attendance/daily/{id}/justify` | ADMIN, STAFF | Justificar ausencia (ABSENT→JUSTIFIED) |
+| PATCH | `/api/attendance/daily/{id}` | ADMIN, STAFF | Corregir registro diario |
+| POST | `/api/attendance/course` | ADMIN, STAFF, TEACHER | Registrar asistencia por materia |
+| PATCH | `/api/attendance/course/{id}` | ADMIN, STAFF, TEACHER | Corregir registro por materia |
+| GET | `/api/attendance/course/summary` | ADMIN, STAFF, TEACHER | Resumen por alumno/materia/período |
+| GET | `/api/attendance/course/at-risk` | ADMIN, STAFF | Alumnos en riesgo de quedar libres |
+
+**Reglas de negocio `attendance/`:**
+- `MIN_ATTENDANCE_PERCENTAGE = 85` — constante en `AttendanceSummary`, nunca hardcodear
+- `ABSENT` y `JUSTIFIED` tienen el mismo peso (1.0) — la justificación solo registra el motivo
+- `recalculate()` se invoca en cada `RecordCourseAttendanceUseCase` y `CorrectAttendanceUseCase`
+- `justify()` en `DailyAttendance` lanza `IllegalStateException` si el estado no es `ABSENT`
+- El summary se crea automáticamente si no existe al registrar la primera asistencia del período
+
+**Dependencias `attendance/` (solo IDs):**
+```java
+StudentPersonalDataId  → students/
+CourseSubjectId        → course/
+StudentCourseSubjectId → course/
+GradeLevelId           → academic/
+PeriodId               → academic/
+AcademicYearId         → academic/
+```
+
+**Tests `attendance/`:** 30 tests unitarios
+- `AttendanceSummaryTest` (9) — lógica de `recalculate()`, pesos, límite 15%
+- `RecordDailyAttendanceUseCaseTest` (4)
+- `RecordCourseAttendanceUseCaseTest` (5) — verifica recalculate crea/actualiza summary
+- `JustifyAbsenceUseCaseTest` (5) — verifica que solo ABSENT puede justificarse
+- `CorrectAttendanceUseCaseTest` (4)
+- `GetAtRiskStudentsUseCaseTest` (3)
 
 ### `shared/email/` ✅ COMPLETO
 
@@ -646,59 +774,8 @@ course/
 - SMTP configurado para **OCI Email Delivery** (prod) y **Mailhog** (local)
 - `@Async` — envío nunca bloquea el hilo transaccional
 - Fallos silenciosos — log + catch, nunca propagan excepción
+- `sendTeacherInvitation()` incluye `activationLink` — si está vacío, el email indica contactar a administración
 - Perfil `local` en `application.yml` con Mailhog: `docker run -p 1025:1025 -p 8025:8025 mailhog/mailhog`
-
-### `attendance/` ⏳ PRÓXIMO
-
-**Responsabilidad:** Control de asistencia diaria (por preceptor) y por materia (por profesor), con cálculo automático de resumen por período.
-
-**Reglas de negocio IPET 132:**
-- Mínimo **85%** de asistencia para no quedar libre (`MIN_ATTENDANCE_PERCENTAGE = 85`)
-- `ABSENT` → 1.0 falta | `JUSTIFIED` → 1.0 falta (igual, solo queda el motivo)
-- `LATE` → 0.2 faltas (5 tardanzas = 1 falta)
-- `WITHDRAWN` → 0.2 faltas (mismo peso que tardanza)
-- Libre si: `weightedAbsences / totalClasses > 0.15`
-
-**Modelos planificados:**
-```
-attendance/
-├── domain/
-│   ├── model/        DailyAttendance     — lista del día, tomada por preceptor/STAFF
-│   │                 CourseAttendance    — asistencia por clase, tomada por TEACHER
-│   │                 AttendanceSummary   — resumen calculado por período y materia
-│   ├── valueobject/  DailyAttendanceId, CourseAttendanceId, AttendanceSummaryId
-│   │                 AttendanceStatus (PRESENT=0, ABSENT=1, JUSTIFIED=1, LATE=0.2, WITHDRAWN=0.2)
-│   ├── repository/   DailyAttendanceRepository, CourseAttendanceRepository,
-│   │                 AttendanceSummaryRepository
-│   └── exception/    AttendanceAlreadyRecordedException, AttendanceNotFoundException
-```
-
-**Dependencias (solo IDs):**
-```java
-StudentPersonalDataId  → students/
-CourseSubjectId        → course/
-StudentCourseSubjectId → course/
-GradeLevelId           → academic/
-PeriodId               → academic/
-AcademicYearId         → academic/
-```
-
-**Endpoints planificados:**
-| Método | Path | Rol | Descripción |
-|--------|------|-----|-------------|
-| POST | `/api/attendance/daily` | STAFF | Registrar lista diaria del curso |
-| PATCH | `/api/attendance/daily/{id}/justify` | STAFF | Justificar ausencia |
-| PATCH | `/api/attendance/daily/{id}` | STAFF | Corregir registro |
-| GET | `/api/attendance/daily` | ADMIN, STAFF | Lista del día por curso |
-| POST | `/api/attendance/course` | TEACHER | Registrar asistencia por materia |
-| PATCH | `/api/attendance/course/{id}` | TEACHER | Corregir registro |
-| GET | `/api/attendance/course/summary` | ADMIN, STAFF, TEACHER | Resumen por materia y período |
-| GET | `/api/attendance/course/at-risk` | ADMIN, STAFF | Alumnos en riesgo de quedar libres |
-
-**Migración:** `V21__create_attendance_tables.sql`
-- `attendance_daily_records` — lista diaria
-- `attendance_course_records` — asistencia por materia
-- `attendance_period_summaries` — resumen por período
 
 ---
 
@@ -738,7 +815,7 @@ AcademicYearId         → academic/
 | **of() como factory method principal** | Estándar del proyecto — `from()` como alias |
 | **Lombok solo en modelos complejos** | `@Builder + @Getter` para clases con +10 campos |
 | **MapStruct en 3 capas** | Persistence / Application / Web — nunca saltear |
-| **PersistenceMapper con default methods** | Para Teachers y Parents — VOs compuestos complejos |
+| **PersistenceMapper con default methods** | Para Teachers, Parents y Attendance — VOs compuestos complejos |
 | **PersistenceMapper con @AfterMapping** | Para Students — patrón alternativo igualmente válido |
 | **Sin INSTANCE estático en mappers Spring** | `componentModel = "spring"` → bean inyectado |
 | **Flyway obligatorio** | Nunca `ddl-auto: create` |
@@ -756,7 +833,7 @@ AcademicYearId         → academic/
 | **Parent es entidad global** | Un padre puede tener hijos en distintas escuelas |
 | **DNI inmutable en Parent y Teacher** | Identificador global — no se puede cambiar |
 | **isPrimaryContact exclusivo por estudiante** | Un solo contacto principal — validado en use case |
-| **Password padre aleatorio seguro** | Pendiente email service — generado con SecureRandom |
+| **Password padre aleatorio seguro** | Generado con SecureRandom, enviado por email |
 | **Password inicial estudiante** | `{DNI}Ipet132!` — simple para el admin |
 | **Folio automático** | `FolioAssignmentService` transaccional garantiza unicidad |
 | **Baja de estudiante es lógica** | No hay delete físico — via `StudentEnrollment.withdraw()` |
@@ -765,7 +842,12 @@ AcademicYearId         → academic/
 | **EmailService en shared/domain/service** | Puerto transversal — usado por teachers, parents y futuro students |
 | **@Async en JavaMailEmailService** | Email no bloquea la transacción principal |
 | **Email falla silenciosamente** | Log + catch — nunca propaga ni revierte la transacción |
-| **Teacher.active = false al crear** | Requiere activación de cuenta — pendiente link |
+| **Teacher.active = false al crear** | Requiere activación via link en email |
+| **confirmationToken JWT (48h) para activación** | Configurable via `app.security.jwt.confirmation-token-expiration` |
+| **ActivateTeacherAccountUseCase activa User Y Teacher** | Atomicidad — ambos deben quedar activos en la misma tx |
+| **Teacher.assignActivationToken() post-create** | El token lo genera auth/, se propaga y persiste en teachers/ |
+| **activate() limpia activationToken** | Token consumido = null — `isPendingActivation()` retorna false |
+| **ActivateTeacherAccountUseCase en auth/ importa TeacherRepository** | Excepción documentada — necesario para atomicidad |
 | **grades/ como BC separado** | Razón de cambio diferente a academic/ — actores distintos (TEACHER vs ADMIN) |
 | **CourseStatus y SubjectEnrollmentStatus en course/** | Igual que EvaluationStatus → grades/; pertenecen al BC que los usa |
 | **StudentCourseSubject sin attendedClasses** | Campo no existe en BD — solo total_classes está en course_subjects |
@@ -774,7 +856,8 @@ AcademicYearId         → academic/
 | **AttendanceStatus con peso de falta** | Encapsula la regla de negocio en el enum — ABSENT=1.0, JUSTIFIED=1.0, LATE=0.2, WITHDRAWN=0.2 |
 | **MIN_ATTENDANCE_PERCENTAGE = 85** | Regla del IPET 132 — constante en AttendanceSummary, nunca hardcodear |
 | **JUSTIFIED descuenta igual que ABSENT** | Regla del IPET 132 — la justificación registra el motivo pero no exime la falta |
-| **recalculate() en AttendanceSummary** | El summary se recalcula en cada carga/corrección — no se calcula on-demand para mantener consistencia |
+| **recalculate() en AttendanceSummary** | El summary se recalcula en cada carga/corrección — consistencia garantizada en la transacción |
+| **atRisk = weightedAbsences/totalClasses > 0.15** | Condición estricta (>) — exactamente 15% NO es libre |
 | **Seeders resuelven place_id en runtime** | Geography usa UUIDs dinámicos (UNHEX UUID()) — searchByName() + filter exact match |
 | **UserEntity usa dni como username** | Campo `dni` en UserEntity — findByDni() no findByUsername() |
 | **auth.infra (no auth.infrastructure)** | El paquete de auth usa `infra` como abreviación — excepción documentada al estándar del proyecto |
@@ -804,12 +887,14 @@ AcademicYearId         → academic/
 - **Usar `UuidBinaryConverter`** en todos los campos UUID de entidades JPA.
 - **Usar `@PrePersist` / `@PreUpdate`** en entidades con timestamps.
 - **Nombrar mappers de persistencia** como `*PersistenceMapper`.
-- **Usar `default methods`** para VOs compuestos en persistence mapper (patrón teachers/parents).
+- **Usar `default methods`** para VOs compuestos en persistence mapper (patrón teachers/parents/attendance).
 - **Usar `ProblemDetail`** en todos los `@RestControllerAdvice`.
 - **`RecordNumber.fromDni(dni)`** al crear un legajo — nunca usar `RegistryNumberGenerator` para esto.
 - **Inyectar `EmailService`** en use cases que crean usuarios — teachers y parents.
 - **Tests en `src/test/java/`** — mismo paquete que producción pero bajo `test/`, no `main/`.
 - **`getFullName()`** para obtener el nombre completo de `FullName` — nunca `fullName()`.
+- **Llamar `teacher.assignActivationToken(token)`** después de `Teacher.create()` y antes de `teacherRepository.save()`.
+- **Verificar que `TeacherPersistenceMapper`** mapea `activationToken`, `activationSentAt`, `activatedAt`, `active`.
 
 ### ❌ Nunca hacer
 
@@ -834,6 +919,8 @@ AcademicYearId         → academic/
 - **Nunca usar alias en imports Java** — Java no lo soporta; usar FQN en declaración del campo.
 - **Nunca llamar `fullName()`** en `FullName` — el método correcto es `getFullName()`.
 - **Nunca dejar que un fallo de email** rompa o revierta una transacción de negocio.
+- **Nunca hardcodear `900`** como duración del confirmation token — usar `confirmationTokenExpirationSeconds`.
+- **Nunca activar solo el `User`** en `ActivateTeacherAccountUseCase` — siempre activar también el `Teacher`.
 
 ### 🔍 Al analizar código existente
 
@@ -867,23 +954,6 @@ Orden estricto de implementación:
 17. `infrastructure/web/exception/` — `@RestControllerAdvice` con `ProblemDetail`
 18. `infrastructure/seeder/` — datos iniciales para perfil `dev`
 19. `db/migration/V{n}__create_{context}_tables.sql`
-
-### 🔗 Dependencias permitidas en `grades/` (próximo BC)
-
-```java
-// ✅ Permitido — solo IDs y Shared Kernel
-import org.school.management.academic.domain.valueobject.ids.AcademicYearId;
-import org.school.management.academic.domain.valueobject.ids.GradeLevelId;
-import org.school.management.academic.domain.valueobject.ids.SubjectId;
-import org.school.management.academic.domain.valueobject.ids.PeriodId;
-import org.school.management.students.personal.domain.valueobject.StudentPersonalDataId;
-import org.school.management.teachers.domain.valueobject.TeacherId;
-import org.school.management.auth.domain.valueobject.UserId;
-
-// ❌ Prohibido — clases completas de otro bounded context
-import org.school.management.academic.domain.model.Subject;   // NUNCA
-import org.school.management.teachers.domain.model.Teacher;   // NUNCA
-```
 
 ### 🧪 Al generar tests
 
@@ -928,7 +998,7 @@ class GetTeacherByIdUseCaseTest {
 | V17 | `evaluation_types`, `evaluations`, `period_grades`, `final_grades` |
 | V19 | `countries`, `provinces` — datos Argentina (seed SQL) |
 | V20 | `places` — localidades Argentina (seed SQL) |
-| V21 | `attendance_daily_records`, `attendance_course_records`, `attendance_period_summaries` ← pendiente |
+| V21 | `attendance_daily_records`, `attendance_course_records`, `attendance_period_summaries` ✅ |
 
 **Convenciones de BD:**
 - PK: `BINARY(16)` — `@Convert(UuidBinaryConverter.class)` en entidades, `@Id` como `UUID`
@@ -976,55 +1046,42 @@ docker run -p 1025:1025 -p 8025:8025 mailhog/mailhog
 
 ### ✅ Completado
 
-- `auth/` — JWT, refresh, blacklist, sesiones, creación de usuarios
+- `auth/` — JWT, refresh, blacklist, sesiones, creación de usuarios, activación de cuenta teacher
 - `geography/` — Geografía argentina con búsqueda y jerarquía
 - `academic/` — Años, orientaciones, cursos, materias, registro de calificaciones, 22 use cases
 - `shared/email/` — EmailService (puerto + JavaMailEmailService con OCI SMTP + AsyncConfig)
 - **`students/` — COMPLETO** — 5 agregados de punta a punta
-- **`teachers/` — COMPLETO** — domain + application + infrastructure + 4 endpoints
-- **`parents/` — CORREGIDO** — cuil agregado en todas las capas, residencePlaceId → placeId
-- **`grades/` — COMPLETO** — domain + application + infrastructure + 7 endpoints + seeder + 19 tests + stubs desbloqueados
+- **`teachers/` — COMPLETO** — domain + application + infrastructure + 4 endpoints + flujo activación por email
+- **`parents/` — COMPLETO** — cuil agregado en todas las capas, placeId consistente
+- **`grades/` — COMPLETO** — domain + application + infrastructure + 7 endpoints + seeder + 19 tests
 - **`course/` — COMPLETO** — domain + application + infrastructure + 5 endpoints + seeder + 9 tests
+- **`attendance/` — COMPLETO** — domain + application + infrastructure + 7 endpoints + V21 + 30 tests
+- **Flujo activación teacher** — confirmationToken (48h), email con link, ActivateTeacherAccountUseCase activa User+Teacher
 - **`AcademicDataSeeder`** — 2 años lectivos, 2 orientaciones, 64 materias, 22 cursos, 2 registros
 - **`CourseDataSeeder`** — ~152 CourseSubjects para 2025, @Order(6)
 - **`TeacherDataSeeder`** — 3 docentes activados, @Order(7)
 - **`StudentAndParentDataSeeder`** — 4 alumnos + 4 padres, @Order(8)
-- **Tests unitarios** — 50 tests: teachers (11), parents (11), grades (19), course (9)
-- Flyway V1–V7, V10–V15, V17, V19, V20
+- **Tests unitarios** — 80 tests: teachers (11), parents (11), grades (19), course (9), attendance (30)
+- Flyway V1–V7, V10–V15, V17, V19, V20, V21
 
 ### ⏳ Pendiente
 
-- [ ] `attendance/` BC — DailyAttendance, CourseAttendance, AttendanceSummary ← **próximo**
-- [ ] Activación de cuenta teacher — link en email (requiere `confirmationToken` en `CreateTeacherResponse`)
-- [ ] Tests unitarios para students (CreateStudentUseCase — 15 pasos)
+- [ ] Tests de activación teacher — `ActivateTeacherAccountUseCaseTest` (5 casos), `auth/CreateTeacherUseCaseTest` actualizado
+- [ ] Tests unitarios para students (`CreateStudentUseCase` — 15 pasos)
 - [ ] Rate limiting, auditoría, métricas
 
-### 🎯 Próximo paso — `attendance/` (bounded context)
+### 🎯 Próximos pasos sugeridos
 
-**Responsabilidad:** Control de asistencia diaria por preceptor y por materia por profesor, con cálculo automático de resúmenes por período y detección de alumnos en riesgo de quedar libres.
+**A) Tests de activación teacher** *(cierra el trabajo de este chat)*
+```
+ActivateTeacherAccountUseCaseTest
+  ├─ token inválido → InvalidTokenException
+  ├─ token válido pero user no encontrado → UserNotFoundException
+  ├─ token válido pero no es TEACHER → InvalidOperationException
+  ├─ teacher no encontrado → TeacherNotFoundException
+  └─ happy path → User.active=true + Teacher.active=true + token=null
+```
 
-**Reglas de negocio:**
-- Mínimo 85% asistencia — libre si `weightedAbsences / totalClasses > 0.15`
-- ABSENT=1.0 | JUSTIFIED=1.0 | LATE=0.2 | WITHDRAWN=0.2 | PRESENT=0.0
-- El preceptor puede justificar una ausencia (ABSENT → JUSTIFIED) desde la lista diaria
+**B) Tests para `CreateStudentUseCase`** *(el flujo más complejo — 15 pasos atómicos)*
 
-**Modelos:**
-- `DailyAttendance` — lista del día por curso (actor: STAFF/preceptor)
-- `CourseAttendance` — asistencia por clase por materia (actor: TEACHER)
-- `AttendanceSummary` — resumen calculado automáticamente por período
-
-**Ya implementado (dominio + aplicación parcial):**
-- Value objects: `DailyAttendanceId`, `CourseAttendanceId`, `AttendanceSummaryId`, `AttendanceStatus`
-- Modelos: `DailyAttendance`, `CourseAttendance`, `AttendanceSummary` con `recalculate()`
-- Puertos: `DailyAttendanceRepository`, `CourseAttendanceRepository`, `AttendanceSummaryRepository`
-- Excepciones: `AttendanceAlreadyRecordedException`, `AttendanceNotFoundException`
-- DTOs request/response completos
-- `AttendanceApplicationMapper`
-- `RecordDailyAttendanceUseCase`, `RecordCourseAttendanceUseCase` (parcial)
-
-**Pendiente en el nuevo chat:**
-- Completar `RecordCourseAttendanceUseCase`
-- `JustifyAbsenceUseCase`, `CorrectAttendanceUseCase`, `GetAttendanceSummaryUseCase`, `GetAtRiskStudentsUseCase`
-- Infraestructura completa (entidades JPA, adaptadores, persistence mappers)
-- Controller con 8 endpoints
-- `V21__create_attendance_tables.sql`
+**C) Rate limiting / auditoría** *(infraestructura transversal)*

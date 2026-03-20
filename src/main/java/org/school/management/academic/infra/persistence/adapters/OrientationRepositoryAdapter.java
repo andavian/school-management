@@ -52,7 +52,7 @@ public class OrientationRepositoryAdapter implements OrientationRepository {
     @Override
     public List<Orientation> findActiveOrientations() {
         // BUG RESUELTO: Implementa la lógica usando el método JPA
-        return jpaRepository.findByIsActiveTrue().stream()
+        return jpaRepository.findByActiveTrue().stream()
                 .map(mapper::toDomain)
                 .collect(Collectors.toList());
     }

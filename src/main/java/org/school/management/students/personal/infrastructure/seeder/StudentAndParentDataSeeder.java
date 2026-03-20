@@ -74,26 +74,26 @@ public class StudentAndParentDataSeeder implements ApplicationRunner {
     private final PasswordEncoder passwordEncoder;
 
     // ── UUIDs fijos — Students ────────────────────────────────────────────
-    public static final UUID STUDENT_1_ID      = UUID.fromString("st000000-0000-0000-0000-000000000001");
-    public static final UUID STUDENT_2_ID      = UUID.fromString("st000000-0000-0000-0000-000000000002");
-    public static final UUID STUDENT_3_ID      = UUID.fromString("st000000-0000-0000-0000-000000000003");
-    public static final UUID STUDENT_4_ID      = UUID.fromString("st000000-0000-0000-0000-000000000004");
+    public static final UUID STUDENT_1_ID      = UUID.fromString("ed000000-0000-0000-0000-000000000001");
+    public static final UUID STUDENT_2_ID      = UUID.fromString("ed000000-0000-0000-0000-000000000002");
+    public static final UUID STUDENT_3_ID      = UUID.fromString("ed000000-0000-0000-0000-000000000003");
+    public static final UUID STUDENT_4_ID      = UUID.fromString("ed000000-0000-0000-0000-000000000004");
 
-    public static final UUID STUDENT_1_USER_ID = UUID.fromString("su000000-0000-0000-0000-000000000001");
-    public static final UUID STUDENT_2_USER_ID = UUID.fromString("su000000-0000-0000-0000-000000000002");
-    public static final UUID STUDENT_3_USER_ID = UUID.fromString("su000000-0000-0000-0000-000000000003");
-    public static final UUID STUDENT_4_USER_ID = UUID.fromString("su000000-0000-0000-0000-000000000004");
+    public static final UUID STUDENT_1_USER_ID = UUID.fromString("ea000000-0000-0000-0000-000000000001");
+    public static final UUID STUDENT_2_USER_ID = UUID.fromString("ea000000-0000-0000-0000-000000000002");
+    public static final UUID STUDENT_3_USER_ID = UUID.fromString("ea000000-0000-0000-0000-000000000003");
+    public static final UUID STUDENT_4_USER_ID = UUID.fromString("ea000000-0000-0000-0000-000000000004");
 
     // ── UUIDs fijos — Parents ─────────────────────────────────────────────
-    public static final UUID PARENT_1_ID      = UUID.fromString("pa000000-0000-0000-0000-000000000001");
-    public static final UUID PARENT_2_ID      = UUID.fromString("pa000000-0000-0000-0000-000000000002");
-    public static final UUID PARENT_3_ID      = UUID.fromString("pa000000-0000-0000-0000-000000000003");
-    public static final UUID PARENT_4_ID      = UUID.fromString("pa000000-0000-0000-0000-000000000004");
+    public static final UUID PARENT_1_ID      = UUID.fromString("fa000000-0000-0000-0000-000000000001");
+    public static final UUID PARENT_2_ID      = UUID.fromString("fa000000-0000-0000-0000-000000000002");
+    public static final UUID PARENT_3_ID      = UUID.fromString("fa000000-0000-0000-0000-000000000003");
+    public static final UUID PARENT_4_ID      = UUID.fromString("fa000000-0000-0000-0000-000000000004");
 
-    public static final UUID PARENT_1_USER_ID = UUID.fromString("pu000000-0000-0000-0000-000000000001");
-    public static final UUID PARENT_2_USER_ID = UUID.fromString("pu000000-0000-0000-0000-000000000002");
-    public static final UUID PARENT_3_USER_ID = UUID.fromString("pu000000-0000-0000-0000-000000000003");
-    public static final UUID PARENT_4_USER_ID = UUID.fromString("pu000000-0000-0000-0000-000000000004");
+    public static final UUID PARENT_1_USER_ID = UUID.fromString("fe000000-0000-0000-0000-000000000001");
+    public static final UUID PARENT_2_USER_ID = UUID.fromString("fe000000-0000-0000-0000-000000000002");
+    public static final UUID PARENT_3_USER_ID = UUID.fromString("fe000000-0000-0000-0000-000000000003");
+    public static final UUID PARENT_4_USER_ID = UUID.fromString("fe000000-0000-0000-0000-000000000004");
 
     @Override
     @Transactional

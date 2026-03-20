@@ -15,7 +15,7 @@ import java.util.UUID;
 public interface GradeLevelJpaRepository extends JpaRepository<GradeLevelEntity, UUID> {
     List<GradeLevelEntity> findByAcademicYearId(UUID academicYearId);
 
-    List<GradeLevelEntity> findByAcademicYearIdAndIsActiveTrue(UUID academicYearId);
+    List<GradeLevelEntity> findByAcademicYearIdAndActiveTrue(UUID academicYearId);
 
     Optional<GradeLevelEntity> findByAcademicYearIdAndYearLevelAndDivision(
             UUID academicYearId,
@@ -36,7 +36,7 @@ public interface GradeLevelJpaRepository extends JpaRepository<GradeLevelEntity,
 
     List<GradeLevelEntity> findByOrientationId(UUID orientationId);
 
-    List<GradeLevelEntity> findByIsActiveTrue();
+    List<GradeLevelEntity> findByActiveTrue();
 
     List<GradeLevelEntity> findByAcademicYearIdAndShift(UUID academicYearId, String shift);
 
@@ -55,7 +55,7 @@ public interface GradeLevelJpaRepository extends JpaRepository<GradeLevelEntity,
     );
 
     @Query("SELECT gl FROM GradeLevelEntity gl WHERE gl.academicYearId = :academicYearId " +
-            "AND gl.yearLevel = :yearLevel AND gl.orientationId = :orientationId AND gl.isActive = true")
+            "AND gl.yearLevel = :yearLevel AND gl.orientationId = :orientationId AND gl.active = true")
     List<GradeLevelEntity> findByYearLevelAndOrientation(
             @Param("academicYearId") UUID academicYearId,
             @Param("yearLevel") Integer yearLevel,
@@ -64,7 +64,7 @@ public interface GradeLevelJpaRepository extends JpaRepository<GradeLevelEntity,
 
     @Query("SELECT gl FROM GradeLevelEntity gl " +
             "JOIN AcademicYearEntity ay ON gl.academicYearId = ay.academicYearId " +
-            "WHERE ay.status = 'ACTIVE' AND gl.isActive = true " +
+            "WHERE ay.status = 'ACTIVE' AND gl.active = true " +
             "ORDER BY gl.yearLevel, gl.division")
     List<GradeLevelEntity> findCurrentYearActiveLevels();
 
@@ -76,9 +76,9 @@ public interface GradeLevelJpaRepository extends JpaRepository<GradeLevelEntity,
 
      long countByAcademicYearId(UUID academicYearId);
 
-    long countByAcademicYearIdAndIsActiveTrue(UUID academicYearId);
+    long countByAcademicYearIdAndActiveTrue(UUID academicYearId);
 
-    @Query("SELECT COUNT(gl) FROM GradeLevelEntity gl WHERE gl.homeroomTeacherId = :teacherId AND gl.isActive = true")
+    @Query("SELECT COUNT(gl) FROM GradeLevelEntity gl WHERE gl.homeroomTeacherId = :teacherId AND gl.active = true")
     long countActiveClassesByTeacher(@Param("teacherId") UUID teacherId);
 
     // Query con jerarquía completa (GradeLevel + AcademicYear + Orientation)
@@ -89,7 +89,7 @@ public interface GradeLevelJpaRepository extends JpaRepository<GradeLevelEntity,
             "FROM GradeLevelEntity gl JOIN AcademicYearEntity ay ON gl.academicYearId = ay.academicYearId " +
             "LEFT JOIN OrientationEntity o ON gl.orientationId = o.orientationId " +
             "WHERE ay.status = 'ACTIVE' AND gl.gradeLevelId = :id " +
-            "AND gl.isActive = true ORDER BY gl.yearLevel, gl.division")
+            "AND gl.active = true ORDER BY gl.yearLevel, gl.division")
     Optional<GradeLevelWithDetailsProjection> findByIdWithDetails(@Param("id") UUID id);
 
     @Query("SELECT new org.school.management.academic.infra.persistence.entity.GradeLevelWithDetailsProjection(" +

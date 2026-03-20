@@ -52,13 +52,13 @@ public class TeacherDataSeeder implements ApplicationRunner {
     private final PasswordEncoder passwordEncoder;
 
     // UUIDs fijos — referenciables desde otros seeders
-    public static final UUID TEACHER_1_ID      = UUID.fromString("tc000000-0000-0000-0000-000000000001");
-    public static final UUID TEACHER_2_ID      = UUID.fromString("tc000000-0000-0000-0000-000000000002");
-    public static final UUID TEACHER_3_ID      = UUID.fromString("tc000000-0000-0000-0000-000000000003");
+    public static final UUID TEACHER_1_ID      = UUID.fromString("0c000000-0000-0000-0000-000000000001");
+    public static final UUID TEACHER_2_ID      = UUID.fromString("0c000000-0000-0000-0000-000000000002");
+    public static final UUID TEACHER_3_ID      = UUID.fromString("0c000000-0000-0000-0000-000000000003");
 
-    public static final UUID TEACHER_1_USER_ID = UUID.fromString("tu000000-0000-0000-0000-000000000001");
-    public static final UUID TEACHER_2_USER_ID = UUID.fromString("tu000000-0000-0000-0000-000000000002");
-    public static final UUID TEACHER_3_USER_ID = UUID.fromString("tu000000-0000-0000-0000-000000000003");
+    public static final UUID TEACHER_1_USER_ID = UUID.fromString("e0000000-0000-0000-0000-000000000001");
+    public static final UUID TEACHER_2_USER_ID = UUID.fromString("e0000000-0000-0000-0000-000000000002");
+    public static final UUID TEACHER_3_USER_ID = UUID.fromString("e0000000-0000-0000-0000-000000000003");
 
     @Override
     @Transactional

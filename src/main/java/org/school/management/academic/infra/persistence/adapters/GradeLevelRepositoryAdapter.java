@@ -79,14 +79,14 @@ public class GradeLevelRepositoryAdapter implements GradeLevelRepository {
 
     @Override
     public List<GradeLevel> findActiveGradeLevels() {
-        return jpaRepository.findByIsActiveTrue().stream()
+        return jpaRepository.findByActiveTrue().stream()
                 .map(mapper::toDomain)
                 .collect(Collectors.toList());
     }
 
     @Override
     public List<GradeLevel> findActiveByAcademicYear(AcademicYearId academicYearId) {
-        return jpaRepository.findByAcademicYearIdAndIsActiveTrue(academicYearId.value()).stream()
+        return jpaRepository.findByAcademicYearIdAndActiveTrue(academicYearId.value()).stream()
                 .map(mapper::toDomain)
                 .collect(Collectors.toList());
     }

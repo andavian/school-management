@@ -54,7 +54,7 @@ public class SubjectRepositoryAdapter implements SubjectRepository {
     @Override
     // IMPLEMENTACIÓN CORREGIDA (Ya que jpaRepository.findByIsActiveTrue existe)
     public List<Subject> findActiveSubjects() {
-        return jpaRepository.findByIsActiveTrue().stream()
+        return jpaRepository.findByActiveTrue().stream()
                 .map(mapper::toDomain)
                 .collect(Collectors.toList());
     }

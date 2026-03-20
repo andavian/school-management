@@ -5,29 +5,36 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.school.management.auth.application.dto.responses.UserResponse;
 import org.school.management.auth.application.usecases.admin.*;
 import org.school.management.auth.domain.exception.*;
+import org.school.management.auth.infra.web.SecurityContextHelper;
 import org.school.management.auth.infra.web.dto.response.*;
 import org.school.management.auth.infra.web.dto.requests.*;
 import org.school.management.auth.infra.web.mappers.AuthWebMapper;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 import io.swagger.v3.oas.annotations.tags.Tag;
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.*;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 
+/**
+ * Controller de autenticación y gestión de cuenta propia.
+ *
+ * <p>Responsabilidad exclusiva: operaciones que el usuario hace sobre
+ * su propia sesión e identidad — login, activar cuenta, cambiar password,
+ * ver perfil. No gestiona otros usuarios ni entidades de dominio.</p>
+ *
+ * <p>Base path: {@code /api/auth}</p>
+ */
 @RestController
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
 @Slf4j
-@Tag(name = "Authentication", description = "Endpoints de autenticación y gestión de cuentas")
+@Tag(name = "Authentication", description = "Endpoints de autenticación y gestión de cuenta propia")
 public class AuthController {
 
     private final LoginUseCase loginUseCase;
@@ -36,12 +43,11 @@ public class AuthController {
     private final GetUserProfileUseCase getUserProfileUseCase;
     private final AuthWebMapper webMapper;
 
-    // ============================================================
-    // LOGIN  (PUBLIC)
-    // ============================================================
+    // ── POST /api/auth/login ──────────────────────────────────────────────
+
     @Operation(
             summary = "Iniciar sesión",
-            description = "Permite autenticar un usuario por DNI y contraseña. Devuelve un JWT si las credenciales son válidas."
+            description = "Autentica un usuario por DNI y contraseña. Devuelve JWT si las credenciales son válidas."
     )
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Login exitoso",
@@ -55,21 +61,18 @@ public class AuthController {
     public ResponseEntity<LoginApiResponse> login(
             @Valid @RequestBody LoginApiRequest request) {
 
-        log.info("POST /api/auth/login - DNI {}", request.dni());
+        log.info("POST /api/auth/login — DNI: {}", request.dni());
 
         var applicationRequest = webMapper.toApplicationDto(request);
         var loginResponse = loginUseCase.execute(applicationRequest);
-        var apiResponse = webMapper.toApiResponse(loginResponse);
-
-        return ResponseEntity.ok(apiResponse);
+        return ResponseEntity.ok(webMapper.toApiResponse(loginResponse));
     }
 
-    // ============================================================
-    // ACTIVATE ACCOUNT (PUBLIC con token)
-    // ============================================================
+    // ── POST /api/auth/activate-account ──────────────────────────────────
+
     @Operation(
             summary = "Activar cuenta de profesor",
-            description = "Activa la cuenta de un profesor utilizando el token enviado por email."
+            description = "Activa la cuenta de un profesor usando el token enviado por email."
     )
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Cuenta activada correctamente",
@@ -87,18 +90,15 @@ public class AuthController {
                 request.token(),
                 request.newPassword()
         );
-
         var response = activateTeacherAccountUseCase.execute(applicationRequest);
-
         return ResponseEntity.ok(webMapper.createSuccessResponse(response.message()));
     }
 
-    // ============================================================
-    // CHANGE PASSWORD (PRIVATE - requiere JWT)
-    // ============================================================
+    // ── PUT /api/auth/change-password ─────────────────────────────────────
+
     @Operation(
             summary = "Cambiar contraseña",
-            description = "Permite a un usuario autenticado cambiar su contraseña actual.",
+            description = "Permite al usuario autenticado cambiar su contraseña actual.",
             security = @SecurityRequirement(name = "bearer-jwt")
     )
     @ApiResponses({
@@ -110,29 +110,24 @@ public class AuthController {
     })
     @PutMapping("/change-password")
     public ResponseEntity<SuccessApiResponse> changePassword(
-            @Valid @RequestBody ChangePasswordApiRequest request) {
+            @Valid @RequestBody ChangePasswordApiRequest request,
+            @AuthenticationPrincipal UserDetails userDetails) {
 
         log.info("PUT /api/auth/change-password");
 
-        String userId = getCurrentUserId();
-
-        var appRequest = webMapper.toApplicationDto(request);
-        var requestWithUserId = new org.school.management.auth.application.dto.requests.ChangePasswordRequest(
-                userId,
-                appRequest.currentPassword(),
-                appRequest.newPassword()
+        var appRequest = new org.school.management.auth.application.dto.requests.ChangePasswordRequest(
+                SecurityContextHelper.extractUserId(userDetails).toString(),
+                webMapper.toApplicationDto(request).currentPassword(),
+                webMapper.toApplicationDto(request).newPassword()
         );
-
-        var response = changePasswordUseCase.execute(requestWithUserId);
-
+        var response = changePasswordUseCase.execute(appRequest);
         return ResponseEntity.ok(webMapper.createSuccessResponse(response.message()));
     }
 
-    // ============================================================
-    // PROFILE (PRIVATE)
-    // ============================================================
+    // ── GET /api/auth/profile ─────────────────────────────────────────────
+
     @Operation(
-            summary = "Obtener perfil",
+            summary = "Obtener perfil propio",
             description = "Devuelve la información del usuario autenticado.",
             security = @SecurityRequirement(name = "bearer-jwt")
     )
@@ -142,22 +137,20 @@ public class AuthController {
             @ApiResponse(responseCode = "401", description = "Usuario no autenticado")
     })
     @GetMapping("/profile")
-    public ResponseEntity<UserApiResponse> getProfile() {
+    public ResponseEntity<UserApiResponse> getProfile(
+            @AuthenticationPrincipal UserDetails userDetails) {
+
         log.info("GET /api/auth/profile");
 
-        String userId = getCurrentUserId();
+        var userId = SecurityContextHelper.extractUserId(userDetails).toString();
         var user = getUserProfileUseCase.execute(userId);
-
         return ResponseEntity.ok(webMapper.toApiResponse(user));
     }
 
-    // ============================================================
-    // REFRESH TOKEN (PUBLIC)
-    // ============================================================
-    @Operation(
-            summary = "Renovar token JWT",
-            description = "Renueva un token JWT expirado utilizando un refresh token válido."
-    )
+    // ── POST /api/auth/refresh-token ──────────────────────────────────────
+
+    @Operation(summary = "Renovar token JWT",
+            description = "Renueva un token JWT expirado usando un refresh token válido.")
     @ApiResponses({
             @ApiResponse(responseCode = "501", description = "Aún no implementado")
     })
@@ -167,27 +160,5 @@ public class AuthController {
 
         log.info("POST /api/auth/refresh-token");
         throw new UnsupportedOperationException("Refresh token no implementado aún");
-    }
-
-    // ============================================================
-    // Helper
-    // ============================================================
-    private String getCurrentUserId() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-
-        if (authentication == null || !authentication.isAuthenticated()) {
-            throw new UnauthorizedException("Usuario no autenticado");
-        }
-
-        org.school.management.auth.domain.model.User user =
-                (org.school.management.auth.domain.model.User) authentication.getPrincipal();
-
-        return user.getUserId().asString();
-    }
-
-    public static class UnauthorizedException extends RuntimeException {
-        public UnauthorizedException(String message) {
-            super(message);
-        }
     }
 }

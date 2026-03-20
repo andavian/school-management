@@ -16,18 +16,18 @@ public interface OrientationJpaRepository extends JpaRepository<OrientationEntit
 
     Optional<OrientationEntity> findByName(String name);
 
-    List<OrientationEntity> findByIsActiveTrue();
+    List<OrientationEntity> findByActiveTrue();
 
     List<OrientationEntity> findByAvailableFromYear(Integer yearLevel);
 
-    @Query("SELECT o FROM OrientationEntity o WHERE o.availableFromYear <= :yearLevel AND o.isActive = true")
+    @Query("SELECT o FROM OrientationEntity o WHERE o.availableFromYear <= :yearLevel AND o.active = true")
     List<OrientationEntity> findAvailableForYearLevel(@Param("yearLevel") Integer yearLevel);
 
     boolean existsByCode(String code);
 
     boolean existsByName(String name);
 
-    long countByIsActiveTrue();
+    long countByActiveTrue();
 
     @Query("SELECT o FROM OrientationEntity o WHERE LOWER(o.name) LIKE LOWER(CONCAT('%', :search, '%')) " +
             "OR LOWER(o.code) LIKE LOWER(CONCAT('%', :search, '%'))")
