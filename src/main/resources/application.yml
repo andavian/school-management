@@ -102,8 +102,9 @@ app:
   security:
     jwt:
       secret-key: ${JWT_SECRET_KEY}
-      access-token-expiration: 3600    # 1 hora en segundos
-      refresh-token-expiration: 86400  # 24 horas en segundos
+      access-token-expiration: 3600
+      refresh-token-expiration: 86400
+      confirmation-token-expiration: 172800
       issuer: "school-management-dev"
 
   # Configuración específica de la escuela
@@ -223,6 +224,7 @@ app:
       secret-key: ${JWT_SECRET_KEY} # DEBE ser variable de entorno
       access-token-expiration: 3600    # 1 hora
       refresh-token-expiration: 604800 # 7 días
+      confirmation-token-expiration: 172800
       issuer: "school-management-prod"
 
   # Configuración específica de la escuela
@@ -292,6 +294,7 @@ app:
       secret-key: ${JWT_SECRET_KEY}
       access-token-expiration: 3600
       refresh-token-expiration: 86400
+      confirmation-token-expiration: 172800
       issuer: "school-management-test"
 
   cors:

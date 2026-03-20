@@ -24,7 +24,6 @@ import java.util.UUID;
 public class CreateTeacherUseCase {
 
     private final TeacherRepository teacherRepository;
-    // Nombre completamente calificado — evita colisión con esta clase
     private final org.school.management.auth.application.usecases.admin.CreateTeacherUseCase authCreateTeacherUseCase;
     private final GetTeacherByIdUseCase getTeacherByIdUseCase;
     private final EmailService emailService;
@@ -47,7 +46,7 @@ public class CreateTeacherUseCase {
             throw TeacherAlreadyExistsException.withCuil(request.cuil());
         }
 
-        // 3. Crear User con rol TEACHER via auth/ (genera password + token de activación)
+        // 3. Crear User con rol TEACHER en auth/ — genera password temporal + confirmationToken
         var authResponse = authCreateTeacherUseCase.execute(
                 new org.school.management.auth.application.dto.requests.CreateTeacherRequest(
                         request.dni(),
@@ -61,20 +60,21 @@ public class CreateTeacherUseCase {
         UserId userId = UserId.from(UUID.fromString(authResponse.userId()));
 
         // 4. Construir VOs del dominio
-        FullName fullName       = FullName.of(request.firstName(), request.lastName());
-        Cuil cuil               = Cuil.of(request.cuil());
-        Email email             = Email.of(request.email());
-        PhoneNumber phone       = PhoneNumber.of(request.phone());
-        Gender gender           = request.gender() != null
+        FullName fullName           = FullName.of(request.firstName(), request.lastName());
+        Cuil cuil                   = Cuil.of(request.cuil());
+        Email email                 = Email.of(request.email());
+        PhoneNumber phone           = PhoneNumber.of(request.phone());
+        Gender gender               = request.gender() != null
                 ? Gender.valueOf(request.gender()) : null;
-        Nationality nationality = request.nationality() != null
+        Nationality nationality     = request.nationality() != null
                 ? Nationality.of(request.nationality()) : Nationality.of("Argentina");
-        PlaceId birthPlaceId    = request.birthPlaceId() != null
+        PlaceId birthPlaceId        = request.birthPlaceId() != null
                 ? PlaceId.of(UUID.fromString(request.birthPlaceId())) : null;
-        Address address         = buildAddress(request.address());
-        TeacherSpecialization specialization = TeacherSpecialization.of(request.specialization());
+        Address address             = buildAddress(request.address());
+        TeacherSpecialization spec  = TeacherSpecialization.of(request.specialization());
 
         // 5. Crear entidad de dominio Teacher
+        //    El confirmationToken se guarda para trackear el estado de activación
         Teacher teacher = Teacher.create(
                 TeacherId.generate(),
                 userId,
@@ -88,27 +88,31 @@ public class CreateTeacherUseCase {
                 nationality,
                 phone,
                 address,
-                specialization,
+                spec,
                 request.teachingLicense(),
                 request.hireDate(),
                 request.employmentType(),
                 UserId.from(createdByUserId)
         );
 
+        // Almacenar token en el dominio para rastrear estado pendiente
+        teacher.assignActivationToken(authResponse.confirmationToken());
+
         // 6. Persistir
         Teacher savedTeacher = teacherRepository.save(teacher);
 
-        emailService.sendTeacherInvitation(
-                request.email(),
-                request.firstName(),
-                request.lastName(),
-                request.dni(),
-                authResponse.temporaryPassword(),
-                ""      // activationLink vacío — pendiente cuando se agregue confirmationToken a authResponse
-        );
+        // 7. El email ya fue enviado en auth/CreateTeacherUseCase (con el link real).
+        //    Solo logueamos el resultado aquí para trazabilidad.
+        if (authResponse.invitationSent()) {
+            log.info("Invitation email sent successfully for teacher DNI: {}", request.dni());
+        } else {
+            log.warn("Invitation email could NOT be sent for teacher DNI: {}. " +
+                    "Admin should resend manually.", request.dni());
+        }
 
-        log.info("Teacher created successfully. DNI: {} - ID: {}",
-                request.dni(), savedTeacher.getTeacherId().asString());
+        log.info("Teacher created successfully. DNI: {} - ID: {} - pendingActivation: {}",
+                request.dni(), savedTeacher.getTeacherId().asString(),
+                savedTeacher.isPendingActivation());
 
         return getTeacherByIdUseCase.buildResponse(savedTeacher);
     }

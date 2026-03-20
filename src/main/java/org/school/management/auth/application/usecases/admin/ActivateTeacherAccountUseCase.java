@@ -15,7 +15,12 @@ import org.school.management.auth.domain.valueobject.PlainPassword;
 import org.school.management.auth.domain.valueobject.RoleName;
 import org.school.management.auth.infra.security.JwtTokenProvider;
 import org.school.management.shared.person.domain.valueobject.Dni;
+import org.school.management.teachers.domain.exception.TeacherNotFoundException;
+import org.school.management.teachers.domain.model.Teacher;
+import org.school.management.teachers.domain.repository.TeacherRepository;
 import org.springframework.stereotype.Service;
+
+import java.time.LocalDateTime;
 
 @Service
 @RequiredArgsConstructor
@@ -25,39 +30,42 @@ public class ActivateTeacherAccountUseCase {
     private final UserRepository userRepository;
     private final JwtTokenProvider jwtTokenProvider;
     private final HashedPassword.PasswordEncoder passwordEncoder;
+    private final TeacherRepository teacherRepository;   // ← nuevo
 
     @Transactional
     public ActivateAccountResponse execute(ActivateAccountRequest request) {
-        // Validar token de confirmación
+
+        // 1. Validar token de confirmación
         if (!jwtTokenProvider.isConfirmationTokenValid(request.token())) {
             throw new InvalidTokenException("Token de activación inválido o expirado");
         }
 
-        // Obtener usuario del token
+        // 2. Obtener DNI del token y buscar el User
         String dni = jwtTokenProvider.getUsernameFromToken(request.token());
         User user = userRepository.findByDni(Dni.of(dni))
                 .orElseThrow(() -> new UserNotFoundException("Usuario no encontrado"));
 
-        // Verificar que sea profesor
+        // 3. Verificar que sea profesor
         if (!user.hasRole(RoleName.teacher())) {
-            throw new InvalidOperationException("Solo los profesores pueden usar este enlace de activación");
+            throw new InvalidOperationException(
+                    "Solo los profesores pueden usar este enlace de activación");
         }
 
-        // Cambiar password
+        // 4. Cambiar password y activar el User
         PlainPassword newPassword = PlainPassword.of(request.newPassword());
         user.resetPassword(newPassword, passwordEncoder);
-
-        // Activar cuenta
         user.activate();
-
         userRepository.save(user);
 
-        log.info("Cuenta de profesor activada: {}", dni);
+        // 5. Activar también el Teacher (misma transacción)
+        Teacher teacher = teacherRepository.findByDni(Dni.of(dni))
+                .orElseThrow(() -> TeacherNotFoundException.byDni(dni));
 
-        return new ActivateAccountResponse(true, "Cuenta activada exitosamente" );
+        teacher.activate(LocalDateTime.now());   // limpia activationToken + setea activatedAt
+        teacherRepository.save(teacher);
 
+        log.info("Cuenta de profesor activada exitosamente: DNI={}", dni);
+
+        return new ActivateAccountResponse(true, "Cuenta activada exitosamente");
     }
-
-
 }
-

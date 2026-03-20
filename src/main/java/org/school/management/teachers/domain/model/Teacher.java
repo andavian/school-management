@@ -159,4 +159,12 @@ public class Teacher {
     public boolean isRetired() {
         return employmentStatus == EmploymentStatus.RETIRED;
     }
+
+    public void assignActivationToken(String token) {
+        if (token == null || token.isBlank()) {
+            throw new IllegalArgumentException("Activation token cannot be blank");
+        }
+        this.activationToken = token;
+        this.activationSentAt = java.time.LocalDateTime.now();
+    }
 }

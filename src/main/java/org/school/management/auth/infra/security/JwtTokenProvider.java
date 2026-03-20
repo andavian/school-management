@@ -43,6 +43,9 @@ public class JwtTokenProvider {
     @Value("${app.security.jwt.refresh-token-expiration}")
     private long refreshTokenExpirationSeconds;
 
+    @Value("${app.security.jwt.confirmation-token-expiration:172800}")
+    private long confirmationTokenExpirationSeconds; // default: 48h = 172 800 seg
+
     @Value("${app.security.jwt.issuer}")
     private String issuer;
 
@@ -127,7 +130,7 @@ public class JwtTokenProvider {
 
         // Usamos los métodos de la interfaz UserDetails para el subject
         assert userId != null;
-        return buildToken(userId, userDetails.getUsername(), claims, 900, "CONFIRMATION");
+        return buildToken(userId, userDetails.getUsername(), claims, confirmationTokenExpirationSeconds, "CONFIRMATION");
     }
 
     // ============================================
@@ -257,7 +260,7 @@ public class JwtTokenProvider {
         return switch (tokenType.toUpperCase()) {
             case "ACCESS" -> accessTokenExpirationSeconds;
             case "REFRESH" -> refreshTokenExpirationSeconds;
-            case "CONFIRMATION" -> 900; // 15 minutos
+            case "CONFIRMATION" -> confirmationTokenExpirationSeconds;
             default -> accessTokenExpirationSeconds;
         };
     }
