@@ -5,7 +5,7 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.school.management.auth.application.usecases.ActivateTeacherAccountUseCase;
+import org.school.management.auth.application.usecases.ActivateAccountUseCase;
 import org.school.management.auth.application.usecases.ChangePasswordUseCase;
 import org.school.management.auth.application.usecases.GetUserProfileUseCase;
 import org.school.management.auth.application.usecases.LoginUseCase;
@@ -40,7 +40,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 public class AuthController {
 
     private final LoginUseCase loginUseCase;
-    private final ActivateTeacherAccountUseCase activateTeacherAccountUseCase;
+    private final ActivateAccountUseCase activateTeacherAccountUseCase;
     private final ChangePasswordUseCase changePasswordUseCase;
     private final GetUserProfileUseCase getUserProfileUseCase;
     private final AuthWebMapper webMapper;
