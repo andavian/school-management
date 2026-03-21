@@ -9,7 +9,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.school.management.auth.domain.model.User;
+import org.school.management.auth.infra.web.SecurityContextHelper;
 import org.school.management.students.personal.application.usecases.CreateStudentUseCase;
 import org.school.management.students.personal.application.usecases.GetStudentByDniUseCase;
 import org.school.management.students.personal.application.usecases.GetStudentByIdUseCase;
@@ -30,12 +30,11 @@ import java.util.UUID;
 /**
  * REST Controller para el agregado StudentPersonalData.
  *
- * Base path: /api/admin/students
- * Seguridad: ADMIN para escritura (POST), ADMIN o STAFF para lectura y actualización (GET, PATCH).
+ * <p>Base path: {@code /api/admin/students}</p>
+ * <p>Seguridad: ADMIN para escritura (POST), ADMIN o STAFF para lectura y actualización (GET, PATCH).</p>
  *
- * El usuario autenticado llega como User (domain model de auth/) porque
- * CustomUserDetailsService.loadUserByUsername() devuelve directamente User,
- * que implementa UserDetails. El cast es seguro en todos los endpoints protegidos.
+ * <p>La extracción del usuario autenticado se delega a {@link SecurityContextHelper#extractUserId},
+ * que centraliza el cast {@code UserDetails} → {@code User} para todos los controllers del proyecto.</p>
  */
 @RestController
 @RequestMapping("/api/admin/students")
@@ -75,12 +74,11 @@ public class StudentController {
 
         log.info("POST /api/admin/students — DNI: {}", request.dni());
 
-        UUID createdByUserId = extractUserId(userDetails);
-        var appRequest  = webMapper.toApplicationRequest(request);
-        var appResponse = createStudentUseCase.execute(appRequest, createdByUserId);
-        var webResponse = webMapper.toWebResponse(appResponse);
-
-        return ResponseEntity.status(HttpStatus.CREATED).body(webResponse);
+        var appResponse = createStudentUseCase.execute(
+                webMapper.toApplicationRequest(request),
+                SecurityContextHelper.extractUserId(userDetails)
+        );
+        return ResponseEntity.status(HttpStatus.CREATED).body(webMapper.toWebResponse(appResponse));
     }
 
     // ── GET /api/admin/students/{id} ──────────────────────────────────────
@@ -97,8 +95,7 @@ public class StudentController {
 
         log.debug("GET /api/admin/students/{}", id);
 
-        var appResponse = getStudentByIdUseCase.execute(id);
-        return ResponseEntity.ok(webMapper.toWebResponse(appResponse));
+        return ResponseEntity.ok(webMapper.toWebResponse(getStudentByIdUseCase.execute(id)));
     }
 
     // ── GET /api/admin/students/dni/{dni} ─────────────────────────────────
@@ -115,8 +112,7 @@ public class StudentController {
 
         log.debug("GET /api/admin/students/dni/{}", dni);
 
-        var appResponse = getStudentByDniUseCase.execute(dni);
-        return ResponseEntity.ok(webMapper.toWebResponse(appResponse));
+        return ResponseEntity.ok(webMapper.toWebResponse(getStudentByDniUseCase.execute(dni)));
     }
 
     // ── GET /api/admin/students ───────────────────────────────────────────
@@ -141,9 +137,9 @@ public class StudentController {
         log.debug("GET /api/admin/students — dni={}, fullName={}, residencePlaceId={}",
                 dni, fullName, residencePlaceId);
 
-        var appSummaries = searchStudentsUseCase.execute(dni, fullName, residencePlaceId);
-        var webSummaries = webMapper.toSummaryWebResponseList(appSummaries);
-
+        var webSummaries = webMapper.toSummaryWebResponseList(
+                searchStudentsUseCase.execute(dni, fullName, residencePlaceId)
+        );
         return ResponseEntity.ok(
                 new StudentWebDto.StudentSearchWebResponse(webSummaries, webSummaries.size())
         );
@@ -169,32 +165,10 @@ public class StudentController {
 
         log.info("PATCH /api/admin/students/{}", id);
 
-        var appRequest  = webMapper.toApplicationRequest(request);
-        var appResponse = updateStudentUseCase.execute(id, appRequest);
-        return ResponseEntity.ok(webMapper.toWebResponse(appResponse));
-    }
-
-    // ── Helper privado ────────────────────────────────────────────────────
-
-    /**
-     * Extrae el UUID del usuario autenticado.
-     *
-     * CustomUserDetailsService.loadUserByUsername() devuelve directamente User
-     * (domain model de auth/), que implementa UserDetails. El cast es seguro
-     * porque Spring Security garantiza que @AuthenticationPrincipal es el objeto
-     * devuelto por loadUserByUsername() — que en este proyecto siempre es User.
-     *
-     * User.getUserId() está disponible via @Data de Lombok → getUserId().value()
-     * devuelve el UUID interno del UserId record.
-     */
-    private UUID extractUserId(UserDetails userDetails) {
-        if (userDetails instanceof User user) {
-            return user.getUserId().value();
-        }
-        throw new IllegalStateException(
-                "Principal inesperado en el contexto de seguridad: "
-                        + userDetails.getClass().getName()
-                        + ". Se esperaba org.school.management.auth.domain.model.User"
+        return ResponseEntity.ok(
+                webMapper.toWebResponse(
+                        updateStudentUseCase.execute(id, webMapper.toApplicationRequest(request))
+                )
         );
     }
 }

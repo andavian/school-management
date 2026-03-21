@@ -1,4 +1,4 @@
-package org.school.management.auth.application.usecases.admin;
+package org.school.management.auth.application.usecases;
 
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -6,7 +6,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.school.management.auth.application.dto.requests.ChangePasswordRequest;
 import org.school.management.auth.application.dto.responses.ChangePasswordResponse;
 import org.school.management.auth.application.mappers.AuthApplicationMapper;
-import org.school.management.auth.application.usecases.BlacklistTokenUseCase;
 import org.school.management.auth.domain.exception.UserNotFoundException;
 import org.school.management.auth.domain.model.User;
 import org.school.management.auth.domain.repository.UserRepository;

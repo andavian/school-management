@@ -9,7 +9,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.school.management.auth.domain.model.User;
+import org.school.management.auth.infra.web.SecurityContextHelper;
 import org.school.management.teachers.application.usecases.CreateTeacherUseCase;
 import org.school.management.teachers.application.usecases.GetTeacherByIdUseCase;
 import org.school.management.teachers.application.usecases.SearchTeachersUseCase;
@@ -25,6 +25,15 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
 
+/**
+ * REST Controller para la gestión de profesores.
+ *
+ * <p>Base path: {@code /api/admin/teachers}</p>
+ * <p>Seguridad: ADMIN para escritura (POST), ADMIN o STAFF para lectura y actualización (GET, PATCH).</p>
+ *
+ * <p>La extracción del usuario autenticado se delega a {@link SecurityContextHelper#extractUserId},
+ * que centraliza el cast {@code UserDetails} → {@code User} para todos los controllers del proyecto.</p>
+ */
 @RestController
 @RequestMapping("/api/admin/teachers")
 @RequiredArgsConstructor
@@ -57,15 +66,13 @@ public class TeacherController {
             @Valid @RequestBody TeacherWebDto.CreateTeacherWebRequest webRequest,
             @AuthenticationPrincipal UserDetails userDetails) {
 
-        UUID createdBy = extractUserId(userDetails);
-        log.info("POST /api/admin/teachers — DNI: {}, createdBy: {}",
-                webRequest.dni(), createdBy);
+        log.info("POST /api/admin/teachers — DNI: {}", webRequest.dni());
 
         return ResponseEntity.status(HttpStatus.CREATED).body(
                 webMapper.toWebResponse(
                         createTeacherUseCase.execute(
                                 webMapper.toApplicationRequest(webRequest),
-                                createdBy
+                                SecurityContextHelper.extractUserId(userDetails)
                         )
                 )
         );
@@ -81,15 +88,12 @@ public class TeacherController {
             @ApiResponse(responseCode = "404", description = "Profesor no encontrado")
     })
     public ResponseEntity<TeacherWebDto.TeacherWebResponse> getTeacherById(
-            @Parameter(description = "UUID del profesor")
-            @PathVariable UUID teacherId) {
+            @Parameter(description = "UUID del profesor") @PathVariable UUID teacherId) {
 
         log.debug("GET /api/admin/teachers/{}", teacherId);
 
         return ResponseEntity.ok(
-                webMapper.toWebResponse(
-                        getTeacherByIdUseCase.execute(teacherId)
-                )
+                webMapper.toWebResponse(getTeacherByIdUseCase.execute(teacherId))
         );
     }
 
@@ -112,7 +116,6 @@ public class TeacherController {
         log.debug("GET /api/admin/teachers — dni={}, lastName={}", dni, lastName);
 
         var summaries = searchTeachersUseCase.execute(dni, lastName);
-
         return ResponseEntity.ok(
                 new TeacherWebDto.TeacherSearchWebResponse(
                         webMapper.toSummaryWebResponseList(summaries),
@@ -136,13 +139,12 @@ public class TeacherController {
             @ApiResponse(responseCode = "422", description = "Datos inválidos")
     })
     public ResponseEntity<TeacherWebDto.TeacherWebResponse> updateTeacher(
-            @Parameter(description = "UUID del profesor")
-            @PathVariable UUID teacherId,
+            @Parameter(description = "UUID del profesor") @PathVariable UUID teacherId,
             @Valid @RequestBody TeacherWebDto.UpdateTeacherWebRequest webRequest,
             @AuthenticationPrincipal UserDetails userDetails) {
 
         log.info("PATCH /api/admin/teachers/{} — requestedBy: {}",
-                teacherId, extractUserId(userDetails));
+                teacherId, SecurityContextHelper.extractUserId(userDetails));
 
         return ResponseEntity.ok(
                 webMapper.toWebResponse(
@@ -151,17 +153,6 @@ public class TeacherController {
                                 webMapper.toApplicationRequest(webRequest)
                         )
                 )
-        );
-    }
-
-    // ── Helper privado ────────────────────────────────────────────────────
-
-    private UUID extractUserId(UserDetails userDetails) {
-        if (userDetails instanceof User user) {
-            return user.getUserId().value();
-        }
-        throw new IllegalStateException(
-                "Principal inesperado: " + userDetails.getClass().getName()
         );
     }
 }

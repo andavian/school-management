@@ -385,8 +385,10 @@ public class TeacherExceptionHandler {
 Cuando dos clases del mismo simple name deben coexistir en el mismo archivo (ej: `CreateTeacherUseCase` de `teachers/` y de `auth/`), usar **nombre completamente calificado en la declaración del campo**:
 
 ```java
+import org.school.management.auth.application.usecases.CreateTeacherUseCase;
+
 // En teachers/application/usecases/CreateTeacherUseCase.java
-private final org.school.management.auth.application.usecases.admin.CreateTeacherUseCase authCreateTeacherUseCase;
+private final org.school.management.auth.application.usecases.CreateTeacherUseCase authCreateTeacherUseCase;
 // Java NO soporta alias en imports — usar FQN en la declaración del campo
 ```
 

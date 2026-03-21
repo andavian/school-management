@@ -24,7 +24,7 @@ import java.util.UUID;
 public class CreateTeacherUseCase {
 
     private final TeacherRepository teacherRepository;
-    private final org.school.management.auth.application.usecases.admin.CreateTeacherUseCase authCreateTeacherUseCase;
+    private final org.school.management.auth.application.usecases.CreateTeacherUseCase authCreateTeacherUseCase;
     private final GetTeacherByIdUseCase getTeacherByIdUseCase;
     private final EmailService emailService;
 

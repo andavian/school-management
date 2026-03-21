@@ -33,7 +33,7 @@ import static org.mockito.Mockito.*;
 class CreateTeacherUseCaseTest {
 
     @Mock private TeacherRepository teacherRepository;
-    @Mock private org.school.management.auth.application.usecases.admin.CreateTeacherUseCase authCreateTeacherUseCase;
+    @Mock private org.school.management.auth.application.usecases.CreateTeacherUseCase authCreateTeacherUseCase;
     @Mock private GetTeacherByIdUseCase getTeacherByIdUseCase;
     @Mock private EmailService emailService;
 

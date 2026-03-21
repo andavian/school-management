@@ -1,4 +1,4 @@
-package org.school.management.auth.application.usecases.admin;
+package org.school.management.auth.application.usecases;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

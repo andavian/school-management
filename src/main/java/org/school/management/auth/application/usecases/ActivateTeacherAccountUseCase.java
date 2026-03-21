@@ -1,4 +1,4 @@
-package org.school.management.auth.application.usecases.admin;
+package org.school.management.auth.application.usecases;
 
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
