@@ -7,7 +7,10 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.school.management.auth.application.dto.responses.CreateTeacherResponse;
+import org.school.management.auth.application.dto.requests.CreateUserRequest;
+import org.school.management.auth.application.dto.responses.CreateUserResponse;
+import org.school.management.auth.application.usecases.CreateUserUseCase;
+import org.school.management.auth.application.usecases.GenerateConfirmationTokenUseCase;
 import org.school.management.auth.domain.valueobject.UserId;
 import org.school.management.shared.domain.service.EmailService;
 import org.school.management.shared.person.domain.valueobject.*;
@@ -32,18 +35,20 @@ import static org.mockito.Mockito.*;
 @DisplayName("CreateTeacherUseCase")
 class CreateTeacherUseCaseTest {
 
-    @Mock private TeacherRepository teacherRepository;
-    @Mock private org.school.management.auth.application.usecases.CreateTeacherUseCase authCreateTeacherUseCase;
-    @Mock private GetTeacherByIdUseCase getTeacherByIdUseCase;
-    @Mock private EmailService emailService;
+    @Mock private TeacherRepository                 teacherRepository;
+    @Mock private CreateUserUseCase                 createUserUseCase;
+    @Mock private GenerateConfirmationTokenUseCase  generateConfirmationTokenUseCase;
+    @Mock private GetTeacherByIdUseCase             getTeacherByIdUseCase;
+    @Mock private EmailService                      emailService;
 
     @InjectMocks private CreateTeacherUseCase useCase;
 
     // ── Fixtures ──────────────────────────────────────────────────────────
 
-    private static final UUID CREATED_BY = UUID.randomUUID();
-    private static final UUID USER_UUID  = UUID.randomUUID();
+    private static final UUID CREATED_BY   = UUID.randomUUID();
+    private static final UUID USER_UUID    = UUID.randomUUID();
     private static final UUID TEACHER_UUID = UUID.randomUUID();
+    private static final String CONFIRMATION_TOKEN = "jwt.confirmation.token";
 
     private CreateTeacherRequest buildRequest() {
         return new CreateTeacherRequest(
@@ -96,35 +101,38 @@ class CreateTeacherUseCaseTest {
     // ── Tests ─────────────────────────────────────────────────────────────
 
     @Test
-    @DisplayName("execute — flujo feliz — crea teacher y envía email")
-    void execute_happyPath_createsTeacherAndSendsEmail() {
+    @DisplayName("execute — flujo feliz — crea Teacher, genera token y envía email")
+    void execute_happyPath_createsTeacherGeneratesTokenAndSendsEmail() {
         CreateTeacherRequest request = buildRequest();
         Teacher saved = buildSavedTeacher(request);
-        TeacherResponse response = buildTeacherResponse();
 
         when(teacherRepository.existsByDni(Dni.of(request.dni()))).thenReturn(false);
         when(teacherRepository.existsByCuil(request.cuil())).thenReturn(false);
-        when(authCreateTeacherUseCase.execute(any()))
-                .thenReturn(new CreateTeacherResponse(
-                        USER_UUID.toString(), request.dni(), "TempPass1!", true
-                ));
+        when(createUserUseCase.execute(any(CreateUserRequest.class)))
+                .thenReturn(new CreateUserResponse(USER_UUID));
+        when(generateConfirmationTokenUseCase.execute(request.dni()))
+                .thenReturn(CONFIRMATION_TOKEN);
         when(teacherRepository.save(any(Teacher.class))).thenReturn(saved);
-        when(getTeacherByIdUseCase.buildResponse(saved)).thenReturn(response);
+        when(getTeacherByIdUseCase.buildResponse(saved)).thenReturn(buildTeacherResponse());
 
         TeacherResponse result = useCase.execute(request, CREATED_BY);
 
         assertThat(result).isNotNull();
         assertThat(result.dni()).isEqualTo("87654321");
-        assertThat(result.employmentStatus()).isEqualTo(EmploymentStatus.ACTIVE);
 
+        // Verifica que el User se creó como inactivo (inactive factory method)
+        verify(createUserUseCase).execute(argThat(req ->
+                req.dni().equals(request.dni()) && !req.startActive()
+        ));
+        verify(generateConfirmationTokenUseCase).execute(request.dni());
         verify(teacherRepository).save(any(Teacher.class));
         verify(emailService).sendTeacherInvitation(
                 eq(request.email()),
                 eq(request.firstName()),
                 eq(request.lastName()),
                 eq(request.dni()),
-                eq("TempPass1!"),
-                any()
+                any(), // password generada aleatoriamente
+                contains(CONFIRMATION_TOKEN)
         );
     }
 
@@ -139,7 +147,7 @@ class CreateTeacherUseCaseTest {
                 .isInstanceOf(TeacherAlreadyExistsException.class)
                 .hasMessageContaining(request.dni());
 
-        verifyNoInteractions(authCreateTeacherUseCase, emailService);
+        verifyNoInteractions(createUserUseCase, generateConfirmationTokenUseCase, emailService);
         verify(teacherRepository, never()).save(any());
     }
 
@@ -155,32 +163,31 @@ class CreateTeacherUseCaseTest {
                 .isInstanceOf(TeacherAlreadyExistsException.class)
                 .hasMessageContaining(request.cuil());
 
-        verifyNoInteractions(authCreateTeacherUseCase, emailService);
+        verifyNoInteractions(createUserUseCase, generateConfirmationTokenUseCase, emailService);
         verify(teacherRepository, never()).save(any());
     }
 
     @Test
-    @DisplayName("execute — fallo de email — no interrumpe la creación del teacher")
+    @DisplayName("execute — fallo de email — no interrumpe la creación del Teacher")
     void execute_whenEmailFails_thenTeacherIsStillCreated() {
         CreateTeacherRequest request = buildRequest();
         Teacher saved = buildSavedTeacher(request);
-        TeacherResponse response = buildTeacherResponse();
 
         when(teacherRepository.existsByDni(Dni.of(request.dni()))).thenReturn(false);
         when(teacherRepository.existsByCuil(request.cuil())).thenReturn(false);
-        when(authCreateTeacherUseCase.execute(any()))
-                .thenReturn(new CreateTeacherResponse(
-                        USER_UUID.toString(), request.dni(), "TempPass1!", false
-                ));
+        when(createUserUseCase.execute(any(CreateUserRequest.class)))
+                .thenReturn(new CreateUserResponse(USER_UUID));
+        when(generateConfirmationTokenUseCase.execute(request.dni()))
+                .thenReturn(CONFIRMATION_TOKEN);
         when(teacherRepository.save(any(Teacher.class))).thenReturn(saved);
-        when(getTeacherByIdUseCase.buildResponse(saved)).thenReturn(response);
+        when(getTeacherByIdUseCase.buildResponse(saved)).thenReturn(buildTeacherResponse());
 
-        // Email falla silenciosamente — @Async + catch en JavaMailEmailService
-        doNothing().when(emailService).sendTeacherInvitation(any(), any(), any(), any(), any(), any());
+        // Email lanza excepción — debe ser capturada silenciosamente
+        doThrow(new RuntimeException("SMTP timeout"))
+                .when(emailService).sendTeacherInvitation(any(), any(), any(), any(), any(), any());
 
         TeacherResponse result = useCase.execute(request, CREATED_BY);
 
-        // El teacher igual se creó
         assertThat(result).isNotNull();
         verify(teacherRepository).save(any(Teacher.class));
     }
