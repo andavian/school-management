@@ -65,7 +65,7 @@ public class ActivateAccountUseCase {
         // 4. Publicar evento — cada BC reacciona de forma independiente
         String roleName = user.getRoles().stream()
                 .findFirst()
-                .map(role -> role.getName().value())
+                .map(role -> role.getName().name())
                 .orElse("UNKNOWN");
 
         eventPublisher.publish(

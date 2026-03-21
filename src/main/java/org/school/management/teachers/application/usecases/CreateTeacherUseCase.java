@@ -2,6 +2,9 @@ package org.school.management.teachers.application.usecases;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.school.management.auth.application.dto.requests.CreateUserRequest;
+import org.school.management.auth.application.usecases.CreateUserUseCase;
+import org.school.management.auth.application.usecases.GenerateConfirmationTokenUseCase;
 import org.school.management.auth.domain.valueobject.UserId;
 import org.school.management.shared.domain.service.EmailService;
 import org.school.management.shared.geography.domain.valueobject.PlaceId;
@@ -13,108 +16,139 @@ import org.school.management.teachers.domain.model.Teacher;
 import org.school.management.teachers.domain.repository.TeacherRepository;
 import org.school.management.teachers.domain.valueobject.TeacherId;
 import org.school.management.teachers.domain.valueobject.TeacherSpecialization;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.security.SecureRandom;
 import java.util.UUID;
 
-@Service("personalCreateTeachertUseCase")
+/**
+ * Caso de uso: crear un profesor completo.
+ *
+ * <p>Orquesta todos los pasos necesarios en orden:</p>
+ * <ol>
+ *   <li>Validar unicidad DNI y CUIL en {@code teachers/}</li>
+ *   <li>Generar password temporal segura</li>
+ *   <li>Crear {@code User} con rol TEACHER via {@link CreateUserUseCase} (inactivo)</li>
+ *   <li>Generar token de confirmación JWT (48h) via {@link GenerateConfirmationTokenUseCase}</li>
+ *   <li>Construir y persistir la entidad {@code Teacher}</li>
+ *   <li>Asignar el token de activación al {@code Teacher}</li>
+ *   <li>Enviar email de invitación con el link de activación (async)</li>
+ * </ol>
+ *
+ * <p>La generación de password y token vive aquí — este use case es el único
+ * que necesita ambos valores (para el {@code Teacher} y para el email).</p>
+ *
+ * <p>El email se envía de forma asíncrona y falla silenciosamente — un fallo
+ * de email nunca revierte la creación del profesor.</p>
+ */
+@Service
 @RequiredArgsConstructor
 @Slf4j
 public class CreateTeacherUseCase {
 
     private final TeacherRepository teacherRepository;
-    private final org.school.management.auth.application.usecases.CreateTeacherUseCase authCreateTeacherUseCase;
+    private final CreateUserUseCase createUserUseCase;
+    private final GenerateConfirmationTokenUseCase generateConfirmationTokenUseCase;
     private final GetTeacherByIdUseCase getTeacherByIdUseCase;
     private final EmailService emailService;
 
+    @Value("${app.frontend.url:http://localhost:3000}")
+    private String frontendUrl;
+
     @Transactional
     public TeacherResponse execute(CreateTeacherRequest request, UUID createdByUserId) {
-        log.info("Creating teacher: {} {} - DNI: {}",
-                request.firstName(), request.lastName(), request.dni());
+        log.info("Creating teacher — DNI: {}", request.dni());
 
-        // 1. Validar unicidad DNI
+        // 1. Validar unicidad DNI y CUIL en teachers/
         Dni dni = Dni.of(request.dni());
         if (teacherRepository.existsByDni(dni)) {
-            log.warn("Teacher already exists with DNI: {}", request.dni());
             throw TeacherAlreadyExistsException.withDni(request.dni());
         }
-
-        // 2. Validar unicidad CUIL
         if (teacherRepository.existsByCuil(request.cuil())) {
-            log.warn("Teacher already exists with CUIL: {}", request.cuil());
             throw TeacherAlreadyExistsException.withCuil(request.cuil());
         }
 
-        // 3. Crear User con rol TEACHER en auth/ — genera password temporal + confirmationToken
-        var authResponse = authCreateTeacherUseCase.execute(
-                new org.school.management.auth.application.dto.requests.CreateTeacherRequest(
-                        request.dni(),
-                        request.firstName(),
-                        request.lastName(),
-                        request.email(),
-                        request.phone(),
-                        request.specialization() != null ? request.specialization() : ""
-                )
+        // 2. Generar password temporal segura
+        String plainPassword = generateSecurePassword();
+
+        // 3. Crear User con rol TEACHER — inactivo hasta que active via link
+        var userResponse = createUserUseCase.execute(
+                CreateUserRequest.inactive(request.dni(), plainPassword, "ROLE_TEACHER")
         );
-        UserId userId = UserId.from(UUID.fromString(authResponse.userId()));
+        UserId userId = UserId.from(userResponse.userId());
 
-        // 4. Construir VOs del dominio
-        FullName fullName           = FullName.of(request.firstName(), request.lastName());
-        Cuil cuil                   = Cuil.of(request.cuil());
-        Email email                 = Email.of(request.email());
-        PhoneNumber phone           = PhoneNumber.of(request.phone());
-        Gender gender               = request.gender() != null
-                ? Gender.valueOf(request.gender()) : null;
-        Nationality nationality     = request.nationality() != null
-                ? Nationality.of(request.nationality()) : Nationality.of("Argentina");
-        PlaceId birthPlaceId        = request.birthPlaceId() != null
-                ? PlaceId.of(UUID.fromString(request.birthPlaceId())) : null;
-        Address address             = buildAddress(request.address());
-        TeacherSpecialization spec  = TeacherSpecialization.of(request.specialization());
+        // 4. Generar token de confirmación JWT (48h)
+        String confirmationToken = generateConfirmationTokenUseCase.execute(request.dni());
+        String activationLink = frontendUrl + "/activate-account?token=" + confirmationToken;
 
-        // 5. Crear entidad de dominio Teacher
-        //    El confirmationToken se guarda para trackear el estado de activación
+        // 5. Construir entidad Teacher
         Teacher teacher = Teacher.create(
                 TeacherId.generate(),
                 userId,
-                fullName,
+                FullName.of(request.firstName(), request.lastName()),
                 dni,
-                cuil,
-                email,
+                Cuil.of(request.cuil()),
+                Email.of(request.email()),
                 request.birthDate(),
-                birthPlaceId,
-                gender,
-                nationality,
-                phone,
-                address,
-                spec,
+                request.birthPlaceId() != null
+                        ? PlaceId.of(UUID.fromString(request.birthPlaceId())) : null,
+                request.gender() != null ? Gender.valueOf(request.gender()) : null,
+                request.nationality() != null
+                        ? Nationality.of(request.nationality()) : Nationality.of("Argentina"),
+                PhoneNumber.of(request.phone()),
+                buildAddress(request.address()),
+                TeacherSpecialization.of(request.specialization()),
                 request.teachingLicense(),
                 request.hireDate(),
                 request.employmentType(),
                 UserId.from(createdByUserId)
         );
 
-        // Almacenar token en el dominio para rastrear estado pendiente
-        teacher.assignActivationToken(authResponse.confirmationToken());
+        // 6. Asignar token para trackear estado de activación pendiente
+        teacher.assignActivationToken(confirmationToken);
 
-        // 6. Persistir
-        Teacher savedTeacher = teacherRepository.save(teacher);
+        Teacher saved = teacherRepository.save(teacher);
 
-        // 7. El email ya fue enviado en auth/CreateTeacherUseCase (con el link real).
-        //    Solo logueamos el resultado aquí para trazabilidad.
-        if (authResponse.invitationSent()) {
-            log.info("Invitation email sent successfully for teacher DNI: {}", request.dni());
-        } else {
-            log.warn("Invitation email could NOT be sent for teacher DNI: {}. " +
-                    "Admin should resend manually.", request.dni());
+        // 7. Enviar email de invitación (async — falla silenciosamente)
+        sendInvitationEmail(request, plainPassword, activationLink);
+
+        log.info("Teacher created successfully — DNI: {}, pendingActivation: {}",
+                request.dni(), saved.isPendingActivation());
+
+        return getTeacherByIdUseCase.buildResponse(saved);
+    }
+
+    // ── helpers privados ──────────────────────────────────────────────────
+
+    private String generateSecurePassword() {
+        SecureRandom random = new SecureRandom();
+        String chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%&*";
+        StringBuilder password = new StringBuilder();
+        for (int i = 0; i < 12; i++) {
+            password.append(chars.charAt(random.nextInt(chars.length())));
         }
+        return password.toString();
+    }
 
-        log.info("Teacher created successfully. DNI: {} - ID: {} - pendingActivation: {}",
-                request.dni(), savedTeacher.getTeacherId().asString(),
-                savedTeacher.isPendingActivation());
-
-        return getTeacherByIdUseCase.buildResponse(savedTeacher);
+    private void sendInvitationEmail(CreateTeacherRequest request,
+                                     String plainPassword,
+                                     String activationLink) {
+        try {
+            emailService.sendTeacherInvitation(
+                    request.email(),
+                    request.firstName(),
+                    request.lastName(),
+                    request.dni(),
+                    plainPassword,
+                    activationLink
+            );
+            log.info("Invitation email sent — DNI: {}", request.dni());
+        } catch (Exception e) {
+            log.error("Could not send invitation email to: {} — {}",
+                    request.email(), e.getMessage());
+        }
     }
 
     private Address buildAddress(CreateTeacherRequest.AddressRequest req) {
