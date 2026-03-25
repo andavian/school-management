@@ -48,9 +48,9 @@ attendance/   → Asistencia diaria y por materia ✅ COMPLETO
 **Regla:** Un bounded context **no importa clases completas de otro**.
 Solo se comparten IDs (ej: `GradeLevelId`, `PlaceId`) o tipos del Shared Kernel.
 
-**Excepción documentada 1:** Los controllers importan `User` de `auth/` únicamente para el cast de `@AuthenticationPrincipal` en `extractUserId()`. Es un cruce de infraestructura aceptado — no lógica de negocio.
+**Excepción documentada 1:** Los controllers de `students/`, `teachers/` y cualquier BC que necesite el userId del usuario autenticado llaman a `SecurityContextHelper.extractUserId(userDetails)` de `auth/infra/web/`. Es un cruce de infraestructura aceptado y centralizado — no lógica de negocio.
 
-**Excepción documentada 2:** `ActivateTeacherAccountUseCase` (en `auth/`) importa `TeacherRepository` de `teachers/` para activar ambos agregados en la misma transacción. Es el único use case de `auth/` con esta dependencia cruzada — aceptado por la necesidad de atomicidad.
+**Excepción documentada 2:** `auth/` usa `infra` como nombre de paquete en lugar de `infrastructure` — excepción histórica documentada, no replicar en nuevos BCs.
 
 ### 3. Screaming Architecture
 
@@ -83,11 +83,17 @@ shared/
 │   └── PlaceId.java       # record UUID — of() + from(UUID) + from(String) + generate()
 ├── domain/exception/
 │   └── DomainException.java    # Clase base abstracta — nunca lanzar directamente
+├── domain/event/
+│   ├── DomainEvent.java        # Interfaz base — eventId() + occurredOn()
+│   ├── AccountActivatedEvent.java  # Publicado por ActivateAccountUseCase — of(userId, dni, roleName)
+│   └── DomainEventPublisher.java   # Puerto — publish(DomainEvent) — sin dependencias Spring
 ├── domain/service/
 │   └── EmailService.java       # Puerto del dominio para envío de emails — sin dependencias Spring
 └── infrastructure/
     ├── persistence/converter/
     │   └── UuidBinaryConverter.java  # AttributeConverter UUID ↔ BINARY(16) — usar en TODOS los módulos
+    ├── event/
+    │   └── SpringDomainEventPublisher.java  # Implementa DomainEventPublisher via ApplicationEventPublisher
     ├── email/
     │   └── JavaMailEmailService.java # Implementación SMTP — OCI Email Delivery (dev: Mailhog)
     └── config/
@@ -131,6 +137,22 @@ shared/
 - `sendParentCredentials(to, firstName, lastName, dni, temporaryPassword)` — credenciales padre
 - Implementado por `JavaMailEmailService` con `@Async` — nunca bloquea el flujo transaccional
 - Fallos de email son silenciosos (log + catch) — nunca rompen la transacción principal
+
+**`DomainEvent.java`** (interfaz base)
+- `eventId()` → UUID único para trazabilidad y deduplicación
+- `occurredOn()` → LocalDateTime del momento en que ocurrió
+- Todos los eventos se implementan como `record` Java 17 con factory method `of(...)`
+
+**`AccountActivatedEvent.java`**
+- Publicado por `ActivateAccountUseCase` cuando un usuario activa su cuenta
+- Campos: `eventId`, `occurredOn`, `userId`, `dni`, `roleName`
+- `roleName` como `String` — no depende del enum `RoleName` de `auth/` para no crear acoplamiento
+- Factory method: `AccountActivatedEvent.of(userId, dni, roleName)`
+
+**`DomainEventPublisher.java`** (puerto)
+- `publish(DomainEvent event)` — sin imports de Spring
+- Implementado por `SpringDomainEventPublisher` en `shared/infrastructure/event/`
+- Los listeners usan `@TransactionalEventListener(phase = BEFORE_COMMIT)` para atomicidad
 
 **`UuidBinaryConverter.java`**
 - `jakarta.persistence.AttributeConverter<UUID, byte[]>` — convierte UUID ↔ BINARY(16)
@@ -336,12 +358,8 @@ public interface TeacherPersistenceMapper {
 @Tag(name = "Teachers") @SecurityRequirement(name = "bearerAuth")
 public class TeacherController {
 
-    private UUID extractUserId(UserDetails userDetails) {
-        if (userDetails instanceof User user) {
-            return user.getUserId().value();
-        }
-        throw new IllegalStateException("Principal inesperado: " + userDetails.getClass().getName());
-    }
+    // Extraer userId via SecurityContextHelper — nunca duplicar este método
+    // SecurityContextHelper.extractUserId(userDetails) centraliza el cast User → UUID
 }
 ```
 
@@ -380,18 +398,6 @@ public class TeacherExceptionHandler {
 - `422` → `Invalid*Exception`, `IllegalArgumentException` del dominio
 - `500` → `IllegalStateException` (estado inválido del sistema)
 
-### Colisión de nombres entre BCs — patrón Java
-
-Cuando dos clases del mismo simple name deben coexistir en el mismo archivo (ej: `CreateTeacherUseCase` de `teachers/` y de `auth/`), usar **nombre completamente calificado en la declaración del campo**:
-
-```java
-import org.school.management.auth.application.usecases.CreateTeacherUseCase;
-
-// En teachers/application/usecases/CreateTeacherUseCase.java
-private final org.school.management.auth.application.usecases.CreateTeacherUseCase authCreateTeacherUseCase;
-// Java NO soporta alias en imports — usar FQN en la declaración del campo
-```
-
 ---
 
 ## 📁 Estructura por Bounded Context
@@ -404,8 +410,14 @@ auth/
 │                           — User implementa UserDetails directamente
 ├── domain/valueobject/     UserId, HashedPassword, PlainPassword, RoleName, RoleId
 ├── domain/repository/      UserRepository, RefreshTokenRepository, BlacklistedTokenRepository
+├── application/usecases/   LoginUseCase, ChangePasswordUseCase, GetUserProfileUseCase
+│                           CreateUserUseCase            ← factory puro de User, agnóstico del rol
+│                           ActivateAccountUseCase       ← activa User + publica AccountActivatedEvent
+│                           GenerateConfirmationTokenUseCase ← JWT 48h para activación
 └── infrastructure/
-    ├── web/controller/     AuthController, AdminController, UsersController
+    ├── web/
+    │   ├── SecurityContextHelper.java  ← extractUserId(UserDetails) — static, centralizado
+    │   └── controllers/    AuthController
     ├── persistence/        entity/, repository/, adapter/, mappers/
     └── security/           SecurityConfig, JwtTokenProvider, JwtAuthenticationFilter
 ```
@@ -413,34 +425,58 @@ auth/
 **Notas `auth/`:**
 - `User` implementa `UserDetails` directamente
 - `RoleName.student()`, `.admin()`, `.teacher()`, `.parent()`, `.staff()` — factory methods por rol
-- `CreateTeacherUseCase` en `auth/` crea el User con rol TEACHER, genera password temporal y envía email real
-- `CreateTeacherResponse` tiene: `userId`, `dni`, `temporaryPassword`, `invitationSent`, `confirmationToken`
-- `ActivateTeacherAccountUseCase` activa **tanto** el `User` como el `Teacher` en la misma transacción
-- `JwtTokenProvider.generateConfirmationToken()` genera JWT de tipo CONFIRMATION (duración configurable, default 48h)
-- Duración configurable via `app.security.jwt.confirmation-token-expiration` (segundos)
+- `auth/` ya **no** crea teachers ni students directamente — cada BC orquesta su propio flujo
+- `CreateUserUseCase` recibe `CreateUserRequest` con factory methods `active()` e `inactive()`
+- `ActivateAccountUseCase` activa el `User` y publica `AccountActivatedEvent` — no conoce `teachers/`
+- `GenerateConfirmationTokenUseCase` encapsula `JwtTokenProvider` — ningún BC externo lo usa directamente
 - `POST /api/auth/activate-account` — endpoint público, recibe `{ token, newPassword }`
 
-**Flujo de activación de cuenta teacher:**
+**`SecurityContextHelper`:**
+```java
+// auth/infra/web/SecurityContextHelper.java
+public final class SecurityContextHelper {
+    public static UUID extractUserId(UserDetails userDetails) {
+        if (userDetails instanceof User user) return user.getUserId().value();
+        throw new IllegalStateException("Principal inesperado: " + userDetails.getClass().getName());
+    }
+}
+```
+Todos los controllers del proyecto llaman a este método estático — nunca duplicarlo.
+
+**Flujo de creación y activación de teacher:**
 ```
 POST /api/admin/teachers
-  └─ teachers/CreateTeacherUseCase
-       ├─ auth/CreateTeacherUseCase
-       │    ├─ crea User (active=false)
-       │    ├─ genera confirmationToken JWT (48h)
-       │    ├─ EmailService.sendTeacherInvitation(link con token) ← ASYNC
-       │    └─ retorna CreateTeacherResponse con confirmationToken
-       ├─ Teacher.create(...)
-       ├─ teacher.assignActivationToken(confirmationToken)
-       └─ teacherRepository.save(teacher)
+  └─ teachers/CreateTeacherUseCase (orquestador completo)
+       ├─ valida unicidad DNI y CUIL en teachers/
+       ├─ genera password temporal segura (SecureRandom, 12 chars)
+       ├─ auth/CreateUserUseCase.execute(CreateUserRequest.inactive(dni, password, "ROLE_TEACHER"))
+       ├─ auth/GenerateConfirmationTokenUseCase.execute(dni) → confirmationToken JWT 48h
+       ├─ Teacher.create(...) + teacher.assignActivationToken(confirmationToken)
+       ├─ teacherRepository.save(teacher)
+       └─ EmailService.sendTeacherInvitation(link con token) ← ASYNC, falla silenciosamente
 
 POST /api/auth/activate-account { token, newPassword }
-  └─ ActivateTeacherAccountUseCase
-       ├─ valida token JWT (purpose=account_confirmation, type=CONFIRMATION)
-       ├─ extrae DNI del token → busca User
+  └─ auth/ActivateAccountUseCase
+       ├─ valida token JWT
        ├─ user.resetPassword(newPassword) + user.activate()
        ├─ userRepository.save(user)
-       ├─ teacherRepository.findByDni() → teacher.activate(now)
-       └─ teacherRepository.save(teacher)  ← Teacher.active=true, activationToken=null
+       └─ eventPublisher.publish(AccountActivatedEvent.of(userId, dni, roleName))
+            └─ teachers/TeacherAccountActivatedListener @TransactionalEventListener(BEFORE_COMMIT)
+                 ├─ filtra roleName == "ROLE_TEACHER"
+                 ├─ teacher.activate(LocalDateTime.now())  ← limpia activationToken
+                 └─ teacherRepository.save(teacher)
+```
+
+**Flujo de creación de student (paso 7):**
+```java
+// students/CreateStudentUseCase — paso 7
+createUserUseCase.execute(CreateUserRequest.active(dni, rawPassword, "ROLE_STUDENT"))
+```
+
+**Flujo de creación de parent:**
+```java
+// students/CreateStudentUseCase — createNewParent()
+createUserUseCase.execute(CreateUserRequest.active(parentDni, rawPassword, "ROLE_PARENT"))
 ```
 
 ### `geography/` ✅ completado
@@ -521,12 +557,16 @@ teachers/
 │   ├── dto/response/TeacherResponse, TeacherSummaryResponse
 │   ├── mapper/      TeacherApplicationMapper (recibe PlaceResponse como parámetros)
 │   └── usecases/    GetTeacherByIdUseCase (buildResponse() package-private reutilizable)
-│                    CreateTeacherUseCase (delega User en auth/ → asigna token → persiste)
+│                    CreateTeacherUseCase (orquestador completo — ver flujo en auth/)
 │                    UpdateTeacherUseCase (PATCH semántico por sección)
 │                    SearchTeachersUseCase (dni exacto | lastName parcial | todos)
 └── infrastructure/
     ├── persistence/ TeacherEntity, TeacherJpaRepository, TeacherPersistenceMapper
     │                (default methods — igual que parents), TeacherRepositoryAdapter
+    ├── event/       TeacherAccountActivatedListener
+    │                — @TransactionalEventListener(BEFORE_COMMIT)
+    │                — filtra roleName == "ROLE_TEACHER"
+    │                — activa Teacher + limpia activationToken
     └── web/         TeacherWebDto (clase contenedora), TeacherWebMapper,
                      TeacherController (4 endpoints), TeacherExceptionHandler
 ```
@@ -540,11 +580,12 @@ teachers/
 | PATCH | `/api/admin/teachers/{teacherId}` | ADMIN, STAFF | Actualizar datos |
 
 **Notas `teachers/`:**
-- Password inicial: aleatorio seguro generado en `auth/CreateTeacherUseCase`
+- Password temporal: generada con `SecureRandom` en `teachers/CreateTeacherUseCase` (movida desde `auth/`)
 - Cuenta inicia con `active = false` — se activa via `POST /api/auth/activate-account`
-- `Teacher.assignActivationToken(token)` — se llama después de `create()`, antes de `save()`
+- `Teacher.assignActivationToken(token)` — se llama después de `create()`, antes de `teacherRepository.save()`
 - El email de invitación incluye el link real con el JWT de activación (48h)
 - `TeacherPersistenceMapper` debe mapear: `active`, `activationToken`, `activationSentAt`, `activatedAt`
+- `TeacherAccountActivatedListener` reacciona al `AccountActivatedEvent` — no acopla `auth/` a `teachers/`
 
 ### `grades/` ✅ COMPLETO
 
@@ -727,7 +768,7 @@ attendance/
     └── web/
         ├── dto/       AttendanceWebDto (clase contenedora con 8 records)
         ├── mapper/    AttendanceWebMapper
-        ├── controller/ AttendanceController (8 endpoints, /api/attendance)
+        ├── controller/ AttendanceController (7 endpoints, /api/attendance)
         └── exception/ AttendanceExceptionHandler
 ```
 
@@ -835,21 +876,33 @@ AcademicYearId         → academic/
 | **Parent es entidad global** | Un padre puede tener hijos en distintas escuelas |
 | **DNI inmutable en Parent y Teacher** | Identificador global — no se puede cambiar |
 | **isPrimaryContact exclusivo por estudiante** | Un solo contacto principal — validado en use case |
-| **Password padre aleatorio seguro** | Generado con SecureRandom, enviado por email |
+| **Password padre aleatorio seguro** | Generado con SecureRandom en students/CreateStudentUseCase, enviado por email |
 | **Password inicial estudiante** | `{DNI}Ipet132!` — simple para el admin |
+| **Password teacher temporal** | SecureRandom 12 chars generado en teachers/CreateTeacherUseCase |
 | **Folio automático** | `FolioAssignmentService` transaccional garantiza unicidad |
 | **Baja de estudiante es lógica** | No hay delete físico — via `StudentEnrollment.withdraw()` |
 | **Sin delete físico en puertos** | Ningún repositorio de students/teachers expone delete |
 | **Address.placeId en teachers/parents** | Columna `place_id` — distinto a `residence_place_id` en students |
-| **EmailService en shared/domain/service** | Puerto transversal — usado por teachers, parents y futuro students |
+| **EmailService en shared/domain/service** | Puerto transversal — usado por teachers, parents y students |
 | **@Async en JavaMailEmailService** | Email no bloquea la transacción principal |
 | **Email falla silenciosamente** | Log + catch — nunca propaga ni revierte la transacción |
 | **Teacher.active = false al crear** | Requiere activación via link en email |
 | **confirmationToken JWT (48h) para activación** | Configurable via `app.security.jwt.confirmation-token-expiration` |
-| **ActivateTeacherAccountUseCase activa User Y Teacher** | Atomicidad — ambos deben quedar activos en la misma tx |
-| **Teacher.assignActivationToken() post-create** | El token lo genera auth/, se propaga y persiste en teachers/ |
+| **Activación de cuenta via eventos de dominio** | `ActivateAccountUseCase` publica `AccountActivatedEvent` — cada BC reacciona independientemente via listener |
+| **@TransactionalEventListener(BEFORE_COMMIT) para activación** | Atomicidad garantizada — si el listener falla, toda la transacción se revierte |
+| **AccountActivatedEvent.roleName como String** | Evita dependencia de `auth/RoleName` en `shared/` |
+| **DomainEventPublisher como puerto en shared/domain** | Los use cases no importan Spring — el dominio permanece puro |
+| **CreateUserUseCase en auth/ — factory puro** | Recibe rol, dni, password — no sabe si es teacher, parent o student |
+| **CreateUserRequest.active() / inactive()** | Factory methods semánticos — students/parents activos, teachers inactivos |
+| **GenerateConfirmationTokenUseCase en auth/** | Encapsula JwtTokenProvider — ningún BC externo lo usa directamente |
+| **teachers/CreateTeacherUseCase es el orquestador** | Genera password, llama CreateUserUseCase, genera token, persiste Teacher, envía email |
+| **SecurityContextHelper estático en auth/infra/web/** | Centraliza cast UserDetails → User — nunca duplicar extractUserId() en cada controller |
+| **AdminController eliminado** | Colisionaba con StudentController y TeacherController — deuda técnica resuelta |
+| **UserController eliminado** | Todo era UnsupportedOperationException — deuda técnica resuelta |
+| **DTOs de create student/teacher eliminados de auth/** | auth/ no crea entidades de dominio — cada BC tiene sus propios DTOs |
+| **AuthApplicationMapper sin factory methods de User** | Solo mapeos de login y perfil — la creación de User es responsabilidad de CreateUserUseCase |
+| **Teacher.activate() via evento** | TeacherAccountActivatedListener reacciona al AccountActivatedEvent — auth/ no conoce teachers/ |
 | **activate() limpia activationToken** | Token consumido = null — `isPendingActivation()` retorna false |
-| **ActivateTeacherAccountUseCase en auth/ importa TeacherRepository** | Excepción documentada — necesario para atomicidad |
 | **grades/ como BC separado** | Razón de cambio diferente a academic/ — actores distintos (TEACHER vs ADMIN) |
 | **CourseStatus y SubjectEnrollmentStatus en course/** | Igual que EvaluationStatus → grades/; pertenecen al BC que los usa |
 | **StudentCourseSubject sin attendedClasses** | Campo no existe en BD — solo total_classes está en course_subjects |
@@ -864,8 +917,7 @@ AcademicYearId         → academic/
 | **UserEntity usa dni como username** | Campo `dni` en UserEntity — findByDni() no findByUsername() |
 | **auth.infra (no auth.infrastructure)** | El paquete de auth usa `infra` como abreviación — excepción documentada al estándar del proyecto |
 | **ProblemDetail para errores HTTP** | RFC 9457, nativo en Spring 6 |
-| **User implementa UserDetails directo** | Cast via pattern matching Java 17 en `extractUserId()` |
-| **FQN para clases con mismo nombre** | Java no soporta alias en imports — usar nombre completamente calificado |
+| **User implementa UserDetails directo** | Cast via pattern matching Java 17 en `SecurityContextHelper` |
 
 ---
 
@@ -892,11 +944,15 @@ AcademicYearId         → academic/
 - **Usar `default methods`** para VOs compuestos en persistence mapper (patrón teachers/parents/attendance).
 - **Usar `ProblemDetail`** en todos los `@RestControllerAdvice`.
 - **`RecordNumber.fromDni(dni)`** al crear un legajo — nunca usar `RegistryNumberGenerator` para esto.
-- **Inyectar `EmailService`** en use cases que crean usuarios — teachers y parents.
+- **Inyectar `EmailService`** en use cases que crean usuarios — teachers, parents y students.
 - **Tests en `src/test/java/`** — mismo paquete que producción pero bajo `test/`, no `main/`.
 - **`getFullName()`** para obtener el nombre completo de `FullName` — nunca `fullName()`.
 - **Llamar `teacher.assignActivationToken(token)`** después de `Teacher.create()` y antes de `teacherRepository.save()`.
 - **Verificar que `TeacherPersistenceMapper`** mapea `activationToken`, `activationSentAt`, `activatedAt`, `active`.
+- **Usar `SecurityContextHelper.extractUserId(userDetails)`** en controllers — nunca duplicar el método privado.
+- **Usar `CreateUserRequest.active()` o `inactive()`** al llamar `CreateUserUseCase` — factory methods semánticos.
+- **Usar `DomainEventPublisher`** para notificar eventos entre BCs — nunca inyectar repositorios de otros BCs en use cases de `auth/`.
+- **Agregar `@TransactionalEventListener(phase = BEFORE_COMMIT)`** en listeners que deben ser atómicos con el evento.
 
 ### ❌ Nunca hacer
 
@@ -916,13 +972,16 @@ AcademicYearId         → academic/
 - **Nunca crear `GenderEntity`** u otros enums duplicados del Shared Kernel.
 - **Nunca poner `INSTANCE = Mappers.getMapper(...)`** en mappers con `componentModel = "spring"`.
 - **Nunca tipar el `@Id` como `byte[]`** — usar UUID con `@Convert(UuidBinaryConverter.class)`.
-- **Nunca usar `infra`** como nombre de paquete — usar `infrastructure` completo.
+- **Nunca usar `infra`** como nombre de paquete en BCs nuevos — usar `infrastructure` completo.
 - **Nunca exponer delete** en puertos de repositorios de students/teachers/parents.
-- **Nunca usar alias en imports Java** — Java no lo soporta; usar FQN en declaración del campo.
 - **Nunca llamar `fullName()`** en `FullName` — el método correcto es `getFullName()`.
 - **Nunca dejar que un fallo de email** rompa o revierta una transacción de negocio.
 - **Nunca hardcodear `900`** como duración del confirmation token — usar `confirmationTokenExpirationSeconds`.
-- **Nunca activar solo el `User`** en `ActivateTeacherAccountUseCase` — siempre activar también el `Teacher`.
+- **Nunca duplicar `extractUserId()`** en controllers — usar `SecurityContextHelper.extractUserId()`.
+- **Nunca crear DTOs de create student/teacher en `auth/`** — cada BC tiene sus propios DTOs.
+- **Nunca inyectar repositorios de otros BCs en use cases de `auth/`** — usar eventos de dominio.
+- **Nunca usar `@Async` en listeners de activación** — deben ser `@TransactionalEventListener(BEFORE_COMMIT)` para garantizar atomicidad.
+- **Nunca crear `AdminController` ni `UserController` en `auth/`** — la creación de entidades pertenece a cada BC.
 
 ### 🔍 Al analizar código existente
 
@@ -931,7 +990,7 @@ AcademicYearId         → academic/
 3. Si se detecta una violación existente, mencionarla pero **no corregirla** salvo pedido explícito.
 4. Respetar el naming del módulo: `*RepositoryImpl` (auth), `*RepositoryAdapter` (módulos nuevos).
 5. Verificar que los VOs usen `of()` y no `from()` como factory method principal.
-6. Verificar que el paquete sea `infrastructure` (no `infra`).
+6. Verificar que el paquete sea `infrastructure` (no `infra`) en BCs nuevos.
 
 ### 🧩 Al crear un nuevo Bounded Context
 
@@ -951,30 +1010,26 @@ Orden estricto de implementación:
 12. `infrastructure/persistence/adapter/` — `XRepositoryAdapter implements XRepository`
 13. `infrastructure/persistence/mapper/` — `XPersistenceMapper` con default methods
 14. `infrastructure/web/dto/` — clase contenedora `XWebDto` con todos los records web
-15. `infrastructure/web/controller/` — REST con `@PreAuthorize`, `extractUserId` via pattern matching
+15. `infrastructure/web/controller/` — REST con `@PreAuthorize`, `SecurityContextHelper.extractUserId()`
 16. `infrastructure/web/mapper/` — `XWebMapper` application ↔ web DTO
 17. `infrastructure/web/exception/` — `@RestControllerAdvice` con `ProblemDetail`
 18. `infrastructure/seeder/` — datos iniciales para perfil `dev`
 19. `db/migration/V{n}__create_{context}_tables.sql`
+20. Si el BC necesita reaccionar a activaciones de cuenta → agregar `XAccountActivatedListener` en `infrastructure/event/`
 
 ### 🧪 Al generar tests
 
 ```java
 // Ruta SIEMPRE en src/test/java/ — mismo paquete que producción
-// src/test/java/org/school/management/teachers/application/usecases/GetTeacherByIdUseCaseTest.java
-
 @ExtendWith(MockitoExtension.class)
 @Tag("unit")
-class GetTeacherByIdUseCaseTest {
-    @Mock private TeacherRepository teacherRepository;
-    @Mock private TeacherApplicationMapper mapper;
-    @Mock private GetPlaceByIdUseCase getPlaceByIdUseCase;
-    @InjectMocks private GetTeacherByIdUseCase useCase;
-
-    @Test
-    void execute_whenTeacherExists_thenReturnResponse() { ... }
-    @Test
-    void execute_whenTeacherNotFound_thenThrowTeacherNotFoundException() { ... }
+class CreateTeacherUseCaseTest {
+    @Mock private TeacherRepository           teacherRepository;
+    @Mock private CreateUserUseCase           createUserUseCase;           // ← no authCreateTeacherUseCase
+    @Mock private GenerateConfirmationTokenUseCase generateConfirmationTokenUseCase;
+    @Mock private GetTeacherByIdUseCase       getTeacherByIdUseCase;
+    @Mock private EmailService                emailService;
+    @InjectMocks private CreateTeacherUseCase useCase;
 }
 ```
 
@@ -1048,40 +1103,46 @@ docker run -p 1025:1025 -p 8025:8025 mailhog/mailhog
 
 ### ✅ Completado
 
-- `auth/` — JWT, refresh, blacklist, sesiones, creación de usuarios, activación de cuenta teacher
+- `auth/` — JWT, refresh, blacklist, sesiones + refactor completo de fronteras del BC
 - `geography/` — Geografía argentina con búsqueda y jerarquía
 - `academic/` — Años, orientaciones, cursos, materias, registro de calificaciones, 22 use cases
 - `shared/email/` — EmailService (puerto + JavaMailEmailService con OCI SMTP + AsyncConfig)
+- `shared/event/` — DomainEvent, AccountActivatedEvent, DomainEventPublisher + SpringDomainEventPublisher
 - **`students/` — COMPLETO** — 5 agregados de punta a punta
-- **`teachers/` — COMPLETO** — domain + application + infrastructure + 4 endpoints + flujo activación por email
+- **`teachers/` — COMPLETO** — domain + application + infrastructure + 4 endpoints + flujo activación por eventos
 - **`parents/` — COMPLETO** — cuil agregado en todas las capas, placeId consistente
 - **`grades/` — COMPLETO** — domain + application + infrastructure + 7 endpoints + seeder + 19 tests
 - **`course/` — COMPLETO** — domain + application + infrastructure + 5 endpoints + seeder + 9 tests
 - **`attendance/` — COMPLETO** — domain + application + infrastructure + 7 endpoints + V21 + 30 tests
-- **Flujo activación teacher** — confirmationToken (48h), email con link, ActivateTeacherAccountUseCase activa User+Teacher
+- **Refactor `auth/` BC** — fronteras limpias, eventos de dominio, SecurityContextHelper centralizado
 - **`AcademicDataSeeder`** — 2 años lectivos, 2 orientaciones, 64 materias, 22 cursos, 2 registros
 - **`CourseDataSeeder`** — ~152 CourseSubjects para 2025, @Order(6)
 - **`TeacherDataSeeder`** — 3 docentes activados, @Order(7)
 - **`StudentAndParentDataSeeder`** — 4 alumnos + 4 padres, @Order(8)
-- **Tests unitarios** — 80 tests: teachers (11), parents (11), grades (19), course (9), attendance (30)
+- **Tests unitarios** — 81 tests: teachers (11), parents (11), grades (19), course (9), attendance (30), auth (1 actualizado)
 - Flyway V1–V7, V10–V15, V17, V19, V20, V21
 
 ### ⏳ Pendiente
 
-- [ ] Tests de activación teacher — `ActivateTeacherAccountUseCaseTest` (5 casos), `auth/CreateTeacherUseCaseTest` actualizado
+- [ ] `ActivateAccountUseCaseTest` — 5 casos (token inválido, user no encontrado, happy path, etc.)
+- [ ] `TeacherAccountActivatedListenerTest` — 3 casos (rol teacher, otro rol ignorado, teacher no encontrado)
 - [ ] Tests unitarios para students (`CreateStudentUseCase` — 15 pasos)
 - [ ] Rate limiting, auditoría, métricas
 
 ### 🎯 Próximos pasos sugeridos
 
-**A) Tests de activación teacher** *(cierra el trabajo de este chat)*
+**A) Tests del nuevo flujo de activación**
 ```
-ActivateTeacherAccountUseCaseTest
+ActivateAccountUseCaseTest
   ├─ token inválido → InvalidTokenException
-  ├─ token válido pero user no encontrado → UserNotFoundException
-  ├─ token válido pero no es TEACHER → InvalidOperationException
-  ├─ teacher no encontrado → TeacherNotFoundException
-  └─ happy path → User.active=true + Teacher.active=true + token=null
+  ├─ user no encontrado → UserNotFoundException
+  ├─ happy path → User.active=true + AccountActivatedEvent publicado
+  └─ verifica que no toca TeacherRepository directamente
+
+TeacherAccountActivatedListenerTest
+  ├─ evento con ROLE_TEACHER → Teacher.activate() llamado
+  ├─ evento con otro rol → retorna sin hacer nada
+  └─ teacher no encontrado → TeacherNotFoundException
 ```
 
 **B) Tests para `CreateStudentUseCase`** *(el flujo más complejo — 15 pasos atómicos)*

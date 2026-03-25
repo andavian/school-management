@@ -20,6 +20,7 @@ Sistema de gestión escolar para el **IPET 132** (Argentina) que permite:
 - ✅ Módulo de calificaciones — **COMPLETO** (evaluaciones, notas de período, nota final, libro matriz)
 - ✅ Módulo de cursos — **COMPLETO** (asignación profesor-materia-curso, inscripción de alumnos)
 - ✅ Módulo de asistencia — **COMPLETO** (diaria por preceptor, por materia por docente, resúmenes y alumnos en riesgo)
+- ✅ Infraestructura de eventos de dominio — **COMPLETO** (`DomainEvent`, `AccountActivatedEvent`, `DomainEventPublisher`)
 
 ### 🎯 Características Principales
 
@@ -27,7 +28,9 @@ Sistema de gestión escolar para el **IPET 132** (Argentina) que permite:
 - **CUIL validado** — dígito verificador ANSES/AFIP, obligatorio en students, teachers y parents
 - **Email opcional para estudiantes** — menores sin email propio
 - **Email obligatorio para padres y profesores** — notificaciones y credenciales
-- **Activación de cuenta teacher por link** — JWT de activación (48h) enviado por email
+- **Activación de cuenta teacher via eventos de dominio** — JWT de activación (48h) + `AccountActivatedEvent` desacoplado
+- **Fronteras de BC limpias en `auth/`** — `auth/` solo gestiona identidad y sesión, sin conocer otros BCs
+- **`SecurityContextHelper` centralizado** — extracción de userId sin duplicación en cada controller
 - **Records Java 17** — todos los Value Objects son `record` nativo
 - **Token Rotation** — máxima seguridad en refresh tokens
 - **Flujo transaccional de 15 pasos** — creación de estudiante TODO O NADA
@@ -59,7 +62,7 @@ Sistema de gestión escolar para el **IPET 132** (Argentina) que permite:
 │         DOMAIN LAYER (Core Business)                    │
 │  ┌──────────────────────┴──────────────────────────┐   │
 │  │  Entities, Value Objects (records), Domain      │   │
-│  │  Services, Repository Interfaces (Ports)        │   │
+│  │  Services, Domain Events, Repository Interfaces │   │
 │  └─────────────────────────────────────────────────┘   │
 └─────────────────────────────────────────────────────────┘
 ```
@@ -68,7 +71,8 @@ Sistema de gestión escolar para el **IPET 132** (Argentina) que permite:
 
 ```
 shared/         → Shared Kernel (Dni, Cuil, Email, PhoneNumber, Address, Gender,
-                                 IDs geográficos, UuidBinaryConverter, EmailService)
+                                 IDs geográficos, UuidBinaryConverter, EmailService,
+                                 DomainEvent, AccountActivatedEvent, DomainEventPublisher)
 auth/           → Autenticación y autorización ✅
 geography/      → Lugares geográficos (País, Provincia, Localidad) ✅
 academic/       → Estructura académica (Años, Cursos, Materias) ✅
@@ -116,19 +120,35 @@ src/main/java/org/school/management/
 │   │   └── CountryId.java, ProvinceId.java, PlaceId.java
 │   ├── domain/
 │   │   ├── exception/DomainException.java
-│   │   └── service/EmailService.java               # Puerto — sin dependencias Spring
+│   │   ├── service/EmailService.java               # Puerto — sin dependencias Spring
+│   │   └── event/
+│   │       ├── DomainEvent.java                    # Interfaz base — eventId() + occurredOn()
+│   │       ├── AccountActivatedEvent.java           # Publicado al activar cuenta
+│   │       └── DomainEventPublisher.java            # Puerto — publish(DomainEvent)
 │   └── infrastructure/
 │       ├── persistence/converter/
 │       │   └── UuidBinaryConverter.java            # UUID ↔ BINARY(16)
+│       ├── event/
+│       │   └── SpringDomainEventPublisher.java     # Implementa DomainEventPublisher
 │       ├── email/
 │       │   └── JavaMailEmailService.java           # OCI SMTP + @Async
 │       └── config/
 │           └── AsyncConfig.java                    # @EnableAsync
 │
 ├── auth/                                            # BOUNDED CONTEXT: Autenticación ✅
-│   └── application/usecases/admin/
-│       ├── CreateTeacherUseCase.java               # genera confirmationToken + envía email real
-│       └── ActivateTeacherAccountUseCase.java      # activa User + Teacher en misma tx
+│   ├── application/usecases/
+│   │   ├── CreateUserUseCase.java                  # factory puro de User — agnóstico del rol
+│   │   ├── ActivateAccountUseCase.java             # activa User + publica AccountActivatedEvent
+│   │   ├── GenerateConfirmationTokenUseCase.java   # JWT 48h encapsulado en auth/
+│   │   ├── LoginUseCase.java
+│   │   ├── ChangePasswordUseCase.java
+│   │   └── GetUserProfileUseCase.java
+│   └── infrastructure/
+│       ├── web/
+│       │   ├── SecurityContextHelper.java          # extractUserId() — static, centralizado
+│       │   └── controllers/AuthController.java
+│       ├── persistence/                            entity/, repository/, adapter/, mappers/
+│       └── security/                              SecurityConfig, JwtTokenProvider, JwtAuthenticationFilter
 │
 ├── geography/                                       # BOUNDED CONTEXT: Geografía ✅
 │
@@ -155,11 +175,12 @@ src/main/java/org/school/management/
 │   │   ├── dto/request/  CreateTeacherRequest, UpdateTeacherRequest
 │   │   ├── dto/response/ TeacherResponse, TeacherSummaryResponse
 │   │   ├── mapper/       TeacherApplicationMapper
-│   │   └── usecases/     GetTeacherByIdUseCase, CreateTeacherUseCase,
+│   │   └── usecases/     GetTeacherByIdUseCase, CreateTeacherUseCase (orquestador completo),
 │   │                     UpdateTeacherUseCase, SearchTeachersUseCase
 │   └── infrastructure/
 │       ├── persistence/  TeacherEntity, TeacherJpaRepository,
 │       │                 TeacherPersistenceMapper, TeacherRepositoryAdapter
+│       ├── event/        TeacherAccountActivatedListener  ← reacciona a AccountActivatedEvent
 │       └── web/          TeacherWebDto, TeacherWebMapper,
 │                         TeacherController, TeacherExceptionHandler
 │
@@ -237,13 +258,46 @@ src/main/java/org/school/management/
 ### ✅ Auth — Autenticación y Autorización
 
 JWT con refresh tokens, rotación de tokens, blacklist, sesiones múltiples por dispositivo.
-Flujo de activación de cuenta teacher via link en email (JWT CONFIRMATION de 48h).
+Flujo de activación de cuenta teacher via link en email (JWT CONFIRMATION de 48h) + eventos de dominio.
+
+**Responsabilidad exclusiva de `auth/`:** identidad y sesión. La creación de entidades de dominio (teachers, students, parents) pertenece a cada BC.
+
+**Use cases de `auth/`:**
+
+| Use Case | Responsabilidad |
+|----------|----------------|
+| `CreateUserUseCase` | Factory puro de `User` — recibe dni, password, rol. No sabe qué tipo de usuario es. |
+| `ActivateAccountUseCase` | Valida token, activa `User`, publica `AccountActivatedEvent` |
+| `GenerateConfirmationTokenUseCase` | Genera JWT de activación — encapsula `JwtTokenProvider` |
+| `LoginUseCase` | Autenticación por DNI + password |
+| `ChangePasswordUseCase` | Cambio de password del usuario autenticado |
+| `GetUserProfileUseCase` | Perfil del usuario autenticado |
+
+**`SecurityContextHelper`** — clase estática en `auth/infra/web/`:
+```java
+SecurityContextHelper.extractUserId(userDetails) // todos los controllers lo llaman — nunca duplicar
+```
 
 **Endpoint de activación (público):**
 ```
 POST /api/auth/activate-account
 Body: { "token": "<jwt>", "newPassword": "MiNuevaPass123!" }
 ```
+
+### ✅ Shared — Infraestructura de Eventos de Dominio
+
+Puerto `DomainEventPublisher` en `shared/domain/event/` implementado por `SpringDomainEventPublisher`.
+
+**Flujo de activación desacoplado:**
+```
+ActivateAccountUseCase
+  → activa User
+  → publica AccountActivatedEvent(userId, dni, roleName)
+      └─ TeacherAccountActivatedListener @TransactionalEventListener(BEFORE_COMMIT)
+           └─ activa Teacher — atómico con la transacción principal
+```
+
+Cuando se necesite activación para otros roles (parents, etc.) solo hay que agregar un nuevo listener — sin modificar `auth/`.
 
 ### ✅ Geography — Geografía Argentina
 
@@ -286,12 +340,12 @@ docker run -p 1025:1025 -p 8025:8025 mailhog/mailhog
 4.    Validar GradeLevel activo
 5.    Asignar folio → FolioAssignmentService.assignNextFolio()
 6.    Generar password → {DNI}Ipet132!
-7.    Crear User (rol STUDENT)
+7.    Crear User (rol STUDENT) → CreateUserUseCase.execute(CreateUserRequest.active(...))
 8.    Crear StudentPersonalData
 9.    Crear StudentHealthRecord
 10.   Obtener QualificationRegistry activo
 11.   Crear StudentRecord (recordNumber = DNI)
-12.   Buscar Parent por DNI → si no existe: crear User (PARENT) + crear Parent
+12.   Buscar Parent por DNI → si no existe: CreateUserUseCase.execute(CreateUserRequest.active(...)) + crear Parent + enviar email
 13.   Crear StudentParent
 14.   Crear StudentEnrollment
 15.   Commit → retornar StudentResponse
@@ -340,11 +394,15 @@ docker run -p 1025:1025 -p 8025:8025 mailhog/mailhog
 | PATCH | `/api/admin/teachers/{teacherId}` | ADMIN, STAFF | Actualizar (PATCH semántico) |
 
 **Flujo de creación y activación:**
-1. ADMIN crea el profesor → sistema genera password temporal + JWT de activación (48h)
-2. Email enviado al profesor con link: `{frontendUrl}/activate-account?token=<jwt>`
-3. Profesor accede al link → `POST /api/auth/activate-account` con token + nueva contraseña
-4. Sistema activa `User.active=true` y `Teacher.active=true` en la misma transacción
-5. Profesor puede ingresar con DNI + nueva contraseña
+1. ADMIN crea el profesor → `teachers/CreateTeacherUseCase` orquesta todo
+2. Genera password temporal segura (SecureRandom, 12 chars)
+3. Llama `auth/CreateUserUseCase` con `CreateUserRequest.inactive(dni, password, "ROLE_TEACHER")`
+4. Llama `auth/GenerateConfirmationTokenUseCase` → JWT 48h
+5. Persiste `Teacher` con `assignActivationToken(token)`
+6. Envía email de invitación con link (async — falla silenciosamente)
+7. Profesor activa cuenta → `POST /api/auth/activate-account`
+8. `ActivateAccountUseCase` activa `User` + publica `AccountActivatedEvent`
+9. `TeacherAccountActivatedListener` reacciona → activa `Teacher` (misma transacción)
 
 **Estados de empleo:** `ACTIVE` → `INACTIVE` / `RETIRED` (via PATCH)
 
@@ -359,14 +417,6 @@ docker run -p 1025:1025 -p 8025:8025 mailhog/mailhog
 | POST | `/api/grades/final-grades/exam` | ADMIN, STAFF | Asentar nota de examen/coloquio |
 | POST | `/api/grades/final-grades/calculate` | ADMIN, STAFF | Calcular nota final |
 | PATCH | `/api/grades/final-grades/{id}/registry` | ADMIN | Registrar en libro matriz |
-
-**Flujo de calificación:**
-1. TEACHER crea evaluación y carga nota → estado `GRADED`
-2. STAFF valida la nota → estado `VALIDATED`
-3. STAFF calcula nota de período (promedio de evaluaciones validadas)
-4. Sistema calcula nota final desde períodos validados → `PASSED` o `PENDING_EXAM`
-5. Si `PENDING_EXAM`: STAFF asienta nota de coloquio/examen → `PASSED` o `FAILED`
-6. ADMIN registra nota final en el folio ya asignado al alumno en el libro matriz
 
 **Notas clave:**
 - Nota mínima de aprobación: **7** (`MIN_PASSING_GRADE` constante en cada modelo)
@@ -501,7 +551,7 @@ app:
 - **Roles** — `ADMIN`, `TEACHER`, `STUDENT`, `PARENT`, `STAFF`
 - **Password inicial estudiante** — `{DNI}Ipet132!`
 - **Password teacher/padre** — aleatorio seguro (enviado por email)
-- **Activación teacher** — link en email con JWT CONFIRMATION (48h)
+- **Activación teacher** — link en email con JWT CONFIRMATION (48h) + `AccountActivatedEvent` desacoplado
 - **ProblemDetail** — respuestas de error estandarizadas (RFC 9457)
 
 ---
@@ -545,22 +595,24 @@ mvn test jacoco:report         # reporte de cobertura
 
 ### ✅ Implementado
 
-- Auth, Geography, Academic completos
+- Auth, Geography, Academic completos + **refactor de fronteras del BC `auth/`**
 - `shared/email/` — EmailService + JavaMailEmailService (OCI SMTP) + AsyncConfig
+- `shared/event/` — DomainEvent, AccountActivatedEvent, DomainEventPublisher + SpringDomainEventPublisher
 - **`students/` — COMPLETO** — 5 agregados de punta a punta
-- **`teachers/` — COMPLETO** — domain + application + infrastructure + flujo activación por email
+- **`teachers/` — COMPLETO** — domain + application + infrastructure + flujo activación via eventos
 - **`parents/` — COMPLETO** — cuil obligatorio, placeId consistente
 - **`grades/` — COMPLETO** — domain + application + infrastructure + 7 endpoints + seeder + 19 tests
 - **`course/` — COMPLETO** — domain + application + infrastructure + 5 endpoints + seeder + 9 tests
 - **`attendance/` — COMPLETO** — domain + application + infrastructure + 7 endpoints + V21 + 30 tests
-- **Flujo activación teacher** — JWT 48h, email con link, activa User+Teacher atómicamente
+- **Flujo activación teacher** — JWT 48h, email con link, `AccountActivatedEvent`, `TeacherAccountActivatedListener`
 - **Seeders dev** — Academic, Course, Grades, Teacher (3 docentes), StudentAndParent (4 alumnos + 4 padres)
 - **80 tests unitarios** — teachers (11), parents (11), grades (19), course (9), attendance (30)
 - Flyway V1–V7, V10–V15, V17, V19, V20, V21
 
 ### ⏳ Pendiente
 
-- [ ] Tests de activación teacher — `ActivateTeacherAccountUseCaseTest` (5 casos)
+- [ ] `ActivateAccountUseCaseTest` — 5 casos (token inválido, user no encontrado, happy path, verifica evento publicado)
+- [ ] `TeacherAccountActivatedListenerTest` — 3 casos (rol teacher, otro rol ignorado, teacher no encontrado)
 - [ ] Tests unitarios para `CreateStudentUseCase` (15 pasos)
 - [ ] Rate limiting, auditoría, métricas
 
@@ -570,33 +622,35 @@ mvn test jacoco:report         # reporte de cobertura
 
 | Decisión | Razón |
 |----------|-------|
-| **grades/ como BC separado** | Actores distintos (TEACHER vs ADMIN), frecuencia de cambio diferente |
-| **EvaluationId/TypeId/Status en grades/** | Pertenecen exclusivamente al dominio de calificaciones — movidos desde academic/ |
+| **`auth/` solo gestiona identidad y sesión** | Cada BC es responsable de crear y activar sus propias entidades — `auth/` no conoce teachers ni students |
+| **`CreateUserUseCase` en `auth/` — factory puro** | Recibe rol, dni, password — agnóstico del tipo de usuario — llamado por teachers/, students/, parents/ |
+| **`CreateUserRequest.active() / inactive()`** | Factory methods semánticos — students/parents activos, teachers inactivos hasta activar cuenta |
+| **Activación via eventos de dominio** | `ActivateAccountUseCase` publica `AccountActivatedEvent` — cada BC reacciona con su listener independientemente |
+| **`@TransactionalEventListener(BEFORE_COMMIT)`** | Atomicidad garantizada — si el listener falla, toda la transacción se revierte |
+| **`AccountActivatedEvent.roleName` como String** | Evita dependencia de `auth/RoleName` en `shared/` — los eventos son agnósticos del BC emisor |
+| **`DomainEventPublisher` como puerto en `shared/domain`** | Los use cases no importan Spring — el dominio permanece puro |
+| **`SecurityContextHelper` estático** | Centraliza el cast `UserDetails → User` — nunca duplicar `extractUserId()` en cada controller |
+| **`AdminController` y `UserController` eliminados** | Colisionaban con controllers de BCs — deuda técnica resuelta; cada BC expone sus propios endpoints |
+| **DTOs de create student/teacher eliminados de `auth/`** | `auth/` no crea entidades de dominio — cada BC tiene sus propios DTOs de request/response |
+| **`teachers/CreateTeacherUseCase` es el orquestador** | Genera password, llama `CreateUserUseCase`, genera token, persiste `Teacher`, envía email |
+| **`grades/` como BC separado** | Actores distintos (TEACHER vs ADMIN), frecuencia de cambio diferente |
+| **EvaluationId/TypeId/Status en `grades/`** | Pertenecen exclusivamente al dominio de calificaciones — movidos desde `academic/` |
 | **MIN_PASSING_GRADE = 7 como constante** | Regla de negocio IPET 132 — nunca hardcodear el umbral |
-| **attendance/ como BC separado** | Actores distintos (preceptor vs profesor); volumen alto; razón de cambio diferente a course/ |
+| **`attendance/` como BC separado** | Actores distintos (preceptor vs profesor); volumen alto; razón de cambio diferente a course/ |
 | **AttendanceStatus con peso de falta** | Encapsula regla de negocio en el enum — ABSENT=1.0, LATE=0.2, WITHDRAWN=0.2 |
 | **MIN_ATTENDANCE_PERCENTAGE = 85** | Regla IPET 132 — constante en AttendanceSummary, nunca hardcodear |
 | **JUSTIFIED descuenta igual que ABSENT** | Regla IPET 132 — la justificación registra el motivo pero no exime la falta |
 | **atRisk = weightedAbsences/total > 0.15** | Condición estricta (>) — exactamente 15% NO es libre |
 | **recalculate() en cada carga/corrección** | Consistencia garantizada en la transacción — no on-demand |
-| **confirmationToken JWT 48h para activación** | Configurable via `app.security.jwt.confirmation-token-expiration` |
-| **ActivateTeacherAccountUseCase activa User+Teacher** | Atomicidad — ambos en la misma transacción |
-| **Teacher.assignActivationToken() post-create** | El token lo genera auth/, se propaga y persiste en teachers/ |
-| **activate() limpia activationToken** | Token consumido = null — isPendingActivation() retorna false |
-| **CourseStatus y SubjectEnrollmentStatus en course/** | Mismo patrón que EvaluationStatus → grades/; pertenecen al BC que los usa |
+| **CourseStatus y SubjectEnrollmentStatus en `course/`** | Mismo patrón que EvaluationStatus → grades/; pertenecen al BC que los usa |
 | **StudentCourseSubject sin attendedClasses** | Campo no existe en BD — solo total_classes en course_subjects |
 | **Seeders resuelven place_id en runtime** | Geography usa UUIDs dinámicos — searchByName() + filter exact match |
-| **UserEntity.dni como username** | findByDni() — el campo `dni` es el identificador de login |
-| **auth.infra (no auth.infrastructure)** | El paquete de auth usa `infra` — excepción al estándar del resto |
-| **EmailService en shared/domain** | Puerto transversal — teachers y parents lo usan |
-| **@Async en JavaMailEmailService** | Email no bloquea ni puede revertir transacciones de negocio |
-| **CUIL obligatorio en parents** | Identificador fiscal — consistente con students y teachers |
-| **RecordNumber = DNI** | Legajo único y permanente — compatible con ministerio |
 | **UuidBinaryConverter en shared/** | Un solo converter para todos los BCs |
 | **ProblemDetail para errores** | RFC 9457, nativo en Spring 6 |
+| **RecordNumber = DNI** | Legajo único y permanente — compatible con ministerio |
 
 ---
 
 **Última actualización:** Marzo 2026
-**Versión:** 6.0.0
-**Estado:** En desarrollo activo — `attendance/` ✅ | `teachers activation` ✅ | tests pendientes ⏳
+**Versión:** 7.0.0
+**Estado:** En desarrollo activo — refactor `auth/` ✅ | eventos de dominio ✅ | tests pendientes ⏳
