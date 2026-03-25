@@ -60,9 +60,9 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.FORBIDDEN).body(error);
     }
 
-    @ExceptionHandler(AuthController.UnauthorizedException.class)
+    @ExceptionHandler(UnauthorizedException.class)
     public ResponseEntity<ErrorApiResponse> handleUnauthorized(
-            AuthController.UnauthorizedException ex, WebRequest request) {
+            UnauthorizedException ex, WebRequest request) {
 
         var error = new ErrorApiResponse(
                 false,

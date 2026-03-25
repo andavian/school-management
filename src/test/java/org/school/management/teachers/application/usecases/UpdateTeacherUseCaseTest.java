@@ -63,7 +63,7 @@ class UpdateTeacherUseCaseTest {
                 teacher.getUserId().value(),
                 teacher.getFullName().firstName(),
                 teacher.getFullName().lastName(),
-                teacher.getFullName().getFullName(),
+                teacher.getFullName().firstNameFirst(),
                 teacher.getDni().value(),
                 teacher.getCuil().formatted(),
                 teacher.getEmail().value(),

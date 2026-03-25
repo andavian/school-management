@@ -46,7 +46,8 @@ public record PlainPassword(String value) {
     }
 
     public HashedPassword hash(HashedPassword.PasswordEncoder encoder) {
-        return HashedPassword.of(encoder.encode(this.value));
+
+        return HashedPassword.fromPlain(this.value, encoder);
     }
 
     // Seguridad — nunca exponer la contraseña en texto plano
