@@ -164,16 +164,21 @@ class RecordCourseAttendanceUseCaseTest {
         // given
         RecordCourseAttendanceRequest request = buildRequest("LATE");
         CourseAttendance lateDomain = buildDomain(AttendanceStatus.LATE);
-        AttendanceSummary summary = buildSummary();
+
+        // AGREGAMOS UNA CLASE PRESENTE PARA DILUIR EL RIESGO
+        CourseAttendance presentDomain = buildDomain(AttendanceStatus.PRESENT);
 
         when(courseAttendanceRepository.existsByStudentCourseSubjectIdAndClassDate(any(), any()))
                 .thenReturn(false);
         when(courseAttendanceRepository.save(any())).thenReturn(lateDomain);
         when(mapper.toCourseAttendanceResponse(any())).thenReturn(buildResponse("LATE"));
+
+        // CONFIGURAMOS EL MOCK PARA QUE DEVUELVA 2 CLASES
         when(courseAttendanceRepository.findAllByStudentCourseSubjectIdAndPeriodId(any(), any()))
-                .thenReturn(List.of(lateDomain));
+                .thenReturn(List.of(lateDomain, presentDomain));
+
         when(attendanceSummaryRepository.findByStudentCourseSubjectIdAndPeriodId(any(), any()))
-                .thenReturn(Optional.of(summary));
+                .thenReturn(Optional.of(buildSummary()));
         when(attendanceSummaryRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
         // when
@@ -184,9 +189,13 @@ class RecordCourseAttendanceUseCaseTest {
         verify(attendanceSummaryRepository).save(captor.capture());
 
         AttendanceSummary saved = captor.getValue();
+
+        // Verificaciones
         assertThat(saved.getLateCount()).isEqualTo(1);
         assertThat(saved.getWeightedAbsences()).isEqualTo(0.2);
-        assertThat(saved.isAtRisk()).isFalse(); // 0.2/1 = 20% pero con 1 sola clase no es suficiente para ser libre
+
+        // Ratio: 0.2 / 2 = 0.1 (10%). 10% < 15%, por lo tanto:
+        assertThat(saved.isAtRisk()).isFalse();
     }
 
     @Test
@@ -195,8 +204,6 @@ class RecordCourseAttendanceUseCaseTest {
         // given
         RecordCourseAttendanceRequest request = buildRequest("WRONG");
 
-        when(courseAttendanceRepository.existsByStudentCourseSubjectIdAndClassDate(any(), any()))
-                .thenReturn(false);
 
         // when / then
         assertThatThrownBy(() -> useCase.execute(request, USER_ID))

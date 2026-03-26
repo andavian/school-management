@@ -111,7 +111,7 @@ public class AttendanceSummary {
         this.attendancePercentage = total > 0
                 ? (1.0 - weighted / total) * 100.0
                 : 100.0;
-        this.atRisk               = total > 0 && (weighted / total) > MAX_ABSENCE_RATIO;
+        this.atRisk = total >= 20 && (weighted / total) > MAX_ABSENCE_RATIO;
         this.updatedAt            = LocalDateTime.now();
     }
 

@@ -7,7 +7,6 @@ package org.school.management.shared.person.domain.valueobject;
  */
 public record Dni(String value) {
 
-    private static final int[] WEIGHTS = {2, 7, 6, 5, 4, 3, 2};
 
     public Dni {
         if (value == null || value.isBlank()) {
@@ -20,14 +19,7 @@ public record Dni(String value) {
             throw new IllegalArgumentException("DNI argentino debe tener 7 u 8 dígitos: " + value);
         }
 
-        // Validación del dígito verificador (solo para DNIs de 8 dígitos emitidos en Argentina)
-        if (cleaned.length() == 8) {
-            int prefix = Integer.parseInt(cleaned.substring(0, 2));
-            // Solo validamos verificador si es DNI argentino (no 90-99)
-            if (prefix < 90 && !isValidCheckDigit(cleaned)) {
-                throw new IllegalArgumentException("DNI inválido: dígito verificador incorrecto: " + value);
-            }
-        }
+
 
         // Normalización final: quitamos ceros a la izquierda (excepto si es 0)
         if (cleaned.length() == 8 && cleaned.startsWith("0")) {
@@ -37,15 +29,7 @@ public record Dni(String value) {
         value = cleaned;
     }
 
-    private static boolean isValidCheckDigit(String dni8) {
-        char[] digits = dni8.toCharArray();
-        int sum = 0;
-        for (int i = 0; i < 7; i++) {
-            sum += Character.getNumericValue(digits[i]) * WEIGHTS[i];
-        }
-        int checkDigit = (10 - (sum % 10)) % 10;
-        return checkDigit == Character.getNumericValue(digits[7]);
-    }
+
 
     public static Dni of(String value) {
         return new Dni(value);
@@ -64,12 +48,6 @@ public record Dni(String value) {
         };
     }
 
-    /** DNI de menor (91xxxxxx, 92xxxxxx, etc) */
-    public boolean isMinor() {
-        if (value.length() != 8) return false;
-        int prefix = Integer.parseInt(value.substring(0, 2));
-        return prefix >= 91 && prefix <= 95;
-    }
 
     /** DNI de extranjero (90xxxxxx, 94xxxxxx, etc) */
     public boolean isForeigner() {
@@ -80,7 +58,7 @@ public record Dni(String value) {
 
     /** DNI argentino común (00–89) */
     public boolean isArgentinean() {
-        return !isMinor() && !isForeigner();
+        return !isForeigner();
     }
 
     public long asLong() {

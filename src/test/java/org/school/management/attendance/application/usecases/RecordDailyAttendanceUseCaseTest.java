@@ -131,7 +131,6 @@ class RecordDailyAttendanceUseCaseTest {
         // given
         RecordDailyAttendanceRequest request = buildRequest("INVALID_STATUS");
 
-        when(dailyAttendanceRepository.existsByStudentIdAndDate(any(), any())).thenReturn(false);
 
         // when / then
         assertThatThrownBy(() -> useCase.execute(request, RECORDED_BY))

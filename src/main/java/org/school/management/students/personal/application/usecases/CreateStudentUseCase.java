@@ -151,6 +151,7 @@ public class CreateStudentUseCase {
                 request.postalCode()
         );
 
+        // Paso 8: Crear StudentPersonalData
         StudentPersonalData student = StudentPersonalData.create(
                 StudentPersonalData.builder()
                         .studentId(studentId)
@@ -160,6 +161,7 @@ public class CreateStudentUseCase {
                         .fullName(FullName.of(request.firstName(), request.lastName()))
                         .birthDate(request.birthDate())
                         .birthPlaceId(PlaceId.of(request.birthPlaceId()))
+                        .residencePlaceId(PlaceId.of(request.residencePlaceId()))
                         .gender(request.gender() != null ? Gender.valueOf(request.gender()) : null)
                         .nationality(request.nationality() != null
                                 ? Nationality.of(request.nationality()) : Nationality.of("Argentina"))
@@ -286,6 +288,7 @@ public class CreateStudentUseCase {
                         .parentId(parentId)
                         .userId(parentUserId)
                         .dni(Dni.of(request.dni()))
+                        .cuil(Cuil.of(request.cuil()))
                         .fullName(FullName.of(request.firstName(), request.lastName()))
                         .email(Email.of(request.email()))
                         .phone(PhoneNumber.of(request.phone()))

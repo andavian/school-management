@@ -53,8 +53,8 @@ class CreateTeacherUseCaseTest {
     private CreateTeacherRequest buildRequest() {
         return new CreateTeacherRequest(
                 "María", "González",
-                "87654321",
-                "27876543210",
+                "20345676",
+                "23203456769",
                 "maria.gonzalez@ipet132.edu.ar",
                 LocalDate.of(1985, 6, 15),
                 null, "FEMALE", "Argentina",
@@ -87,7 +87,7 @@ class CreateTeacherUseCaseTest {
         return new TeacherResponse(
                 TEACHER_UUID, USER_UUID,
                 "María", "González", "María González",
-                "87654321", "27-87654321-0",
+                "20345676", "23-20345676-9",
                 "maria.gonzalez@ipet132.edu.ar",
                 LocalDate.of(1985, 6, 15), "FEMALE", "Argentina",
                 "3514987654", null, null, null,
@@ -118,7 +118,7 @@ class CreateTeacherUseCaseTest {
         TeacherResponse result = useCase.execute(request, CREATED_BY);
 
         assertThat(result).isNotNull();
-        assertThat(result.dni()).isEqualTo("87654321");
+        assertThat(result.dni()).isEqualTo("20345676");
 
         // Verifica que el User se creó como inactivo (inactive factory method)
         verify(createUserUseCase).execute(argThat(req ->

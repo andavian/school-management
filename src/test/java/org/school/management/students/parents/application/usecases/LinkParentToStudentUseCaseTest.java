@@ -49,14 +49,14 @@ class LinkParentToStudentUseCaseTest {
 
     private static final UUID STUDENT_UUID = UUID.randomUUID();
     private static final UUID PARENT_UUID  = UUID.randomUUID();
-    private static final String PARENT_DNI = "11223344";
+    private static final String PARENT_DNI = "20345676";
 
     private Parent buildParent() {
         return Parent.builder()
                 .parentId(ParentId.of(PARENT_UUID))
                 .userId(UserId.of(UUID.randomUUID()))
                 .dni(Dni.of(PARENT_DNI))
-                .cuil(Cuil.of("27112233440"))
+                .cuil(Cuil.of("23203456769"))
                 .fullName(FullName.of("Ana", "García"))
                 .email(Email.of("ana.garcia@gmail.com"))
                 .phone(PhoneNumber.of("3514555666"))
@@ -90,7 +90,7 @@ class LinkParentToStudentUseCaseTest {
     private StudentParentResponse buildStudentParentResponse(boolean isPrimaryContact) {
         ParentResponse parentResponse = new ParentResponse(
                 PARENT_UUID, UUID.randomUUID(),
-                PARENT_DNI, "27-11223344-0",
+                PARENT_DNI, "23-20345676-9",
                 "Ana", "García", "Ana García",
                 LocalDate.of(1980, 5, 20),
                 "FEMALE", "Argentina",

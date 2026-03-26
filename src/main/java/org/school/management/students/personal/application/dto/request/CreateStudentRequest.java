@@ -156,6 +156,10 @@ public record CreateStudentRequest(
             @Pattern(regexp = "^\\d{8}$", message = "El DNI debe tener exactamente 8 dígitos")
             String dni,
 
+            @NotBlank(message = "El CUIL es obligatorio")
+            @Pattern(regexp = "^\\d{11}$", message = "El CUIL debe tener 11 dígitos sin guiones")
+            String cuil,
+
             @NotBlank(message = "El email del tutor es obligatorio")
             @Email(message = "Formato de email inválido")
             @Size(max = 254)

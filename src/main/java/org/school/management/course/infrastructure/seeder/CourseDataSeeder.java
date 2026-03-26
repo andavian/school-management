@@ -40,7 +40,6 @@ public class CourseDataSeeder implements ApplicationRunner {
     private final CourseSubjectJpaRepository courseSubjectRepository;
 
     @Override
-    @Transactional
     public void run(ApplicationArguments args) {
         log.info("=".repeat(80));
         log.info("Starting Course Data Seeder...");

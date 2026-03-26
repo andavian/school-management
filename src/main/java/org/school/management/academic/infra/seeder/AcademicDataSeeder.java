@@ -182,7 +182,6 @@ public class AcademicDataSeeder implements ApplicationRunner {
     // RUNNER
     // =========================================================================
     @Override
-    @Transactional
     public void run(ApplicationArguments args) {
         log.info("=".repeat(80));
         log.info("Starting Academic Data Seeder...");
@@ -430,7 +429,7 @@ public class AcademicDataSeeder implements ApplicationRunner {
     // GRADE LEVELS — 2025 (año activo)
     // 1°-2°: A/B/C/D, 3°-6°: A/B/C, 7°: A/B
     // =========================================================================
-    private void seedGradeLevels() {
+        private void seedGradeLevels() {
         log.info("Seeding grade levels for 2025...");
 
         List<GradeLevelData> gradeLevels = new ArrayList<>();

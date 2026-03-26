@@ -50,8 +50,8 @@ class CreateParentUseCaseTest {
     private CreateParentRequest buildRequest() {
         return new CreateParentRequest(
                 "Ana", "García",
-                "11223344",
-                "27112233440",
+                "20345676",
+                "23203456769",
                 LocalDate.of(1980, 5, 20),
                 "FEMALE", "Argentina",
                 "ana.garcia@gmail.com",
@@ -118,7 +118,7 @@ class CreateParentUseCaseTest {
         ParentResponse result = useCase.execute(request, CREATED_BY);
 
         assertThat(result).isNotNull();
-        assertThat(result.dni()).isEqualTo("11223344");
+        assertThat(result.dni()).isEqualTo("20345676");
 
         verify(parentRepository).save(any(Parent.class));
         verify(emailService).sendParentCredentials(
@@ -164,16 +164,23 @@ class CreateParentUseCaseTest {
     @Test
     @DisplayName("execute — CUIL duplicado — lanza ParentAlreadyExistsException")
     void execute_whenCuilExists_thenThrowParentAlreadyExistsException() {
+        // GIVEN
         CreateParentRequest request = buildRequest();
 
-        when(parentRepository.existsByDni(Dni.of(request.dni()))).thenReturn(false);
-        when(parentRepository.existsByEmail(Email.of(request.email()))).thenReturn(false);
+        // 1. DNI: Debe ser false para que el flujo continúe
+        when(parentRepository.existsByDni(any(Dni.class))).thenReturn(false);
+
+        // 2. CUIL: Aquí es donde queremos que falle
         when(parentRepository.existsByCuil(request.cuil())).thenReturn(true);
 
+        // IMPORTANTE: Eliminamos el stub de existsByEmail porque NO se llega a ejecutar.
+
+        // WHEN & THEN
         assertThatThrownBy(() -> useCase.execute(request, CREATED_BY))
                 .isInstanceOf(ParentAlreadyExistsException.class)
                 .hasMessageContaining(request.cuil());
 
+        // Verificaciones de seguridad
         verify(parentRepository, never()).save(any());
         verifyNoInteractions(userRepository, emailService);
     }

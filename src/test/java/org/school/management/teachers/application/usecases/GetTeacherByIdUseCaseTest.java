@@ -47,8 +47,8 @@ class GetTeacherByIdUseCaseTest {
                 .teacherId(TeacherId.of(TEACHER_UUID))
                 .userId(UserId.of(USER_UUID))
                 .fullName(FullName.of("Juan", "Pérez"))
-                .dni(Dni.of("12345678"))
-                .cuil(Cuil.of("20123456789"))
+                .dni(Dni.of("20345676"))
+                .cuil(Cuil.of("23203456769"))
                 .email(Email.of("juan.perez@ipet132.edu.ar"))
                 .phone(PhoneNumber.of("3514123456"))
                 .hireDate(LocalDate.of(2020, 3, 1))
@@ -63,7 +63,7 @@ class GetTeacherByIdUseCaseTest {
         return new TeacherResponse(
                 TEACHER_UUID, USER_UUID,
                 "Juan", "Pérez", "Juan Pérez",
-                "12345678", "20-12345678-9",
+                "20345676", "23-20345676-9",
                 "juan.perez@ipet132.edu.ar",
                 null, null, "Argentina",
                 "3514123456", null, null, null,
