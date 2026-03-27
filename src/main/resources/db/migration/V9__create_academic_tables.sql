@@ -50,6 +50,7 @@ CREATE TABLE qualification_registries (
     max_folios          INT NOT NULL DEFAULT 500,
     status              VARCHAR(20) NOT NULL DEFAULT 'ACTIVE',
     created_at          TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at          TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     closed_at           TIMESTAMP,
     
     CONSTRAINT fk_registries_academic_year 

@@ -3,6 +3,7 @@ package org.school.management.auth.infra.security;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.school.management.auth.infra.security.config.CorsProperties;
+import org.school.management.auth.infra.security.ratelimit.RateLimitFilter;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -61,6 +62,7 @@ public class SecurityConfig {
     private final AuthenticationProvider authenticationProvider;
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
     private final CorsProperties corsProperties;
+    private final RateLimitFilter rateLimitFilter;
 
     @Bean
     public WebSecurityCustomizer webSecurityCustomizer() {
@@ -138,6 +140,7 @@ public class SecurityConfig {
                 )
 
                 .authenticationProvider(authenticationProvider)
+                .addFilterBefore(rateLimitFilter, UsernamePasswordAuthenticationFilter.class)
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
                 .build();
     }

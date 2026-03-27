@@ -123,6 +123,21 @@ logging:
   pattern:
     console: "%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
 
+  rate-limit:
+    enabled: true
+    login:
+      capacity: 100
+      refill-tokens: 100
+      refill-seconds: 60
+    activate-account:
+      capacity: 100
+      refill-tokens: 100
+      refill-seconds: 60
+    refresh-token:
+      capacity: 100
+      refill-tokens: 100
+      refill-seconds: 60
+
 ---
 # ==============================
 # Perfil PROD (despliegue en server / nube)
@@ -261,6 +276,21 @@ management:
     git:
       enabled: true
 
+rate-limit:
+  enabled: true
+  login:
+    capacity: 5
+    refill-tokens: 5
+    refill-seconds: 60
+  activate-account:
+    capacity: 3
+    refill-tokens: 3
+    refill-seconds: 60
+  refresh-token:
+    capacity: 10
+    refill-tokens: 10
+    refill-seconds: 60
+
 ---
 # ==============================
 # Perfil TEST (para testing)
@@ -310,3 +340,6 @@ app:
 logging:
   level:
     org.school.management: WARN
+
+rate-limit:
+  enabled: false

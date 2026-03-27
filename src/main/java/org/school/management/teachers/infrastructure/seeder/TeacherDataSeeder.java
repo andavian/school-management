@@ -2,6 +2,7 @@ package org.school.management.teachers.infrastructure.seeder;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.school.management.auth.domain.valueobject.RoleName;
 import org.school.management.auth.infra.persistence.entity.RoleEntity;
 import org.school.management.auth.infra.persistence.entity.UserEntity;
 import org.school.management.auth.infra.persistence.repository.RoleJpaRepository;
@@ -75,7 +76,7 @@ public class TeacherDataSeeder implements ApplicationRunner {
         try {
             UUID cordobaPlaceId = resolveCordobaPlaceId();
             UUID adminUserId    = resolveAdminUserId();
-            RoleEntity teacherRole = resolveRole("ROLE_TEACHER");
+            RoleEntity teacherRole = resolveRole(RoleName.teacher());
 
             seedTeachers(cordobaPlaceId, adminUserId, teacherRole);
 
@@ -113,10 +114,11 @@ public class TeacherDataSeeder implements ApplicationRunner {
                         "Admin user (DNI 00000001) not found. Run V3 migration first."));
     }
 
-    private RoleEntity resolveRole(String roleName) {
-        return roleRepository.findByName(roleName)
+    private RoleEntity resolveRole(RoleName roleName) {
+        String searchName = roleName.toDbName(); // Buscará "TEACHER"
+        return roleRepository.findByName(searchName)
                 .orElseThrow(() -> new IllegalStateException(
-                        "Role '" + roleName + "' not found. Check roles table."));
+                        "Role '" + searchName + "' not found. Check V1 migration."));
     }
 
     // ── Seed ──────────────────────────────────────────────────────────────
