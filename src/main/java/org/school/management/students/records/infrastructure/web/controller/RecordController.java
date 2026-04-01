@@ -7,19 +7,27 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.school.management.auth.domain.model.User;
+import org.school.management.auth.infra.web.SecurityContextHelper;
+import org.school.management.students.records.application.dto.request.UploadDocumentRequest;
+import org.school.management.students.records.application.dto.response.RecordDocumentResponse;
 import org.school.management.students.records.application.usecases.AddDocumentToRecordUseCase;
 import org.school.management.students.records.application.usecases.GetRecordByStudentIdUseCase;
 import org.school.management.students.records.application.usecases.ReviewDocumentUseCase;
 import org.school.management.students.records.application.usecases.UpdateRecordStatusUseCase;
+import org.school.management.students.records.application.usecases.UploadRecordDocumentUseCase;
 import org.school.management.students.records.infrastructure.web.dto.RecordWebDto;
 import org.school.management.students.records.infrastructure.web.mapper.RecordWebMapper;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.time.LocalDate;
 import java.util.UUID;
 
 @RestController
@@ -30,11 +38,12 @@ import java.util.UUID;
 @SecurityRequirement(name = "bearerAuth")
 public class RecordController {
 
-    private final GetRecordByStudentIdUseCase getRecordByStudentIdUseCase;
-    private final AddDocumentToRecordUseCase addDocumentToRecordUseCase;
-    private final ReviewDocumentUseCase reviewDocumentUseCase;
-    private final UpdateRecordStatusUseCase updateRecordStatusUseCase;
-    private final RecordWebMapper mapper;
+    private final GetRecordByStudentIdUseCase    getRecordByStudentIdUseCase;
+    private final AddDocumentToRecordUseCase     addDocumentToRecordUseCase;
+    private final ReviewDocumentUseCase          reviewDocumentUseCase;
+    private final UpdateRecordStatusUseCase      updateRecordStatusUseCase;
+    private final UploadRecordDocumentUseCase    uploadRecordDocumentUseCase;
+    private final RecordWebMapper                mapper;
 
     // ── GET /api/admin/students/{studentId}/record ────────────────────────
     @GetMapping
@@ -54,10 +63,10 @@ public class RecordController {
         );
     }
 
-    // ── POST /api/admin/students/{studentId}/record/documents ─────────────
+    // ── POST /api/admin/students/{studentId}/record/documents (JSON) ──────
     @PostMapping("/documents")
     @PreAuthorize("hasAnyRole('ADMIN', 'STAFF')")
-    @Operation(summary = "Agregar un documento al legajo")
+    @Operation(summary = "Agregar un documento al legajo (sin archivo)")
     public ResponseEntity<RecordWebDto.StudentRecordWebResponse> addDocument(
             @PathVariable UUID studentId,
             @Valid @RequestBody RecordWebDto.AddDocumentWebRequest webRequest,
@@ -77,6 +86,45 @@ public class RecordController {
         );
     }
 
+    // ── POST /api/admin/students/{studentId}/record/{recordId}/upload ─────
+    @PostMapping(
+            value = "/{recordId}/upload",
+            consumes = MediaType.MULTIPART_FORM_DATA_VALUE
+    )
+    @PreAuthorize("hasAnyRole('ADMIN', 'STAFF')")
+    @Operation(
+            summary = "Subir archivo al legajo",
+            description = "Sube un PDF o imagen (JPG/PNG, máx 10 MB) y lo asocia al legajo."
+    )
+    public ResponseEntity<RecordDocumentResponse> uploadDocument(
+            @PathVariable UUID studentId,
+            @PathVariable UUID recordId,
+            @RequestPart("file") MultipartFile file,
+            @RequestPart("documentTypeId") UUID documentTypeId,
+            @RequestPart("title") String title,
+            @RequestPart(value = "description", required = false) String description,
+            @RequestPart(value = "issueDate", required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate issueDate,
+            @RequestPart(value = "expiryDate", required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate expiryDate,
+            @RequestPart(value = "issuingAuthority", required = false) String issuingAuthority,
+            @AuthenticationPrincipal UserDetails userDetails) {
+
+        log.info("POST upload — studentId: {}, recordId: {}, file: {}",
+                studentId, recordId, file.getOriginalFilename());
+
+        var request = new UploadDocumentRequest(
+                documentTypeId, title, description,
+                issueDate, expiryDate, issuingAuthority
+        );
+
+        RecordDocumentResponse response = uploadRecordDocumentUseCase.execute(
+                recordId, request, file, extractUserId(userDetails)
+        );
+
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
     // ── PATCH /api/admin/students/{studentId}/record/documents/{documentId}
     @PatchMapping("/documents/{documentId}")
     @PreAuthorize("hasAnyRole('ADMIN', 'STAFF')")
@@ -88,8 +136,8 @@ public class RecordController {
             @RequestParam(required = false) String observations,
             @AuthenticationPrincipal UserDetails userDetails) {
 
-        log.debug("PATCH document — studentId: {}, documentId: {}, action: {}, reviewedBy: {}",
-                studentId, documentId, action, extractUserId(userDetails));
+        log.debug("PATCH document — studentId: {}, documentId: {}, action: {}",
+                studentId, documentId, action);
 
         return ResponseEntity.ok(
                 mapper.toWebResponse(
@@ -128,6 +176,9 @@ public class RecordController {
     }
 
     // ── Utilidad ──────────────────────────────────────────────────────────
+
+    // Nota: este método debería reemplazarse por SecurityContextHelper.extractUserId()
+    // Es una deuda técnica existente en este controller — no modificar sin task específica.
     private UUID extractUserId(UserDetails userDetails) {
         if (userDetails instanceof User user) {
             return user.getUserId().value();

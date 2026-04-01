@@ -53,7 +53,7 @@ spring:
 
 
   mail:
-    host: smtp.email.${OCI_EMAIL_REGION}.oci.oraclecloud.com
+    host: smtp.email.${OCI_REGION}.oci.oraclecloud.com
     port: 587
     username: ${OCI_SMTP_USERNAME}         # OCID del usuario SMTP de OCI
     password: ${OCI_SMTP_PASSWORD}         # Auth token generado en OCI
@@ -114,14 +114,14 @@ app:
     default-student-role: "STUDENT"
     default-teacher-role: "TEACHER"
 
-# Logging para desarrollo
-logging:
-  level:
-    org.school.management: DEBUG
-    org.springframework.security: DEBUG
-    org.hibernate.SQL: DEBUG
-  pattern:
-    console: "%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
+  # Logging para desarrollo
+  logging:
+    level:
+      org.school.management: DEBUG
+      org.springframework.security: DEBUG
+      org.hibernate.SQL: DEBUG
+    pattern:
+      console: "%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
 
   rate-limit:
     enabled: true
@@ -137,6 +137,17 @@ logging:
       capacity: 100
       refill-tokens: 100
       refill-seconds: 60
+
+  storage:
+    oci:
+      tenancy-ocid: ${OCI_TENANCY_OCID}
+      user-ocid: ${OCI_USER_OCID}
+      fingerprint: ${OCI_FINGERPRINT}
+      private-key-path: ${OCI_PRIVATE_KEY_PATH}   # path al .pem en el servidor
+      region: ${OCI_REGION}                        # ej: sa-saopaulo-1
+      namespace: ${OCI_NAMESPACE}                  # visible en la consola OCI
+      bucket-name: ${OCI_BUCKET_NAME}              # ej: ipet132-documents
+      max-file-size-mb: 10
 
 ---
 # ==============================
@@ -172,7 +183,7 @@ spring:
         order_updates: true
 
   mail:
-    host: smtp.email.${OCI_EMAIL_REGION}.oci.oraclecloud.com
+    host: smtp.email.${OCI_REGION}.oci.oraclecloud.com
     port: 587
     username: ${OCI_SMTP_USERNAME}         # OCID del usuario SMTP de OCI
     password: ${OCI_SMTP_PASSWORD}         # Auth token generado en OCI
@@ -249,47 +260,58 @@ app:
     default-student-role: "STUDENT"
     default-teacher-role: "TEACHER"
 
-# Logging para producción
-logging:
-  level:
-    org.school.management: INFO
-    org.springframework.security: WARN
-    org.hibernate.SQL: WARN
-  file:
-    name: logs/school-management.log
-  pattern:
-    file: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
+  # Logging para producción
+  logging:
+    level:
+      org.school.management: INFO
+      org.springframework.security: WARN
+      org.hibernate.SQL: WARN
+    file:
+      name: logs/school-management.log
+    pattern:
+      file: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
 
-# Configuración de actuator para monitoreo
-management:
-  endpoints:
-    web:
-      exposure:
-        include: health,info,metrics
-      base-path: /actuator
-  endpoint:
-    health:
-      show-details: when-authorized
-  info:
-    build:
-      enabled: true
-    git:
-      enabled: true
+  # Configuración de actuator para monitoreo
+  management:
+    endpoints:
+      web:
+        exposure:
+          include: health,info,metrics
+        base-path: /actuator
+    endpoint:
+      health:
+        show-details: when-authorized
+    info:
+      build:
+        enabled: true
+      git:
+        enabled: true
 
-rate-limit:
-  enabled: true
-  login:
-    capacity: 5
-    refill-tokens: 5
-    refill-seconds: 60
-  activate-account:
-    capacity: 3
-    refill-tokens: 3
-    refill-seconds: 60
-  refresh-token:
-    capacity: 10
-    refill-tokens: 10
-    refill-seconds: 60
+  rate-limit:
+    enabled: true
+    login:
+      capacity: 5
+      refill-tokens: 5
+      refill-seconds: 60
+    activate-account:
+      capacity: 3
+      refill-tokens: 3
+      refill-seconds: 60
+    refresh-token:
+      capacity: 10
+      refill-tokens: 10
+      refill-seconds: 60
+
+  storage:
+    oci:
+      tenancy-ocid: ${OCI_TENANCY_OCID}
+      user-ocid: ${OCI_USER_OCID}
+      fingerprint: ${OCI_FINGERPRINT}
+      private-key-path: ${OCI_PRIVATE_KEY_PATH}   # path al .pem en el servidor
+      region: ${OCI_REGION}                        # ej: sa-saopaulo-1
+      namespace: ${OCI_NAMESPACE}                  # visible en la consola OCI
+      bucket-name: ${OCI_BUCKET_NAME}              # ej: ipet132-documents
+      max-file-size-mb: 10
 
 ---
 # ==============================
