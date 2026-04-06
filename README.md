@@ -21,10 +21,13 @@ Sistema de gestión escolar para el **IPET 132** (Argentina) que permite:
 - ✅ Módulo de cursos — **COMPLETO** (asignación profesor-materia-curso, inscripción de alumnos)
 - ✅ Módulo de asistencia — **COMPLETO** (diaria por preceptor, por materia por docente, resúmenes y alumnos en riesgo)
 - ✅ Infraestructura de eventos de dominio — **COMPLETO** (`DomainEvent`, `AccountActivatedEvent`, `DomainEventPublisher`)
+- ✅ Rate limiting — **COMPLETO** (Bucket4j in-memory, por IP, endpoints de auth protegidos)
+- ✅ Almacenamiento de archivos — **COMPLETO** (OCI Object Storage, documentos del legajo + material didáctico)
+- ✅ Material didáctico de profesores — **COMPLETO** (upload a OCI, control de visibilidad, ownership check)
 
 ### 🎯 Características Principales
 
-- **DNI como username** — sistema adaptado a la realidad argentina (siempre 8 dígitos)
+- **DNI como username** — sistema adaptado a la realidad argentina (correlativo, sin dígito verificador)
 - **CUIL validado** — dígito verificador ANSES/AFIP, obligatorio en students, teachers y parents
 - **Email opcional para estudiantes** — menores sin email propio
 - **Email obligatorio para padres y profesores** — notificaciones y credenciales
@@ -39,6 +42,9 @@ Sistema de gestión escolar para el **IPET 132** (Argentina) que permite:
 - **Sin delete físico** — bajas lógicas via `StudentEnrollment`
 - **Email asíncrono** — nunca bloquea ni revierte transacciones de negocio
 - **Control de asistencia ponderado** — ABSENT=1.0, JUSTIFIED=1.0, LATE=0.2, WITHDRAWN=0.2
+- **Rate limiting por IP** — Bucket4j in-memory, 5 intentos/min en login (prod)
+- **Almacenamiento OCI** — archivos en OCI Object Storage, URL pública + presigned URLs
+- **Ownership check en materiales** — TEACHER solo puede editar/eliminar su propio material
 
 ---
 
@@ -70,17 +76,19 @@ Sistema de gestión escolar para el **IPET 132** (Argentina) que permite:
 ### Vertical Slicing (Bounded Contexts)
 
 ```
-shared/         → Shared Kernel (Dni, Cuil, Email, PhoneNumber, Address, Gender,
-                                 IDs geográficos, UuidBinaryConverter, EmailService,
-                                 DomainEvent, AccountActivatedEvent, DomainEventPublisher)
-auth/           → Autenticación y autorización ✅
-geography/      → Lugares geográficos (País, Provincia, Localidad) ✅
-academic/       → Estructura académica (Años, Cursos, Materias) ✅
-students/       → Gestión de estudiantes ✅ COMPLETO
-teachers/       → Gestión de profesores ✅ COMPLETO
-grades/         → Calificaciones ✅ COMPLETO
-course/         → Asignación profesor-materia-curso ✅ COMPLETO
-attendance/     → Asistencia diaria y por materia ✅ COMPLETO
+shared/              → Shared Kernel (Dni, Cuil, Email, PhoneNumber, Address, Gender,
+                                      IDs geográficos, UuidBinaryConverter, EmailService,
+                                      DomainEvent, AccountActivatedEvent, DomainEventPublisher)
+auth/                → Autenticación y autorización ✅
+geography/           → Lugares geográficos (País, Provincia, Localidad) ✅
+academic/            → Estructura académica (Años, Cursos, Materias) ✅
+students/            → Gestión de estudiantes ✅ COMPLETO
+teachers/            → Gestión de profesores ✅ COMPLETO
+grades/              → Calificaciones ✅ COMPLETO
+course/              → Asignación profesor-materia-curso ✅ COMPLETO
+attendance/          → Asistencia diaria y por materia ✅ COMPLETO
+storage/             → Almacenamiento de archivos en OCI Object Storage ✅ COMPLETO
+teaching-materials/  → Material didáctico de profesores ✅ COMPLETO
 ```
 
 ---
@@ -101,6 +109,8 @@ attendance/     → Asistencia diaria y por materia ✅ COMPLETO
 | Flyway | Boot managed | Migraciones de esquema |
 | SpringDoc OpenAPI | 2.5.0 | Swagger UI |
 | spring-boot-starter-mail | Boot managed | SMTP via JavaMailSender (OCI Email Delivery) |
+| Bucket4j | 8.10.1 | Rate limiting in-memory por IP |
+| OCI Java SDK | 3.43.0 | OCI Object Storage (subida de archivos) |
 | JUnit 5 + Mockito | Boot managed | Testing |
 
 ---
@@ -112,143 +122,80 @@ src/main/java/org/school/management/
 │
 ├── shared/                                          # Shared Kernel
 │   ├── person/domain/valueobject/
-│   │   ├── Dni.java, Cuil.java, FullName.java
-│   │   ├── Gender.java, Nationality.java
-│   │   ├── PhoneNumber.java, Email.java
-│   │   └── Address.java
+│   │   ├── Dni.java, Cuil.java, FullName.java, Gender.java
+│   │   ├── Nationality.java, PhoneNumber.java, Email.java, Address.java
 │   ├── geography/domain/valueobject/
 │   │   └── CountryId.java, ProvinceId.java, PlaceId.java
 │   ├── domain/
 │   │   ├── exception/DomainException.java
-│   │   ├── service/EmailService.java               # Puerto — sin dependencias Spring
+│   │   ├── service/EmailService.java
 │   │   └── event/
-│   │       ├── DomainEvent.java                    # Interfaz base — eventId() + occurredOn()
-│   │       ├── AccountActivatedEvent.java           # Publicado al activar cuenta
-│   │       └── DomainEventPublisher.java            # Puerto — publish(DomainEvent)
+│   │       ├── DomainEvent.java, AccountActivatedEvent.java, DomainEventPublisher.java
 │   └── infrastructure/
-│       ├── persistence/converter/
-│       │   └── UuidBinaryConverter.java            # UUID ↔ BINARY(16)
-│       ├── event/
-│       │   └── SpringDomainEventPublisher.java     # Implementa DomainEventPublisher
-│       ├── email/
-│       │   └── JavaMailEmailService.java           # OCI SMTP + @Async
-│       └── config/
-│           └── AsyncConfig.java                    # @EnableAsync
+│       ├── persistence/converter/UuidBinaryConverter.java
+│       ├── event/SpringDomainEventPublisher.java
+│       ├── email/JavaMailEmailService.java
+│       └── config/AsyncConfig.java
 │
 ├── auth/                                            # BOUNDED CONTEXT: Autenticación ✅
+│   ├── domain/exception/UnauthorizedException.java
 │   ├── application/usecases/
-│   │   ├── CreateUserUseCase.java                  # factory puro de User — agnóstico del rol
-│   │   ├── ActivateAccountUseCase.java             # activa User + publica AccountActivatedEvent
-│   │   ├── GenerateConfirmationTokenUseCase.java   # JWT 48h encapsulado en auth/
-│   │   ├── LoginUseCase.java
-│   │   ├── ChangePasswordUseCase.java
-│   │   └── GetUserProfileUseCase.java
+│   │   ├── CreateUserUseCase.java
+│   │   ├── ActivateAccountUseCase.java
+│   │   ├── GenerateConfirmationTokenUseCase.java
+│   │   ├── LoginUseCase.java, ChangePasswordUseCase.java, GetUserProfileUseCase.java
 │   └── infrastructure/
-│       ├── web/
-│       │   ├── SecurityContextHelper.java          # extractUserId() — static, centralizado
-│       │   └── controllers/AuthController.java
-│       ├── persistence/                            entity/, repository/, adapter/, mappers/
-│       └── security/                              SecurityConfig, JwtTokenProvider, JwtAuthenticationFilter
+│       ├── web/SecurityContextHelper.java
+│       ├── persistence/
+│       └── security/
+│           ├── SecurityConfig.java, JwtTokenProvider.java, JwtAuthenticationFilter.java
+│           └── ratelimit/RateLimitFilter.java, RateLimitProperties.java
 │
 ├── geography/                                       # BOUNDED CONTEXT: Geografía ✅
-│
 ├── academic/                                        # BOUNDED CONTEXT: Académico ✅
-│   └── domain/service/
-│       ├── FolioAssignmentService.java
-│       └── RegistryNumberGenerator.java
 │
 ├── students/                                        # BOUNDED CONTEXT: Estudiantes ✅ COMPLETO
-│   ├── personal/   ✅
+│   ├── personal/   ✅ — CreateStudentUseCase (15 pasos)
 │   ├── health/     ✅
 │   ├── enrollment/ ✅
-│   ├── records/    ✅
-│   └── parents/    ✅ (cuil obligatorio, placeId consistente)
+│   ├── records/    ✅ — legajo + UploadRecordDocumentUseCase + RecordDocumentRepository
+│   └── parents/    ✅
 │
 ├── teachers/                                        # BOUNDED CONTEXT: Profesores ✅ COMPLETO
-│   ├── domain/
-│   │   ├── model/Teacher.java                      # assignActivationToken(), activate(), isPendingActivation()
-│   │   ├── valueobject/ TeacherId, EmploymentStatus, EmploymentType, TeacherSpecialization
-│   │   ├── repository/TeacherRepository.java
-│   │   └── exception/  TeacherNotFoundException, TeacherAlreadyExistsException,
-│   │                   InvalidTeacherDataException
-│   ├── application/
-│   │   ├── dto/request/  CreateTeacherRequest, UpdateTeacherRequest
-│   │   ├── dto/response/ TeacherResponse, TeacherSummaryResponse
-│   │   ├── mapper/       TeacherApplicationMapper
-│   │   └── usecases/     GetTeacherByIdUseCase, CreateTeacherUseCase (orquestador completo),
-│   │                     UpdateTeacherUseCase, SearchTeachersUseCase
-│   └── infrastructure/
-│       ├── persistence/  TeacherEntity, TeacherJpaRepository,
-│       │                 TeacherPersistenceMapper, TeacherRepositoryAdapter
-│       ├── event/        TeacherAccountActivatedListener  ← reacciona a AccountActivatedEvent
-│       └── web/          TeacherWebDto, TeacherWebMapper,
-│                         TeacherController, TeacherExceptionHandler
-│
 ├── grades/                                          # BOUNDED CONTEXT: Calificaciones ✅ COMPLETO
-│   ├── domain/
-│   │   ├── model/        Evaluation, PeriodGrade, FinalGrade
-│   │   ├── valueobject/  EvaluationId, EvaluationTypeId, EvaluationStatus (movidos de academic/)
-│   │   │                 FinalGradeId, PeriodGradeId, FinalGradeStatus
-│   │   ├── repository/   EvaluationRepository, PeriodGradeRepository, FinalGradeRepository
-│   │   └── exception/    GradeNotFoundException, GradeAlreadyValidatedException,
-│   │                     InvalidGradeException, GradeAlreadyRecordedInRegistryException
-│   ├── application/
-│   │   ├── dto/request/  CreateEvaluationRequest, GradeEvaluationRequest,
-│   │   │                 RecordExamGradeRequest
-│   │   ├── dto/response/ EvaluationResponse, PeriodGradeResponse, FinalGradeResponse
-│   │   ├── mapper/       GradesApplicationMapper
-│   │   └── usecases/     CreateEvaluationUseCase, GradeEvaluationUseCase,
-│   │                     ValidateEvaluationUseCase, CalculatePeriodGradeUseCase,
-│   │                     RecordExamGradeUseCase, CalculateFinalGradeUseCase,
-│   │                     RecordFinalGradeInRegistryUseCase
-│   └── infrastructure/
-│       ├── persistence/  EvaluationEntity, PeriodGradeEntity, FinalGradeEntity,
-│       │                 EvaluationTypeEntity + JpaRepositories + Adapters + Mappers
-│       ├── web/          GradesWebDto, GradesWebMapper,
-│       │                 GradesController (7 endpoints), GradesExceptionHandler
-│       └── seeder/       GradesDataSeeder (@Profile("dev"), @Order(10))
-│
 ├── course/                                          # BOUNDED CONTEXT: Cursos ✅ COMPLETO
-│   ├── domain/
-│   │   ├── model/        CourseSubject, StudentCourseSubject
-│   │   ├── valueobject/  CourseSubjectId, StudentCourseSubjectId, CourseStatus,
-│   │   │                 SubjectEnrollmentStatus
-│   │   ├── repository/   CourseSubjectRepository, StudentCourseSubjectRepository
-│   │   └── exception/    CourseSubjectNotFoundException, StudentAlreadyEnrolledException, ...
-│   ├── application/
-│   │   ├── dto/          CreateCourseSubjectRequest, AssignTeacherRequest, EnrollStudentRequest
-│   │   ├── mapper/       CourseApplicationMapper
-│   │   └── usecases/     CreateCourseSubjectUseCase, AssignTeacherToCourseUseCase,
-│   │                     EnrollStudentInCourseUseCase, GetCourseSubjectsByGradeLevelUseCase,
-│   │                     GetStudentCoursesUseCase
-│   └── infrastructure/
-│       ├── persistence/  CourseSubjectEntity, StudentCourseSubjectEntity
-│       │                 + JpaRepositories + Adapters + PersistenceMappers
-│       ├── web/          CourseWebDto, CourseWebMapper, CourseController (5 endpoints),
-│       │                 CourseExceptionHandler
-│       └── seeder/       CourseDataSeeder (@Profile("dev"), @Order(6))
+├── attendance/                                      # BOUNDED CONTEXT: Asistencia ✅ COMPLETO
 │
-└── attendance/                                      # BOUNDED CONTEXT: Asistencia ✅ COMPLETO
+├── storage/                                         # BOUNDED CONTEXT: Almacenamiento ✅ COMPLETO
+│   ├── domain/
+│   │   ├── service/StorageService.java
+│   │   └── model/UploadedFile.java
+│   └── infrastructure/
+│       ├── config/OciStorageProperties.java
+│       └── oci/OciObjectStorageService.java
+│
+└── teaching-materials/                              # BOUNDED CONTEXT: Material Didáctico ✅ COMPLETO
     ├── domain/
-    │   ├── model/        DailyAttendance, CourseAttendance, AttendanceSummary
-    │   ├── valueobject/  DailyAttendanceId, CourseAttendanceId, AttendanceSummaryId
-    │   │                 AttendanceStatus (PRESENT=0, ABSENT=1, JUSTIFIED=1, LATE=0.2, WITHDRAWN=0.2)
-    │   ├── repository/   DailyAttendanceRepository, CourseAttendanceRepository,
-    │   │                 AttendanceSummaryRepository
-    │   └── exception/    AttendanceAlreadyRecordedException, AttendanceNotFoundException
+    │   ├── model/TeachingMaterial.java
+    │   ├── valueobject/TeachingMaterialId.java, MaterialType.java
+    │   ├── repository/TeachingMaterialRepository.java
+    │   └── exception/TeachingMaterialNotFoundException.java
+    │               TeachingMaterialAccessDeniedException.java
     ├── application/
-    │   ├── dto/          RecordDailyAttendanceRequest, RecordCourseAttendanceRequest,
-    │   │                 JustifyAbsenceRequest, CorrectAttendanceRequest
-    │   │                 + DailyAttendanceResponse, CourseAttendanceResponse, AttendanceSummaryResponse
-    │   ├── mapper/       AttendanceApplicationMapper
-    │   └── usecases/     RecordDailyAttendanceUseCase, RecordCourseAttendanceUseCase,
-    │                     JustifyAbsenceUseCase, CorrectAttendanceUseCase,
-    │                     GetAttendanceSummaryUseCase, GetAtRiskStudentsUseCase
+    │   ├── dto/request/  UploadMaterialRequest.java, UpdateMaterialRequest.java
+    │   ├── dto/response/ TeachingMaterialResponse.java
+    │   ├── mapper/       TeachingMaterialApplicationMapper.java
+    │   └── usecases/     UploadTeachingMaterialUseCase.java
+    │                     GetMaterialsByCourseUseCase.java
+    │                     GetMaterialsForStudentUseCase.java
+    │                     UpdateMaterialUseCase.java
+    │                     DeleteMaterialUseCase.java
     └── infrastructure/
-        ├── persistence/  DailyAttendanceEntity, CourseAttendanceEntity, AttendanceSummaryEntity
-        │                 + JpaRepositories + Adapters + PersistenceMappers (default methods)
-        └── web/          AttendanceWebDto, AttendanceWebMapper,
-                          AttendanceController (7 endpoints), AttendanceExceptionHandler
+        ├── persistence/  TeachingMaterialEntity, TeachingMaterialJpaRepository,
+        │                 TeachingMaterialPersistenceMapper, TeachingMaterialRepositoryAdapter
+        └── web/          TeachingMaterialWebDto, TeachingMaterialWebMapper,
+                          TeachingMaterialController (5 endpoints),
+                          TeachingMaterialExceptionHandler
 ```
 
 ---
@@ -260,66 +207,26 @@ src/main/java/org/school/management/
 JWT con refresh tokens, rotación de tokens, blacklist, sesiones múltiples por dispositivo.
 Flujo de activación de cuenta teacher via link en email (JWT CONFIRMATION de 48h) + eventos de dominio.
 
-**Responsabilidad exclusiva de `auth/`:** identidad y sesión. La creación de entidades de dominio (teachers, students, parents) pertenece a cada BC.
+### ✅ Rate Limiting
 
-**Use cases de `auth/`:**
+Protección de endpoints de autenticación contra fuerza bruta y abuso, implementado con **Bucket4j in-memory** por IP.
 
-| Use Case | Responsabilidad |
-|----------|----------------|
-| `CreateUserUseCase` | Factory puro de `User` — recibe dni, password, rol. No sabe qué tipo de usuario es. |
-| `ActivateAccountUseCase` | Valida token, activa `User`, publica `AccountActivatedEvent` |
-| `GenerateConfirmationTokenUseCase` | Genera JWT de activación — encapsula `JwtTokenProvider` |
-| `LoginUseCase` | Autenticación por DNI + password |
-| `ChangePasswordUseCase` | Cambio de password del usuario autenticado |
-| `GetUserProfileUseCase` | Perfil del usuario autenticado |
+| Endpoint | Límite (prod) | Límite (dev) |
+|----------|--------------|--------------|
+| `POST /api/auth/login` | 5 req/min | 100 req/min |
+| `POST /api/auth/activate-account` | 3 req/min | 100 req/min |
+| `POST /api/auth/refresh-token` | 10 req/min | 100 req/min |
 
-**`SecurityContextHelper`** — clase estática en `auth/infra/web/`:
-```java
-SecurityContextHelper.extractUserId(userDetails) // todos los controllers lo llaman — nunca duplicar
-```
+### ✅ Almacenamiento — OCI Object Storage
 
-**Endpoint de activación (público):**
-```
-POST /api/auth/activate-account
-Body: { "token": "<jwt>", "newPassword": "MiNuevaPass123!" }
-```
+Puerto `StorageService` en `storage/domain/service/` implementado por `OciObjectStorageService`.
 
-### ✅ Shared — Infraestructura de Eventos de Dominio
-
-Puerto `DomainEventPublisher` en `shared/domain/event/` implementado por `SpringDomainEventPublisher`.
-
-**Flujo de activación desacoplado:**
-```
-ActivateAccountUseCase
-  → activa User
-  → publica AccountActivatedEvent(userId, dni, roleName)
-      └─ TeacherAccountActivatedListener @TransactionalEventListener(BEFORE_COMMIT)
-           └─ activa Teacher — atómico con la transacción principal
-```
-
-Cuando se necesite activación para otros roles (parents, etc.) solo hay que agregar un nuevo listener — sin modificar `auth/`.
-
-### ✅ Geography — Geografía Argentina
-
-Jerarquía País → Provincia → Localidad.
-
-### ✅ Academic — Estructura Académica
-
-Años lectivos, orientaciones, cursos (1°A–7°B), materias, registro de calificaciones.
-IPET 132 usa **2 períodos cuatrimestrales** por año.
-
-### ✅ Email Service
-
-Puerto `EmailService` en `shared/domain/service/` implementado por `JavaMailEmailService`.
-SMTP configurado para **OCI Email Delivery** en prod y **Mailhog** en local.
-Envío `@Async` — nunca bloquea transacciones. Fallos silenciosos (log + catch).
-`sendTeacherInvitation()` incluye link de activación con JWT de 48h.
-
-```bash
-# Levantar Mailhog para desarrollo local
-docker run -p 1025:1025 -p 8025:8025 mailhog/mailhog
-# UI: http://localhost:8025
-```
+- Sube archivos a OCI Object Storage con estructura de carpetas organizada
+- Genera URLs públicas y presigned URLs (acceso temporal seguro)
+- Tipos permitidos: `application/pdf`, `image/jpeg`, `image/png` — máx 10 MB
+- Estructura en bucket:
+    - `records/{studentId}/{uuid}-{fileName}` — documentos del legajo
+    - `materials/{teacherId}/{courseSubjectId}/{uuid}-{fileName}` — material didáctico
 
 ### ✅ Students — COMPLETO (5 agregados)
 
@@ -332,24 +239,6 @@ docker run -p 1025:1025 -p 8025:8025 mailhog/mailhog
 | GET | `/api/admin/students/dni/{dni}` | ADMIN, STAFF |
 | GET | `/api/admin/students` | ADMIN, STAFF |
 | PATCH | `/api/admin/students/{id}` | ADMIN, STAFF |
-
-**CreateStudentUseCase — 15 pasos atómicos:**
-```
-1-2.  Validar unicidad DNI y CUIL
-3.    Obtener AcademicYear activo
-4.    Validar GradeLevel activo
-5.    Asignar folio → FolioAssignmentService.assignNextFolio()
-6.    Generar password → {DNI}Ipet132!
-7.    Crear User (rol STUDENT) → CreateUserUseCase.execute(CreateUserRequest.active(...))
-8.    Crear StudentPersonalData
-9.    Crear StudentHealthRecord
-10.   Obtener QualificationRegistry activo
-11.   Crear StudentRecord (recordNumber = DNI)
-12.   Buscar Parent por DNI → si no existe: CreateUserUseCase.execute(CreateUserRequest.active(...)) + crear Parent + enviar email
-13.   Crear StudentParent
-14.   Crear StudentEnrollment
-15.   Commit → retornar StudentResponse
-```
 
 #### Students Health
 
@@ -372,6 +261,7 @@ docker run -p 1025:1025 -p 8025:8025 mailhog/mailhog
 |--------|------|-----|
 | GET | `/api/admin/students/{studentId}/record` | ADMIN, STAFF |
 | POST | `/api/admin/students/{studentId}/record/documents` | ADMIN, STAFF |
+| POST | `/api/admin/students/{studentId}/record/{recordId}/upload` | ADMIN, STAFF |
 | PATCH | `/api/admin/students/{studentId}/record/documents/{documentId}` | ADMIN, STAFF |
 | PATCH | `/api/admin/students/{studentId}/record/status` | ADMIN |
 
@@ -393,19 +283,6 @@ docker run -p 1025:1025 -p 8025:8025 mailhog/mailhog
 | GET | `/api/admin/teachers` | ADMIN, STAFF | Buscar (dni / lastName / todos) |
 | PATCH | `/api/admin/teachers/{teacherId}` | ADMIN, STAFF | Actualizar (PATCH semántico) |
 
-**Flujo de creación y activación:**
-1. ADMIN crea el profesor → `teachers/CreateTeacherUseCase` orquesta todo
-2. Genera password temporal segura (SecureRandom, 12 chars)
-3. Llama `auth/CreateUserUseCase` con `CreateUserRequest.inactive(dni, password, "ROLE_TEACHER")`
-4. Llama `auth/GenerateConfirmationTokenUseCase` → JWT 48h
-5. Persiste `Teacher` con `assignActivationToken(token)`
-6. Envía email de invitación con link (async — falla silenciosamente)
-7. Profesor activa cuenta → `POST /api/auth/activate-account`
-8. `ActivateAccountUseCase` activa `User` + publica `AccountActivatedEvent`
-9. `TeacherAccountActivatedListener` reacciona → activa `Teacher` (misma transacción)
-
-**Estados de empleo:** `ACTIVE` → `INACTIVE` / `RETIRED` (via PATCH)
-
 ### ✅ Grades — COMPLETO
 
 | Método | Path | Rol | Descripción |
@@ -417,12 +294,6 @@ docker run -p 1025:1025 -p 8025:8025 mailhog/mailhog
 | POST | `/api/grades/final-grades/exam` | ADMIN, STAFF | Asentar nota de examen/coloquio |
 | POST | `/api/grades/final-grades/calculate` | ADMIN, STAFF | Calcular nota final |
 | PATCH | `/api/grades/final-grades/{id}/registry` | ADMIN | Registrar en libro matriz |
-
-**Notas clave:**
-- Nota mínima de aprobación: **7** (`MIN_PASSING_GRADE` constante en cada modelo)
-- El folio del alumno se obtiene de `StudentRecord` — fue asignado en `CreateStudentUseCase`
-- `EvaluationId`, `EvaluationTypeId`, `EvaluationStatus` viven en `grades/domain/valueobject/`
-- Seeder puebla 5 tipos de evaluación con UUIDs fijos para perfil `dev`
 
 ### ✅ Course — COMPLETO
 
@@ -436,25 +307,33 @@ docker run -p 1025:1025 -p 8025:8025 mailhog/mailhog
 
 ### ✅ Attendance — COMPLETO
 
-Control de asistencia diaria por preceptor y por materia por docente.
-Cálculo automático de porcentaje de asistencia y detección de alumnos en riesgo de quedar libres.
-
 | Método | Path | Rol | Descripción |
 |--------|------|-----|-------------|
 | POST | `/api/attendance/daily` | ADMIN, STAFF | Registrar asistencia diaria del curso |
-| PATCH | `/api/attendance/daily/{id}/justify` | ADMIN, STAFF | Justificar ausencia (ABSENT→JUSTIFIED) |
+| PATCH | `/api/attendance/daily/{id}/justify` | ADMIN, STAFF | Justificar ausencia |
 | PATCH | `/api/attendance/daily/{id}` | ADMIN, STAFF | Corregir registro diario |
 | POST | `/api/attendance/course` | ADMIN, STAFF, TEACHER | Registrar asistencia por materia |
 | PATCH | `/api/attendance/course/{id}` | ADMIN, STAFF, TEACHER | Corregir registro por materia |
 | GET | `/api/attendance/course/summary` | ADMIN, STAFF, TEACHER | Resumen por alumno/materia/período |
 | GET | `/api/attendance/course/at-risk` | ADMIN, STAFF | Alumnos en riesgo de quedar libres |
 
-**Reglas IPET 132:**
-- Mínimo **85%** de asistencia para aprobar
-- `ABSENT` = 1.0 falta | `JUSTIFIED` = 1.0 falta (la justificación registra el motivo, no exime)
-- `LATE` = 0.2 faltas (5 tardanzas = 1 falta) | `WITHDRAWN` = 0.2 faltas
-- Libre si `weightedAbsences / totalClasses > 0.15` (condición estricta)
-- `AttendanceSummary.recalculate()` se ejecuta en cada carga/corrección — consistencia garantizada
+### ✅ Teaching Materials — COMPLETO
+
+Material didáctico subido por profesores, asociado a cursos específicos, con control de visibilidad para alumnos.
+
+| Método | Path | Rol | Descripción |
+|--------|------|-----|-------------|
+| POST | `/api/materials` | TEACHER | Subir material (multipart/form-data) |
+| GET | `/api/materials/course/{courseSubjectId}` | TEACHER, ADMIN, STAFF | Listar todos por curso |
+| GET | `/api/materials/my-courses` | STUDENT | Ver material visible de sus cursos |
+| PATCH | `/api/materials/{materialId}` | TEACHER, ADMIN, STAFF | Actualizar metadata/visibilidad |
+| DELETE | `/api/materials/{materialId}` | TEACHER, ADMIN | Eliminar (OCI + BD) |
+
+**Decisiones de diseño:**
+- TEACHER solo puede editar/eliminar su propio material; ADMIN puede hacerlo con cualquiera
+- `GET /my-courses` recibe `courseSubjectIds` como query params (obtenidos previamente vía `GET /api/courses/enrollments/{enrollmentId}/courses`)
+- Sin FK a `teachers` en BD — evita acoplamiento entre BCs a nivel de esquema
+- Tipos: `APUNTE`, `EJERCICIO`, `EXAMEN`, `GUIA`, `VIDEO`, `OTRO`
 
 ---
 
@@ -479,6 +358,9 @@ Cálculo automático de porcentaje de asistencia y detección de alumnos en ries
 | `V19` | `countries`, `provinces` — datos Argentina |
 | `V20` | `places` — localidades Argentina |
 | `V21` | `attendance_daily_records`, `attendance_course_records`, `attendance_period_summaries` |
+| `V22` | `teaching_materials` ✅ |
+
+**Próxima migración disponible: V23**
 
 ---
 
@@ -489,7 +371,7 @@ Cálculo automático de porcentaje de asistencia y detección de alumnos en ries
 mysql -u root -p
 CREATE DATABASE school132_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
-# 2. Configurar application.yml con credenciales de BD y OCI SMTP
+# 2. Configurar .env con credenciales
 
 # 3. Compilar
 mvn clean install
@@ -506,39 +388,49 @@ mvn spring-boot:run -Dspring-boot.run.profiles=local
 # Mailhog UI:    http://localhost:8025
 ```
 
-### Configuración OCI Email Delivery
+### Variables de Entorno
 
-```yaml
-spring:
-  mail:
-    host: smtp.email.${OCI_EMAIL_REGION:us-ashburn-1}.oci.oraclecloud.com
-    port: 587
-    username: ${OCI_SMTP_USERNAME}
-    password: ${OCI_SMTP_PASSWORD}
-    properties:
-      mail.smtp.auth: true
-      mail.smtp.starttls.enable: true
+```env
+# Base de datos
+DB_HOST=localhost
+DB_PORT=3306
+DB_NAME=school132_db
+DB_USER=root
+DB_PASSWORD=tu_password
 
-app:
-  frontend:
-    url: http://localhost:3000          # en prod: URL del frontend
-  security:
-    jwt:
-      confirmation-token-expiration: 172800   # 48 horas en segundos
-  school:
-    name: "IPET 132"
+# JWT
+JWT_SECRET_KEY=tu_clave_secreta_de_al_menos_32_caracteres
+
+# OCI Email Delivery
+OCI_EMAIL_REGION=sa-saopaulo-1
+OCI_SMTP_USERNAME=tu_usuario_smtp_oci
+OCI_SMTP_PASSWORD=tu_token_oci
+
+# OCI Object Storage
+OCI_TENANCY_OCID=ocid1.tenancy.oc1..xxx
+OCI_USER_OCID=ocid1.user.oc1..xxx
+OCI_FINGERPRINT=aa:bb:cc:dd:...
+OCI_PRIVATE_KEY_PATH=/ruta/al/oci_api_key.pem
+OCI_REGION=sa-saopaulo-1
+OCI_NAMESPACE=tu_namespace
+OCI_BUCKET_NAME=ipet132-documents
 ```
 
 ---
 
-## 🔑 Credenciales de Prueba
+## 🔑 Credenciales de Prueba (perfil `dev`)
 
 | Rol | DNI | Password |
 |-----|-----|----------|
 | ADMIN | `00000001` | `Admin123!` |
-| TEACHER | `12345678` | `Teacher123!` |
-| STUDENT (con email) | `11223344` | `11223344Ipet132!` |
-| STUDENT (sin email) | `87654321` | `87654321Ipet132!` |
+| TEACHER | `12345678` | `Teacher123!` (Juan García — Matemática) |
+| TEACHER | `23456789` | `Teacher123!` (María López — Física) |
+| TEACHER | `34567890` | `Teacher123!` (Carlos Fernández — Electrotecnia) |
+| STUDENT (con email) | `11223344` | `11223344Ipet132!` (Lucas Romero — 1°A) |
+| STUDENT (sin email) | `87654321` | `87654321Ipet132!` (Sofía Torres — 1°A) |
+| STUDENT | `44556677` | `44556677Ipet132!` (Martín Díaz — 4°A Electricista) |
+| STUDENT | `55667788` | `55667788Ipet132!` (Ana Gómez — 4°C Electromecánico) |
+| PARENT | `98765432` | `Parent123!` (Roberto Romero) |
 
 ---
 
@@ -548,11 +440,11 @@ app:
 - **Refresh token** — larga duración, almacenado hasheado en BD, rotación en cada uso
 - **Confirmation token** — JWT de 48h para activación de cuenta teacher
 - **Blacklist** — access tokens revocados hasta expiración
+- **Rate limiting** — Bucket4j in-memory por IP en endpoints de auth
 - **Roles** — `ADMIN`, `TEACHER`, `STUDENT`, `PARENT`, `STAFF`
-- **Password inicial estudiante** — `{DNI}Ipet132!`
-- **Password teacher/padre** — aleatorio seguro (enviado por email)
-- **Activación teacher** — link en email con JWT CONFIRMATION (48h) + `AccountActivatedEvent` desacoplado
+- **Ownership check** — TEACHER solo modifica/elimina su propio material didáctico
 - **ProblemDetail** — respuestas de error estandarizadas (RFC 9457)
+- **Archivos** — almacenados en OCI Object Storage privado, acceso via presigned URLs
 
 ---
 
@@ -560,15 +452,16 @@ app:
 
 Tests unitarios implementados con JUnit 5 + Mockito + AssertJ.
 
-**Ruta:** `src/test/java/org/school/management/`
-
 | Test | Módulo | Tests |
 |------|--------|-------|
+| `ActivateAccountUseCaseTest` | auth | 5 |
+| `TeacherAccountActivatedListenerTest` | teachers | 3 |
 | `GetTeacherByIdUseCaseTest` | teachers | 3 |
 | `CreateTeacherUseCaseTest` | teachers | 4 |
 | `UpdateTeacherUseCaseTest` | teachers | 4 |
 | `CreateParentUseCaseTest` | parents | 5 |
 | `LinkParentToStudentUseCaseTest` | parents | 6 |
+| `CreateStudentUseCaseTest` | students | 10 |
 | `CreateEvaluationUseCaseTest` | grades | 3 |
 | `GradeEvaluationUseCaseTest` | grades | 4 |
 | `ValidateEvaluationUseCaseTest` | grades | 4 |
@@ -582,12 +475,7 @@ Tests unitarios implementados con JUnit 5 + Mockito + AssertJ.
 | `JustifyAbsenceUseCaseTest` | attendance | 5 |
 | `CorrectAttendanceUseCaseTest` | attendance | 4 |
 | `GetAtRiskStudentsUseCaseTest` | attendance | 3 |
-| **Total** | | **80** |
-
-```bash
-mvn test -Dgroups="unit"      # ejecutar solo unit tests
-mvn test jacoco:report         # reporte de cobertura
-```
+| **Total** | | **98** |
 
 ---
 
@@ -595,26 +483,27 @@ mvn test jacoco:report         # reporte de cobertura
 
 ### ✅ Implementado
 
-- Auth, Geography, Academic completos + **refactor de fronteras del BC `auth/`**
+- Auth, Geography, Academic completos + refactor de fronteras del BC `auth/`
 - `shared/email/` — EmailService + JavaMailEmailService (OCI SMTP) + AsyncConfig
-- `shared/event/` — DomainEvent, AccountActivatedEvent, DomainEventPublisher + SpringDomainEventPublisher
-- **`students/` — COMPLETO** — 5 agregados de punta a punta
-- **`teachers/` — COMPLETO** — domain + application + infrastructure + flujo activación via eventos
+- `shared/event/` — DomainEvent, AccountActivatedEvent, DomainEventPublisher
+- **`students/` — COMPLETO** — 5 agregados + upload de documentos a OCI
+- **`teachers/` — COMPLETO** — flujo activación via eventos de dominio
 - **`parents/` — COMPLETO** — cuil obligatorio, placeId consistente
-- **`grades/` — COMPLETO** — domain + application + infrastructure + 7 endpoints + seeder + 19 tests
-- **`course/` — COMPLETO** — domain + application + infrastructure + 5 endpoints + seeder + 9 tests
-- **`attendance/` — COMPLETO** — domain + application + infrastructure + 7 endpoints + V21 + 30 tests
-- **Flujo activación teacher** — JWT 48h, email con link, `AccountActivatedEvent`, `TeacherAccountActivatedListener`
-- **Seeders dev** — Academic, Course, Grades, Teacher (3 docentes), StudentAndParent (4 alumnos + 4 padres)
-- **80 tests unitarios** — teachers (11), parents (11), grades (19), course (9), attendance (30)
-- Flyway V1–V7, V10–V15, V17, V19, V20, V21
+- **`grades/` — COMPLETO** — 7 endpoints + seeder
+- **`course/` — COMPLETO** — 5 endpoints + seeder
+- **`attendance/` — COMPLETO** — 7 endpoints + V21
+- **`storage/` — COMPLETO** — OCI Object Storage, puerto + adaptador
+- **`teaching-materials/` — COMPLETO** — 5 endpoints, upload OCI, ownership check, V22
+- **Rate Limiting** — Bucket4j in-memory, 3 endpoints protegidos, configurable por perfil
+- **98 tests unitarios**
+- Flyway V1–V7, V10–V15, V17, V19, V20, V21, V22
 
 ### ⏳ Pendiente
 
-- [ ] `ActivateAccountUseCaseTest` — 5 casos (token inválido, user no encontrado, happy path, verifica evento publicado)
-- [ ] `TeacherAccountActivatedListenerTest` — 3 casos (rol teacher, otro rol ignorado, teacher no encontrado)
-- [ ] Tests unitarios para `CreateStudentUseCase` (15 pasos)
-- [ ] Rate limiting, auditoría, métricas
+- [ ] Crear bucket OCI (`ipet132-documents`) y configurar variables de entorno OCI en `.env`
+- [ ] Probar endpoints de upload con bucket real (records + materials)
+- [ ] Auditoría (registrar quién hizo qué y cuándo)
+- [ ] Métricas / monitoreo
 
 ---
 
@@ -622,35 +511,23 @@ mvn test jacoco:report         # reporte de cobertura
 
 | Decisión | Razón |
 |----------|-------|
-| **`auth/` solo gestiona identidad y sesión** | Cada BC es responsable de crear y activar sus propias entidades — `auth/` no conoce teachers ni students |
-| **`CreateUserUseCase` en `auth/` — factory puro** | Recibe rol, dni, password — agnóstico del tipo de usuario — llamado por teachers/, students/, parents/ |
-| **`CreateUserRequest.active() / inactive()`** | Factory methods semánticos — students/parents activos, teachers inactivos hasta activar cuenta |
-| **Activación via eventos de dominio** | `ActivateAccountUseCase` publica `AccountActivatedEvent` — cada BC reacciona con su listener independientemente |
-| **`@TransactionalEventListener(BEFORE_COMMIT)`** | Atomicidad garantizada — si el listener falla, toda la transacción se revierte |
-| **`AccountActivatedEvent.roleName` como String** | Evita dependencia de `auth/RoleName` en `shared/` — los eventos son agnósticos del BC emisor |
-| **`DomainEventPublisher` como puerto en `shared/domain`** | Los use cases no importan Spring — el dominio permanece puro |
-| **`SecurityContextHelper` estático** | Centraliza el cast `UserDetails → User` — nunca duplicar `extractUserId()` en cada controller |
-| **`AdminController` y `UserController` eliminados** | Colisionaban con controllers de BCs — deuda técnica resuelta; cada BC expone sus propios endpoints |
-| **DTOs de create student/teacher eliminados de `auth/`** | `auth/` no crea entidades de dominio — cada BC tiene sus propios DTOs de request/response |
-| **`teachers/CreateTeacherUseCase` es el orquestador** | Genera password, llama `CreateUserUseCase`, genera token, persiste `Teacher`, envía email |
-| **`grades/` como BC separado** | Actores distintos (TEACHER vs ADMIN), frecuencia de cambio diferente |
-| **EvaluationId/TypeId/Status en `grades/`** | Pertenecen exclusivamente al dominio de calificaciones — movidos desde `academic/` |
-| **MIN_PASSING_GRADE = 7 como constante** | Regla de negocio IPET 132 — nunca hardcodear el umbral |
-| **`attendance/` como BC separado** | Actores distintos (preceptor vs profesor); volumen alto; razón de cambio diferente a course/ |
-| **AttendanceStatus con peso de falta** | Encapsula regla de negocio en el enum — ABSENT=1.0, LATE=0.2, WITHDRAWN=0.2 |
-| **MIN_ATTENDANCE_PERCENTAGE = 85** | Regla IPET 132 — constante en AttendanceSummary, nunca hardcodear |
-| **JUSTIFIED descuenta igual que ABSENT** | Regla IPET 132 — la justificación registra el motivo pero no exime la falta |
-| **atRisk = weightedAbsences/total > 0.15** | Condición estricta (>) — exactamente 15% NO es libre |
-| **recalculate() en cada carga/corrección** | Consistencia garantizada en la transacción — no on-demand |
-| **CourseStatus y SubjectEnrollmentStatus en `course/`** | Mismo patrón que EvaluationStatus → grades/; pertenecen al BC que los usa |
-| **StudentCourseSubject sin attendedClasses** | Campo no existe en BD — solo total_classes en course_subjects |
-| **Seeders resuelven place_id en runtime** | Geography usa UUIDs dinámicos — searchByName() + filter exact match |
-| **UuidBinaryConverter en shared/** | Un solo converter para todos los BCs |
-| **ProblemDetail para errores** | RFC 9457, nativo en Spring 6 |
-| **RecordNumber = DNI** | Legajo único y permanente — compatible con ministerio |
+| **`auth/` solo gestiona identidad y sesión** | Cada BC crea y activa sus propias entidades |
+| **`CreateUserUseCase` factory puro** | Agnóstico del tipo de usuario — llamado por teachers/, students/, parents/ |
+| **Activación via eventos de dominio** | `ActivateAccountUseCase` publica `AccountActivatedEvent` — cada BC reacciona independientemente |
+| **`@TransactionalEventListener(BEFORE_COMMIT)`** | Atomicidad garantizada con la transacción principal |
+| **`SecurityContextHelper` estático** | Centraliza el cast `UserDetails → User` — nunca duplicar |
+| **`storage/` como BC separado** | Razón de cambio diferente — el proveedor cloud puede cambiar sin afectar otros BCs |
+| **`StorageService` como puerto del dominio** | Los use cases no conocen OCI — solo el adaptador |
+| **Rate limiting in-memory** | Sin Redis — apropiado para despliegue en único nodo |
+| **`filePath` = objectName OCI** | Necesario para delete y presigned URLs — `fileName` guarda la URL pública |
+| **Sin FK a `teachers` en `teaching_materials`** | Evita acoplamiento entre BCs a nivel de esquema de BD |
+| **Ownership check con `null` bypass** | ADMIN/STAFF pasan `null` como teacherId — use case interpreta null como permiso total |
+| **`GET /my-courses` con query params** | El frontend ya conoce los courseSubjectIds del estudiante — no se duplica la lógica de inscripción |
+| **DNI sin dígito verificador** | El DNI argentino es correlativo — el validador fue removido para corrección |
+| **Instancia real para modelos con `final` + `@Builder`** | Mockito no puede interceptar métodos en campos `final` — construir con builder |
 
 ---
 
-**Última actualización:** Marzo 2026
-**Versión:** 7.0.0
-**Estado:** En desarrollo activo — refactor `auth/` ✅ | eventos de dominio ✅ | tests pendientes ⏳
+**Última actualización:** Abril 2026
+**Versión:** 9.0.0
+**Estado:** En desarrollo activo — teaching-materials ✅ completo

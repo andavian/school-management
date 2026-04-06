@@ -10,7 +10,7 @@
 Sistema de gestión escolar para el **IPET 132** (Argentina).
 **Stack:** Java 17 + Spring Boot 3.3.4 + Spring Security 6 + MySQL 8
 **Package raíz:** `org.school.management`
-**Estado actual:** Auth ✅ + Geography ✅ + Academic ✅ + Students ✅ + Teachers ✅ + Email Service ✅ + Grades ✅ + Course ✅ + Attendance ✅ + Rate Limiting ✅ + Storage (OCI) ✅ parcial
+**Estado actual:** Auth ✅ + Geography ✅ + Academic ✅ + Students ✅ + Teachers ✅ + Email Service ✅ + Grades ✅ + Course ✅ + Attendance ✅ + Rate Limiting ✅ + Storage (OCI) ✅ + Teaching Materials ✅
 
 ---
 
@@ -44,7 +44,7 @@ grades/              → Calificaciones ✅ COMPLETO
 course/              → Asignación profesor-materia-curso ✅ COMPLETO
 attendance/          → Asistencia diaria y por materia ✅ COMPLETO
 storage/             → Almacenamiento de archivos en OCI Object Storage ✅ COMPLETO
-teaching-materials/  → Material didáctico de profesores ⏳ PENDIENTE
+teaching-materials/  → Material didáctico de profesores ✅ COMPLETO
 ```
 
 **Regla:** Un bounded context **no importa clases completas de otro**.
@@ -394,9 +394,10 @@ public class TeacherExceptionHandler {
 
 **Códigos HTTP estándar del proyecto:**
 - `404` → `*NotFoundException`
+- `403` → `*AccessDeniedException` (ownership check — distinto del 401 de Spring Security)
 - `409` → `*AlreadyExistsException`, `DuplicatePrimaryContactException`
 - `422` → `Invalid*Exception`, `IllegalArgumentException` del dominio
-- `500` → `IllegalStateException` (estado inválido del sistema)
+- `500` → `IllegalStateException` (estado inválido del sistema, errores de storage)
 
 ---
 
@@ -600,17 +601,6 @@ grades/
     └── seeder/       GradesDataSeeder (@Profile("dev"), @Order(10))
 ```
 
-**Endpoints grades:**
-| Método | Path | Rol | Descripción |
-|--------|------|-----|-------------|
-| POST | `/api/grades/evaluations` | TEACHER | Crear evaluación |
-| PATCH | `/api/grades/evaluations/{id}/grade` | TEACHER | Cargar nota |
-| PATCH | `/api/grades/evaluations/{id}/validate` | ADMIN, STAFF | Validar evaluación |
-| POST | `/api/grades/period-grades/calculate` | ADMIN, STAFF | Calcular nota de período |
-| POST | `/api/grades/final-grades/exam` | ADMIN, STAFF | Asentar nota de examen/coloquio |
-| POST | `/api/grades/final-grades/calculate` | ADMIN, STAFF | Calcular nota final |
-| PATCH | `/api/grades/final-grades/{id}/registry` | ADMIN | Registrar en libro matriz |
-
 ### `course/` ✅ COMPLETO
 
 ```
@@ -631,15 +621,6 @@ course/
     ├── web/          CourseWebDto, CourseWebMapper, CourseController (5 endpoints), CourseExceptionHandler
     └── seeder/       CourseDataSeeder (@Profile("dev"), @Order(6))
 ```
-
-**Endpoints course:**
-| Método | Path | Rol | Descripción |
-|--------|------|-----|-------------|
-| POST | `/api/courses/course-subjects` | ADMIN, STAFF | Crear asignación materia-curso |
-| GET | `/api/courses/course-subjects` | ADMIN, STAFF, TEACHER | Listar por curso y año |
-| PATCH | `/api/courses/course-subjects/{id}/teacher` | ADMIN, STAFF | Asignar docente |
-| POST | `/api/courses/enrollments` | ADMIN, STAFF | Inscribir alumno a materia |
-| GET | `/api/courses/enrollments/{enrollmentId}/courses` | ADMIN, STAFF, TEACHER | Materias del alumno |
 
 ### `attendance/` ✅ COMPLETO
 
@@ -665,11 +646,6 @@ attendance/
                       AttendanceController (7 endpoints), AttendanceExceptionHandler
 ```
 
-**Reglas de negocio `attendance/`:**
-- `MIN_ATTENDANCE_PERCENTAGE = 85` — constante en `AttendanceSummary`
-- `JUSTIFIED` descuenta igual que `ABSENT` (peso 1.0) — la justificación registra el motivo
-- `atRisk = weightedAbsences/totalClasses > 0.15` — condición estricta
-
 ### `storage/` ✅ COMPLETO
 
 ```
@@ -686,25 +662,59 @@ storage/
 - Puerto en `storage/domain/service/StorageService` — sin dependencias OCI
 - Dependencias: `oci-java-sdk-objectstorage:3.43.0` + `oci-java-sdk-common:3.43.0`
 - Cliente OCI inicializado en `@PostConstruct`, cerrado en `@PreDestroy`
-- Estructura de carpetas en bucket: `records/{studentId}/{uuid}-{fileName}`, `materials/{teacherId}/{uuid}-{fileName}`
+- Estructura de carpetas en bucket: `records/{studentId}/{uuid}-{fileName}`, `materials/{teacherId}/{courseSubjectId}/{uuid}-{fileName}`
 - URL pública: `https://objectstorage.{region}.oraclecloud.com/n/{namespace}/b/{bucket}/o/{objectName}`
 - Presigned URLs via `CreatePreauthenticatedRequest` de OCI SDK
 - Variables de entorno requeridas: `OCI_TENANCY_OCID`, `OCI_USER_OCID`, `OCI_FINGERPRINT`, `OCI_PRIVATE_KEY_PATH`, `OCI_REGION`, `OCI_NAMESPACE`, `OCI_BUCKET_NAME`
 - Límite multipart: `spring.servlet.multipart.max-file-size=10MB`, `max-request-size=12MB`
 
-**Configuración `application.yml` — agregar en `app:` de cada perfil:**
-```yaml
-  storage:
-    oci:
-      tenancy-ocid: ${OCI_TENANCY_OCID}
-      user-ocid: ${OCI_USER_OCID}
-      fingerprint: ${OCI_FINGERPRINT}
-      private-key-path: ${OCI_PRIVATE_KEY_PATH}
-      region: ${OCI_REGION}
-      namespace: ${OCI_NAMESPACE}
-      bucket-name: ${OCI_BUCKET_NAME}
-      max-file-size-mb: 10
+### `teaching-materials/` ✅ COMPLETO
+
 ```
+teaching-materials/
+├── domain/
+│   ├── model/       TeachingMaterial
+│   │                — create(...) factory method con validaciones
+│   │                — updateMetadata(title, description, type, visible)
+│   │                — makeVisible(), hide()
+│   │                — belongsToTeacher(TeacherId) → boolean
+│   ├── valueobject/ TeachingMaterialId, MaterialType (APUNTE, EJERCICIO, EXAMEN, GUIA, VIDEO, OTRO)
+│   ├── repository/  TeachingMaterialRepository
+│   └── exception/   TeachingMaterialNotFoundException (byId)
+│                    TeachingMaterialAccessDeniedException (notOwner)
+├── application/
+│   ├── dto/request/ UploadMaterialRequest, UpdateMaterialRequest (PATCH semántico)
+│   ├── dto/response/TeachingMaterialResponse
+│   ├── mapper/      TeachingMaterialApplicationMapper
+│   └── usecases/    UploadTeachingMaterialUseCase   ← TEACHER
+│                    GetMaterialsByCourseUseCase      ← TEACHER, ADMIN, STAFF
+│                    GetMaterialsForStudentUseCase    ← STUDENT (filtra visibleToStudents)
+│                    UpdateMaterialUseCase            ← TEACHER (propio), ADMIN/STAFF (cualquiera)
+│                    DeleteMaterialUseCase            ← TEACHER (propio), ADMIN (cualquiera)
+└── infrastructure/
+    ├── persistence/ TeachingMaterialEntity, TeachingMaterialJpaRepository,
+    │                TeachingMaterialPersistenceMapper, TeachingMaterialRepositoryAdapter
+    └── web/         TeachingMaterialWebDto, TeachingMaterialWebMapper,
+                     TeachingMaterialController (5 endpoints), TeachingMaterialExceptionHandler
+```
+
+**Endpoints teaching-materials:**
+| Método | Path | Rol | Descripción |
+|--------|------|-----|-------------|
+| POST | `/api/materials` | TEACHER | Subir material (multipart/form-data) |
+| GET | `/api/materials/course/{courseSubjectId}` | TEACHER, ADMIN, STAFF | Listar todos por curso |
+| GET | `/api/materials/my-courses` | STUDENT | Ver material visible de sus cursos |
+| PATCH | `/api/materials/{materialId}` | TEACHER, ADMIN, STAFF | Actualizar metadata/visibilidad |
+| DELETE | `/api/materials/{materialId}` | TEACHER, ADMIN | Eliminar (OCI + BD) |
+
+**Decisiones clave `teaching-materials/`:**
+- `filePath` guarda el `objectName` de OCI (para delete/presigned), `fileName` guarda la URL pública — mismo patrón que `records/`
+- Carpeta OCI: `materials/{teacherId}/{courseSubjectId}/{uuid}-{fileName}`
+- Sin FK a `teachers` en BD — evita acoplamiento entre BCs a nivel de esquema
+- Ownership check en Update/Delete: `teacherId = null` para ADMIN/STAFF (bypass), valor real para TEACHER
+- `GET /my-courses` recibe `courseSubjectIds` como query params — el frontend los obtiene previamente vía `GET /api/courses/enrollments/{enrollmentId}/courses`
+- `DeleteMaterialUseCase` falla fuerte si OCI falla — no quedan registros huérfanos en BD
+- `UpdateMaterialUseCase` no permite cambiar el archivo — solo metadata y visibilidad
 
 ---
 
@@ -741,6 +751,7 @@ storage/
 - **Tipos MIME permitidos para upload:** `application/pdf`, `image/jpeg`, `image/png` — máx 10 MB.
 - **En tests usar CUILs válidos:** calcular con pesos `[5,4,3,2,7,6,5,4,3,2]` — ejemplos: DNI `12345678` → CUIL `20123456786`, DNI `87654321` → CUIL `20876543215`.
 - **En tests, modelos con campos `final` y `@Builder` de Lombok** (como `Parent`) → construir instancia real con builder, no mockear.
+- **Ownership check en teaching-materials:** pasar `null` como `teacherId` para ADMIN/STAFF bypass, UUID real para TEACHER.
 
 ### ❌ Nunca hacer
 
@@ -769,6 +780,7 @@ storage/
 - **Nunca acceder al SDK de OCI directamente** desde use cases o dominio — usar el puerto `StorageService`.
 - **Nunca asumir que un DNI tiene dígito verificador** — el DNI argentino es correlativo.
 - **Nunca mockear con `mock()` clases con campos `final` y `@Builder`** — construir instancia real.
+- **Nunca agregar FK a `teachers`** desde tablas de otros BCs — usar solo el `teacher_id` UUID.
 
 ### 🧩 Al crear un nuevo Bounded Context
 
@@ -837,9 +849,9 @@ class CreateStudentUseCaseTest {
 | V19 | `countries`, `provinces` — datos Argentina (seed SQL) |
 | V20 | `places` — localidades Argentina (seed SQL) |
 | V21 | `attendance_daily_records`, `attendance_course_records`, `attendance_period_summaries` |
-| V22 | `teaching_materials` ⏳ PENDIENTE |
+| V22 | `teaching_materials` ✅ |
 
-**Próxima migración disponible: V22**
+**Próxima migración disponible: V23**
 
 ---
 
@@ -877,102 +889,26 @@ docker run -p 1025:1025 -p 8025:8025 mailhog/mailhog
 
 ## ⏳ Estado del Proyecto
 
-### ✅ Completado en esta sesión
+### ✅ Completado
 
-- **Tests unitarios** — 98 tests totales:
-    - `ActivateAccountUseCaseTest` (5 casos) — token inválido, user no encontrado, happy path, datos del evento, invariante arquitectónica
-    - `TeacherAccountActivatedListenerTest` (3 casos) — ROLE_TEACHER, otro rol ignorado, teacher no encontrado
-    - `CreateStudentUseCaseTest` (10 casos) — DNI/CUIL duplicado, sin año académico, GradeLevel inactivo/no encontrado, sin registry, happy path padre nuevo/existente, params del User, email silencioso
-- **`UnauthorizedException`** — movida a `auth/domain/exception/` (fix de compilación)
-- **`Dni.java`** — eliminada validación de dígito verificador (el DNI argentino es correlativo)
-- **Rate Limiting** — Bucket4j in-memory, por IP, 3 endpoints protegidos, configurable por perfil
-- **`storage/` BC** — puerto `StorageService`, VO `UploadedFile`, adaptador OCI (`OciObjectStorageService`), propiedades `OciStorageProperties`
-- **`UploadRecordDocumentUseCase`** — subida de documentos al legajo via OCI, validación MIME/tamaño, atómico con BD
-- **`RecordDocumentRepository`** — puerto + adaptador implementados
-- **`RecordController`** actualizado — nuevo endpoint `POST /{recordId}/upload` (multipart)
+- Auth, Geography, Academic completos + refactor de fronteras del BC `auth/`
+- `shared/email/` — EmailService + JavaMailEmailService (OCI SMTP) + AsyncConfig
+- `shared/event/` — DomainEvent, AccountActivatedEvent, DomainEventPublisher
+- **`students/` — COMPLETO** — 5 agregados + upload de documentos a OCI
+- **`teachers/` — COMPLETO** — flujo activación via eventos de dominio
+- **`parents/` — COMPLETO** — cuil obligatorio, placeId consistente
+- **`grades/` — COMPLETO** — 7 endpoints + seeder
+- **`course/` — COMPLETO** — 5 endpoints + seeder
+- **`attendance/` — COMPLETO** — 7 endpoints + V21
+- **`storage/` — COMPLETO** — OCI Object Storage, puerto + adaptador
+- **`teaching-materials/` — COMPLETO** — 5 endpoints, upload OCI, ownership check, V22
+- **Rate Limiting** — Bucket4j in-memory, 3 endpoints protegidos, configurable por perfil
+- **98 tests unitarios** — auth (8), teachers (11), parents (11), students (10), grades (19), course (9), attendance (30)
+- Flyway V1–V7, V10–V15, V17, V19, V20, V21, V22
 
 ### ⏳ Pendiente
 
 - [ ] Crear bucket OCI (`ipet132-documents`) y configurar variables de entorno OCI en `.env`
-- [ ] Probar endpoint de upload con bucket real
-- [ ] **`teaching-materials/` BC** — material didáctico de profesores ← **PRÓXIMO**
+- [ ] Probar endpoints de upload con bucket real (records + materials)
 - [ ] Auditoría (registrar quién hizo qué y cuándo)
 - [ ] Métricas / monitoreo
-
-### 🎯 Próximo BC: `teaching-materials/`
-
-**Decisiones de diseño acordadas:**
-- Asociación principal a `CourseSubject`, con `subjectId` y `academicYearId` desnormalizados para búsquedas
-- Visibilidad: flag simple `isVisibleToStudents: boolean` (no estados)
-- Tipos: enum fijo `APUNTE, EJERCICIO, EXAMEN, GUIA, VIDEO, OTRO`
-- Almacenamiento en OCI: carpeta `materials/{teacherId}/{courseSubjectId}/{uuid}-{fileName}`
-- Tipos permitidos: PDF, JPG, PNG — máx 10 MB
-- Roles: TEACHER sube/gestiona su propio material; ADMIN/STAFF ve todo; STUDENT solo ve `isVisibleToStudents=true` de sus cursos
-
-**Estructura planificada:**
-```
-teaching-materials/
-├── domain/
-│   ├── model/TeachingMaterial.java
-│   ├── valueobject/TeachingMaterialId.java, MaterialType.java (enum)
-│   ├── repository/TeachingMaterialRepository.java
-│   └── exception/TeachingMaterialNotFoundException.java
-├── application/
-│   ├── dto/request/UploadMaterialRequest.java, UpdateMaterialRequest.java
-│   ├── dto/response/TeachingMaterialResponse.java
-│   ├── mapper/TeachingMaterialApplicationMapper.java
-│   └── usecases/
-│       ├── UploadTeachingMaterialUseCase.java   ← TEACHER
-│       ├── GetMaterialsByCourseUseCase.java     ← TEACHER, ADMIN, STAFF
-│       ├── GetMaterialsForStudentUseCase.java   ← STUDENT (filtra isVisibleToStudents)
-│       ├── UpdateMaterialUseCase.java           ← TEACHER (solo su propio material)
-│       └── DeleteMaterialUseCase.java           ← TEACHER, ADMIN
-└── infrastructure/
-    ├── persistence/  TeachingMaterialEntity + JpaRepository + Adapter + PersistenceMapper
-    ├── web/          TeachingMaterialWebDto, WebMapper, TeachingMaterialController (5 endpoints)
-    └── (sin seeder — el material lo crean los profesores)
-```
-
-**Migración V22:**
-```sql
-CREATE TABLE teaching_materials (
-    material_id         BINARY(16) PRIMARY KEY,
-    teacher_id          BINARY(16) NOT NULL,
-    course_subject_id   BINARY(16) NOT NULL,
-    subject_id          BINARY(16) NOT NULL,        -- desnormalizado para búsquedas
-    academic_year_id    BINARY(16) NOT NULL,         -- desnormalizado para búsquedas
-    title               VARCHAR(200) NOT NULL,
-    description         TEXT,
-    material_type       VARCHAR(20) NOT NULL,        -- APUNTE, EJERCICIO, EXAMEN, GUIA, VIDEO, OTRO
-    file_path           VARCHAR(500) NOT NULL,       -- objectName en OCI
-    file_name           VARCHAR(255) NOT NULL,       -- URL pública en OCI
-    file_size_bytes     BIGINT NOT NULL,
-    mime_type           VARCHAR(100) NOT NULL,
-    is_visible_to_students BOOLEAN NOT NULL DEFAULT FALSE,
-    created_at          TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at          TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    FOREIGN KEY (course_subject_id) REFERENCES course_subjects(course_subject_id) ON DELETE RESTRICT,
-    FOREIGN KEY (academic_year_id) REFERENCES academic_years(academic_year_id) ON DELETE RESTRICT,
-    INDEX idx_course_subject (course_subject_id),
-    INDEX idx_teacher (teacher_id),
-    INDEX idx_subject_year (subject_id, academic_year_id),
-    INDEX idx_visible (is_visible_to_students)
-);
-```
-
-**Endpoints planificados:**
-| Método | Path | Rol | Descripción |
-|--------|------|-----|-------------|
-| POST | `/api/materials` | TEACHER | Subir material (multipart) |
-| GET | `/api/materials/course/{courseSubjectId}` | TEACHER, ADMIN, STAFF | Listar por curso |
-| GET | `/api/materials/my-courses` | STUDENT | Ver material visible de sus cursos |
-| PATCH | `/api/materials/{materialId}` | TEACHER | Actualizar metadata/visibilidad |
-| DELETE | `/api/materials/{materialId}` | TEACHER, ADMIN | Eliminar (OCI + BD) |
-
-**IDs que se cruzan solo como UUID (no clases completas):**
-```java
-CourseSubjectId  → course/
-SubjectId        → academic/
-AcademicYearId   → academic/
-TeacherId        → teachers/
-```
