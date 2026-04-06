@@ -1,6 +1,7 @@
 package org.school.management.teachers.infrastructure.persistence.adapter;
 
 import lombok.RequiredArgsConstructor;
+import org.school.management.auth.domain.valueobject.UserId;
 import org.school.management.shared.person.domain.valueobject.Dni;
 import org.school.management.teachers.domain.model.Teacher;
 import org.school.management.teachers.domain.repository.TeacherRepository;
@@ -12,6 +13,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Component
@@ -67,4 +69,12 @@ public class TeacherRepositoryAdapter implements TeacherRepository {
                 .map(mapper::toDomain)
                 .collect(Collectors.toList());
     }
+
+    @Override
+    public Optional<TeacherId> findTeacherIdByUserId(UserId userId) {
+             return jpaRepository.findByUserId(userId.value())
+                .map(entity -> TeacherId.from(entity.getTeacherId()));
+    }
+
+
 }

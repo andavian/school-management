@@ -16,4 +16,6 @@ public interface TeacherJpaRepository extends JpaRepository<TeacherEntity, UUID>
     boolean existsByCuil(String cuil);
 
     List<TeacherEntity> findByLastNameContainingIgnoreCase(String lastName);
+
+    Optional<TeacherEntity> findByUserId(UUID userId);
 }

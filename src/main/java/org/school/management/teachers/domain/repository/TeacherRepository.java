@@ -1,11 +1,13 @@
 package org.school.management.teachers.domain.repository;
 
+import org.school.management.auth.domain.valueobject.UserId;
 import org.school.management.shared.person.domain.valueobject.Dni;
 import org.school.management.teachers.domain.model.Teacher;
 import org.school.management.teachers.domain.valueobject.TeacherId;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 /**
  * Puerto del dominio — nunca importar JPA ni Spring aquí.
@@ -26,4 +28,8 @@ public interface TeacherRepository {
     Teacher save(Teacher teacher);
 
     List<Teacher> findAll();
+
+    Optional<TeacherId> findTeacherIdByUserId(UserId userId);
+
+
 }
