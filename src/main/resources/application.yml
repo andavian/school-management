@@ -15,7 +15,7 @@ spring:
       on-profile: dev
 
   datasource:
-    url: jdbc:mysql://${DB_HOST}:${DB_PORT}/${DB_NAME}?useSSL=false&serverTimezone=America/Argentina/Buenos_Aires
+    url: ${DB_URL}&serverTimezone=America/Argentina/Buenos_Aires
     username: ${DB_USER}
     password: ${DB_PASSWORD}
     driver-class-name: com.mysql.cj.jdbc.Driver
