@@ -11,7 +11,6 @@ import org.school.management.resources.domain.repository.ReservationRepository;
 import org.school.management.resources.domain.repository.ResourceUnitRepository;
 import org.school.management.resources.domain.valueobject.ReservationId;
 import org.school.management.resources.domain.valueobject.ReservationStatus;
-import org.school.management.auth.domain.valueobject.UserId;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,43 +19,42 @@ import java.util.UUID;
 @Service
 @RequiredArgsConstructor
 @Slf4j
-public class CancelReservationUseCase {
+public class ReturnReservationUseCase {
 
     private final ReservationRepository reservationRepository;
     private final ResourceUnitRepository resourceUnitRepository;
     private final ResourceApplicationMapper mapper;
 
     /**
-     * Cancela una reserva CONFIRMED y libera las unidades asignadas.
-     * Solo aplicable antes de que la reserva pase a IN_USE.
+     * Registra la devolución de recursos reservados.
+     * Transición: IN_USE → RETURNED
+     * Libera las unidades físicas asignadas (IN_USE → AVAILABLE).
      */
     @Transactional
-    public ReservationResponse execute(UUID reservationUuid, UUID actorId, String reason) {
+    public ReservationResponse execute(UUID reservationUuid, String observations) {
         Reservation reservation = reservationRepository.findByReservationId(ReservationId.from(reservationUuid))
                 .orElseThrow(() -> new IllegalArgumentException("Reserva no encontrada: " + reservationUuid));
 
-        if (!reservation.getStatus().isCancelable()) {
+        if (reservation.getStatus() != ReservationStatus.IN_USE) {
             throw InvalidReservationStateException.invalidTransition(
-                    reservation.getReservationId(), reservation.getStatus(), "cancel");
+                    reservation.getReservationId(), reservation.getStatus(), "return");
         }
 
-        // Liberar unidades físicas asignadas (volver a AVAILABLE)
+        // Liberar unidades físicas y registrar devolución
         for (var assignedUnit : reservation.getAssignedUnits()) {
             ResourceUnit unit = resourceUnitRepository.findByUnitId(assignedUnit.getUnitId())
                     .orElseThrow(() -> new IllegalStateException("Unidad física no encontrada: " + assignedUnit.getUnitId()));
 
-            // Solo liberar si aún está en IN_USE por esta reserva
             if (unit.getUnitStatus() == org.school.management.resources.domain.valueobject.UnitStatus.IN_USE) {
                 unit.returnFromReservation();
                 resourceUnitRepository.save(unit);
             }
         }
 
-        // Cancelar la reserva
-        reservation.cancel(UserId.of(actorId), reason);
+        reservation.markAsReturned(observations);
         Reservation saved = reservationRepository.save(reservation);
 
-        log.info("Reserva {} cancelada por actor {} - Motivo: {}", reservationUuid, actorId, reason);
+        log.info("Reserva {} devuelta exitosamente - Observaciones: {}", reservationUuid, observations);
         return mapper.toReservationResponse(saved);
     }
 }

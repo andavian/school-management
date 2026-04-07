@@ -1,23 +1,16 @@
-// ResourceResponse.java
 package org.school.management.resources.application.dto.response;
 
-import org.school.management.resources.domain.valueobject.ResourceId;
-import org.school.management.resources.domain.valueobject.ResourceStatus;
 import org.school.management.resources.domain.valueobject.ResourceType;
-
-import java.time.LocalDateTime;
+import java.util.UUID;
 
 public record ResourceResponse(
-        ResourceId resourceId,
+        UUID resourceId,
         String name,
-        String description,
+        String code,
         ResourceType resourceType,
-        ResourceStatus status,
+        String description,
         String location,
-        LocalDateTime createdAt,
-        LocalDateTime updatedAt
+        boolean reservable,
+        String notes,
+        boolean active
 ) {}
-
-
-
-
