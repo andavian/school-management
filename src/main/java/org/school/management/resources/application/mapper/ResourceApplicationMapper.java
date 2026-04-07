@@ -6,8 +6,10 @@ import org.mapstruct.NullValuePropertyMappingStrategy;
 import org.school.management.resources.application.dto.request.CreateReservationRequest;
 import org.school.management.resources.application.dto.response.ReservationResponse;
 import org.school.management.resources.application.dto.response.ResourceResponse;
+import org.school.management.resources.application.dto.response.ResourceUnitResponse;
 import org.school.management.resources.domain.model.Reservation;
 import org.school.management.resources.domain.model.Resource;
+import org.school.management.resources.domain.model.ResourceUnit;
 import org.school.management.resources.domain.valueobject.ResourceId;
 import org.school.management.auth.domain.valueobject.UserId;
 
@@ -26,6 +28,10 @@ public interface ResourceApplicationMapper {
     @Mapping(target = "requesterId", expression = "java(reservation.getRequesterId().value().toString())")
     @Mapping(target = "resourceCode", ignore = true) // Se inyecta desde el UseCase si es necesario
     ReservationResponse toReservationResponse(Reservation reservation);
+
+    @Mapping(target = "unitId", expression = "java(unit.getUnitId().value())")
+    @Mapping(target = "resourceId", expression = "java(unit.getResourceId().value())")
+    ResourceUnitResponse toResourceUnitResponse(ResourceUnit unit);
 
     // ─── Request → Domain helpers (para campos simples) ──────────
     default ResourceId toResourceId(UUID uuid) {
