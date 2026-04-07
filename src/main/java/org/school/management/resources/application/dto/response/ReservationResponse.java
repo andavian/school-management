@@ -1,19 +1,23 @@
 package org.school.management.resources.application.dto.response;
 
-import org.school.management.resources.domain.valueobject.ReservationId;
-import org.school.management.resources.domain.valueobject.ResourceId;
-import org.school.management.teachers.domain.valueobject.TeacherId;
-
+import org.school.management.resources.domain.valueobject.ReservationStatus;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 
 public record ReservationResponse(
-        ReservationId reservationId,
-        ResourceId resourceId,
-        TeacherId teacherId,
-        LocalDateTime startTime,
-        LocalDateTime endTime,
+        String reservationId,
+        String resourceId,
+        String resourceCode,
+        String requesterId,
+        String requesterName,
+        LocalDate reservationDate,
+        LocalTime startTime,
+        LocalTime endTime,
+        int quantityRequested,
         String purpose,
+        String gradeLevelInfo,
+        ReservationStatus status,
         LocalDateTime createdAt,
-        LocalDateTime cancelledAt
-) {
-}
+        LocalDateTime updatedAt
+) {}

@@ -2,26 +2,37 @@ package org.school.management.resources.application.mapper;
 
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
-import org.mapstruct.MappingTarget;
-import org.school.management.resources.application.dto.request.CreateResourceRequest;
-import org.school.management.resources.application.dto.request.UpdateResourceRequest;
-import org.school.management.resources.application.dto.response.ResourceResponse;
+import org.mapstruct.NullValuePropertyMappingStrategy;
+import org.school.management.resources.application.dto.request.CreateReservationRequest;
 import org.school.management.resources.application.dto.response.ReservationResponse;
-import org.school.management.resources.domain.model.Resource;
+import org.school.management.resources.application.dto.response.ResourceResponse;
 import org.school.management.resources.domain.model.Reservation;
+import org.school.management.resources.domain.model.Resource;
+import org.school.management.resources.domain.valueobject.ResourceId;
+import org.school.management.auth.domain.valueobject.UserId;
 
-@Mapper(componentModel = "spring")
+import java.util.UUID;
+
+@Mapper(componentModel = "spring", nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
 public interface ResourceApplicationMapper {
 
-    @Mapping(target = "resourceId", ignore = true)
-    @Mapping(target = "status", ignore = true)
-    @Mapping(target = "createdAt", ignore = true)
-    @Mapping(target = "updatedAt", ignore = true)
-    Resource toDomain(CreateResourceRequest request);
+    // ─── Resource: Domain → Response ─────────────────────────────
+    @Mapping(target = "resourceId", expression = "java(resource.getResourceId().value().toString())")
+    ResourceResponse toResourceResponse(Resource resource);
 
-    void updateDomain(UpdateResourceRequest request, @MappingTarget Resource resource);
+    // ─── Reservation: Domain → Response ──────────────────────────
+    @Mapping(target = "reservationId", expression = "java(reservation.getReservationId().value().toString())")
+    @Mapping(target = "resourceId", expression = "java(reservation.getResourceId().value().toString())")
+    @Mapping(target = "requesterId", expression = "java(reservation.getRequesterId().value().toString())")
+    @Mapping(target = "resourceCode", ignore = true) // Se inyecta desde el UseCase si es necesario
+    ReservationResponse toReservationResponse(Reservation reservation);
 
-    ResourceResponse toResponse(Resource resource);
+    // ─── Request → Domain helpers (para campos simples) ──────────
+    default ResourceId toResourceId(UUID uuid) {
+        return uuid != null ? ResourceId.of(uuid) : null;
+    }
 
-    ReservationResponse toResponse(Reservation reservation);
+    default UserId toUserId(UUID uuid) {
+        return uuid != null ? UserId.of(uuid) : null;
+    }
 }
