@@ -3,12 +3,14 @@ package org.school.management.resources.domain.model;
 import lombok.Builder;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
-import org.school.management.resources.domain.valueobject.ReservationId;
-import org.school.management.resources.domain.valueobject.ResourceId;
-import org.school.management.teachers.domain.valueobject.TeacherId;
+import org.school.management.auth.domain.valueobject.UserId;
+import org.school.management.resources.domain.valueobject.*;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.DayOfWeek;
+import java.time.LocalTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Getter
 @Builder
@@ -18,56 +20,126 @@ public class Reservation {
     @EqualsAndHashCode.Include
     private final ReservationId reservationId;
     private final ResourceId resourceId;
-    private final TeacherId teacherId;
-    private final LocalDateTime startTime;
-    private final LocalDateTime endTime;
+    private final UserId requesterId;
+    private final String requesterName;
+
+    private final LocalDate reservationDate;
+    private final LocalTime startTime;
+    private final LocalTime endTime;
+
+    private final int quantityRequested;
     private final String purpose;
-    private final LocalDateTime createdAt;
-    private LocalDateTime cancelledAt;
+    private final String gradeLevelInfo;
 
-    public static Reservation create(ResourceId resourceId, TeacherId teacherId,
-                                     LocalDateTime start, LocalDateTime end, String purpose) {
+    private ReservationStatus status;
+    private String cancellationReason;
+    private UserId cancelledBy;
+    private String returnObservations;
+    private LocalDateTime returnedAt;
+
+    @Builder.Default
+    private final List<ReservationUnit> assignedUnits = new ArrayList<>();
+
+    private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
+
+    public static Reservation create(ResourceId resourceId, UserId requesterId, String requesterName,
+                                     LocalDate reservationDate, LocalTime startTime, LocalTime endTime,
+                                     int quantityRequested, String purpose, String gradeLevelInfo) {
         if (resourceId == null) throw new IllegalArgumentException("ResourceId is required");
-        if (teacherId == null) throw new IllegalArgumentException("TeacherId is required");
-        if (start == null || end == null) throw new IllegalArgumentException("Start and end times are required");
-        if (start.isAfter(end)) throw new IllegalArgumentException("Start time must be before end time");
-        if (start.isBefore(LocalDateTime.now())) throw new IllegalArgumentException("Cannot reserve in the past");
-        if (!isWithinSchoolHours(start, end)) throw new IllegalArgumentException("Reservation must be within school hours (7:45-12:45 or 13:15-18:15) on weekdays");
-        if (start.getDayOfWeek() == DayOfWeek.SATURDAY || start.getDayOfWeek() == DayOfWeek.SUNDAY)
-            throw new IllegalArgumentException("Reservations are not allowed on weekends");
+        if (requesterId == null) throw new IllegalArgumentException("RequesterId is required");
+        if (requesterName == null || requesterName.isBlank()) throw new IllegalArgumentException("RequesterName is required");
+        if (reservationDate == null) throw new IllegalArgumentException("ReservationDate is required");
+        if (startTime == null || endTime == null) throw new IllegalArgumentException("Time range is required");
+        if (!endTime.isAfter(startTime)) throw new IllegalArgumentException("End time must be after start time");
+        if (quantityRequested < 1) throw new IllegalArgumentException("Quantity must be at least 1");
+        if (purpose == null || purpose.isBlank()) throw new IllegalArgumentException("Purpose is required");
 
+        LocalDateTime now = LocalDateTime.now();
         return Reservation.builder()
                 .reservationId(ReservationId.generate())
                 .resourceId(resourceId)
-                .teacherId(teacherId)
-                .startTime(start)
-                .endTime(end)
-                .purpose(purpose)
-                .createdAt(LocalDateTime.now())
-                .cancelledAt(null)
+                .requesterId(requesterId)
+                .requesterName(requesterName.trim())
+                .reservationDate(reservationDate)
+                .startTime(startTime)
+                .endTime(endTime)
+                .quantityRequested(quantityRequested)
+                .purpose(purpose.trim())
+                .gradeLevelInfo(gradeLevelInfo != null ? gradeLevelInfo.trim() : null)
+                .status(ReservationStatus.CONFIRMED)
+                .createdAt(now)
+                .updatedAt(now)
                 .build();
     }
 
-    public void cancel() {
-        if (cancelledAt != null) throw new IllegalStateException("Reservation already cancelled");
-        this.cancelledAt = LocalDateTime.now();
+    // ─── Lifecycle Transitions ─────────────────────────────────────────────
+    public void markAsInUse() {
+        assertStatusIs(ReservationStatus.CONFIRMED, "mark as IN_USE");
+        this.status = ReservationStatus.IN_USE;
+        touch();
+    }
+
+    public void markAsReturned(String observations) {
+        assertStatusIs(ReservationStatus.IN_USE, "mark as RETURNED");
+        this.status = ReservationStatus.RETURNED;
+        this.returnObservations = observations;
+        this.returnedAt = LocalDateTime.now();
+        touch();
+    }
+
+    public void cancel(UserId cancelledBy, String reason) {
+        if (!getStatus().isCancelable()) {
+            throw new IllegalStateException(
+                    String.format("Cannot cancel reservation %s: current status is %s",
+                            this.reservationId, this.status));
+        }
+        this.status = ReservationStatus.CANCELLED;
+        this.cancellationReason = reason;
+        this.cancelledBy = cancelledBy;
+        touch();
+    }
+
+    // ─── Unit Assignment (called by ReservationDomainService) ──────────────
+    public void assignUnit(ResourceUnit unit) {
+        if (this.status != ReservationStatus.CONFIRMED && this.status != ReservationStatus.IN_USE) {
+            throw new IllegalStateException("Cannot assign units to reservation in status: " + this.status);
+        }
+        if (!unit.getResourceId().equals(this.resourceId)) {
+            throw new IllegalArgumentException("Unit does not belong to the same resource type");
+        }
+        if (this.assignedUnits.size() >= this.quantityRequested) {
+            throw new IllegalStateException("Maximum quantity requested already assigned");
+        }
+        // Crear la relación ReservationUnit
+        ReservationUnit ru = ReservationUnit.create(ReservationUnitId.generate(), this.reservationId, unit.getUnitId());
+        this.assignedUnits.add(ru);
+        touch();
+    }
+
+    public boolean isFullyAssigned() {
+        return this.assignedUnits.size() >= this.quantityRequested;
+    }
+
+    public boolean overlapsWith(LocalDate otherDate, LocalTime otherStart, LocalTime otherEnd) {
+        if (!this.reservationDate.isEqual(otherDate)) return false;
+        return !this.endTime.isBefore(otherStart) && !this.startTime.isAfter(otherEnd);
+    }
+
+    // ─── Helpers ───────────────────────────────────────────────────────
+    private void assertStatusIs(ReservationStatus expected, String action) {
+        if (this.status != expected) {
+            throw new IllegalStateException(
+                    String.format("Cannot %s reservation %s: current status is %s, expected %s",
+                            action, this.reservationId, this.status, expected));
+        }
+    }
+
+    private void touch() {
+        this.updatedAt = LocalDateTime.now();
     }
 
     public boolean isActive() {
-        return cancelledAt == null;
-    }
-
-    private static boolean isWithinSchoolHours(LocalDateTime start, LocalDateTime end) {
-        int startHour = start.getHour();
-        int startMinute = start.getMinute();
-        int endHour = end.getHour();
-        int endMinute = end.getMinute();
-
-        boolean morning = (startHour > 7 || (startHour == 7 && startMinute >= 45)) && endHour < 12 ||
-                (endHour == 12 && endMinute <= 45);
-        boolean afternoon = (startHour >= 13 && startHour < 18) || (startHour == 18 && startMinute <= 15);
-        if (morning && end.isBefore(start.toLocalDate().atTime(12, 45))) return true;
-        if (afternoon && start.isAfter(start.toLocalDate().atTime(13, 15)) && end.isBefore(start.toLocalDate().atTime(18, 15))) return true;
-        return false;
+        return this.status == ReservationStatus.CONFIRMED || this.status == ReservationStatus.IN_USE;
     }
 }
