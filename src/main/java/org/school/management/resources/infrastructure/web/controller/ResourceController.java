@@ -10,6 +10,10 @@ import org.school.management.resources.application.dto.response.ResourceResponse
 import org.school.management.resources.application.dto.response.ResourceUnitResponse;
 import org.school.management.resources.application.usecases.CreateResourceUnitUseCase;
 import org.school.management.resources.application.usecases.UpdateUnitStatusUseCase;
+// import org.school.management.resources.application.usecases.CreateResourceUseCase;
+// import org.school.management.resources.application.usecases.GetResourceByIdUseCase;
+// import org.school.management.resources.application.usecases.ListResourcesUseCase;
+// import org.school.management.resources.application.usecases.UpdateResourceUseCase;
 import org.school.management.resources.infrastructure.web.dto.ResourceWebDto;
 import org.school.management.resources.infrastructure.web.mapper.ResourcesWebMapper;
 import org.springframework.http.HttpStatus;
@@ -20,26 +24,25 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
-/**
- * Controlador para la gestión del Catálogo de Recursos y sus Unidades Físicas.
- * Nota: Para el CRUD del Catálogo (CreateResource, GetResource, etc.), se asume
- * la existencia de los UseCases correspondientes (CreateResourceUseCase, etc.)
- * inyectados aquí.
- */
 @RestController
 @RequestMapping("/api/resources")
 @RequiredArgsConstructor @Slf4j @Validated
-@Tag(name = "Resources") @SecurityRequirement(name = "bearerAuth")
+@Tag(name = "Resources", description = "Gestión de catálogo de recursos didácticos y unidades físicas")
+@SecurityRequirement(name = "bearerAuth")
 public class ResourceController {
 
-    // Use Cases para Catálogo (Asumidos/Inyectados)
-    private final CreateResourceUnitUseCase createResourceUnitUseCase;
-    private final UpdateUnitStatusUseCase updateUnitStatusUseCase;
+    // Use Cases de Catálogo (pendientes de implementación trivial si no existen)
     // private final CreateResourceUseCase createResourceUseCase;
     // private final GetResourceByIdUseCase getResourceByIdUseCase;
+    // private final ListResourcesUseCase listResourcesUseCase;
+    // private final UpdateResourceUseCase updateResourceUseCase;
 
+    private final CreateResourceUnitUseCase createResourceUnitUseCase;
+    private final UpdateUnitStatusUseCase updateUnitStatusUseCase;
     private final ResourcesWebMapper webMapper;
 
     // ─── UNIDADES FÍSICAS ─────────────────────────────────────────────────
@@ -53,7 +56,6 @@ public class ResourceController {
 
         UUID actorId = SecurityContextHelper.extractUserId(userDetails);
 
-        // Mapear Web Request a App Request
         var appRequest = new org.school.management.resources.application.dto.request.CreateResourceUnitRequest(
                 resourceId, request.unitCode(), request.serialNumber(), request.conditionStatus()
         );
@@ -64,7 +66,7 @@ public class ResourceController {
 
     @PatchMapping("/units/{unitId}")
     @PreAuthorize("hasAnyRole('ADMIN', 'STAFF')")
-    public ResponseEntity<ResourceWebDto.ResourceUnitWebResponse> updateUnitStatus(
+    public ResponseEntity<ResourceWebDto.ResourceUnitWebResponse> updateUnit(
             @PathVariable UUID unitId,
             @Valid @RequestBody ResourceWebDto.UpdateUnitStatusWebRequest request) {
 
@@ -76,19 +78,20 @@ public class ResourceController {
         return ResponseEntity.ok(webMapper.toResourceUnitWebResponse(response));
     }
 
-    // ─── CATÁLOGO DE RECURSOS (Ejemplos) ─────────────────────────────────
-    // Para que este código compile, debes inyectar los Use Cases correspondientes
-    // y descomentar las llamadas.
-
+    // ─── CATÁLOGO DE RECURSOS (Estructura lista para conectar Use Cases) ─
     /*
     @PostMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'STAFF')")
-    public ResponseEntity<ResourceWebDto.ResourceWebResponse> createResource(
-            @Valid @RequestBody ResourceWebDto.CreateResourceWebRequest request,
-            @AuthenticationPrincipal UserDetails userDetails) {
-        UUID userId = SecurityContextHelper.extractUserId(userDetails);
-        ResourceResponse response = createResourceUseCase.execute(request, userId);
-        return ResponseEntity.status(HttpStatus.CREATED).body(webMapper.toResourceWebResponse(response));
-    }
+    public ResponseEntity<ResourceWebDto.ResourceWebResponse> createResource(...) { ... }
+
+    @GetMapping("/{resourceId}")
+    public ResponseEntity<ResourceWebDto.ResourceWebResponse> getResource(...) { ... }
+
+    @GetMapping
+    public ResponseEntity<List<ResourceWebDto.ResourceWebResponse>> listResources(...) { ... }
+
+    @PatchMapping("/{resourceId}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'STAFF')")
+    public ResponseEntity<ResourceWebDto.ResourceWebResponse> updateResource(...) { ... }
     */
 }
