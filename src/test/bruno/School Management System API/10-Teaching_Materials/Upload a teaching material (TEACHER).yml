@@ -13,11 +13,39 @@ http:
     data:
       - name: metadata
         type: text
-        value: ""
+        value: "{{upload_metadata}}"
       - name: file
         type: file
         value: []
   auth: inherit
+
+runtime:
+  scripts:
+    - type: before-request
+      code: |-
+        // Pre-request Script - Preparar Multipart dinámico (avanzado)
+        const fs = require('fs');
+        const path = require('path');
+
+        // Activa en bruno.json: "filesystemAccess": { "allow": true } y moduleWhitelist si usás form-data
+        const filePath = path.resolve(bru.cwd(), "test-files/material-ejemplo.pdf");
+
+        if (fs.existsSync(filePath)) {
+          // Bruno maneja multipart en UI, pero puedes modificar req.body si es necesario
+          console.log(`📁 Archivo listo: ${filePath}`);
+        } else {
+          console.error("❌ Archivo no encontrado");
+        }
+
+        // Metadata dinámico
+        const metadata = {
+          courseSubjectId: bru.getEnvVar("course_subject_id"),
+          title: `Material de prueba - ${new Date().toISOString()}`,
+          description: "Generado automáticamente por script Bruno",
+          visibleToStudents: true
+        };
+
+        bru.setVar("upload_metadata", JSON.stringify(metadata));
 
 settings:
   encodeUrl: true

@@ -1,0 +1,7 @@
+info:
+  name: 03 - Student + Parent Flow
+  type: folder
+  seq: 20
+
+request:
+  auth: inherit

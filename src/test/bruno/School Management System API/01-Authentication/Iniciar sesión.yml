@@ -22,11 +22,96 @@ runtime:
   scripts:
     - type: after-response
       code: |-
-        if (bru.response.getStatus() === 200) {
-          const token = bru.response.getBody().token;   // ajustá según tu respuesta real
-          bru.setEnvVar('jwt_token', token);
-          console.log('Token guardado automáticamente');
+        // ================================================
+        // POST-RESPONSE SCRIPT - LOGIN + REFRESH TOKEN
+        // School Management API - Bruno
+        // ================================================
+
+        if (res.status === 200 || res.status === 201) {
+            const body = res.getBody();
+
+            // Ajusta según la estructura real de tu respuesta de login
+            const accessToken = body.token || body.accessToken || body.jwt || body.data?.token;
+            const refreshToken = body.refreshToken || body.refresh_token || body.data?.refreshToken;
+
+            if (accessToken) {
+                // Guardar token principal (usado en toda la colección)
+                bru.setEnvVar("jwt_token", accessToken, { persist: true });
+                console.log("✅ Access Token guardado correctamente");
+
+                // Guardar refresh token si existe
+                if (refreshToken) {
+                    bru.setEnvVar("refresh_token", refreshToken, { persist: true });
+                    console.log("🔄 Refresh Token guardado");
+                }
+
+                // Opcional: Guardar información del usuario
+                if (body.user || body.data?.user) {
+                    const user = body.user || body.data.user;
+                    bru.setEnvVar("current_user_id", user.id || user.userId);
+                    bru.setEnvVar("current_role", user.role || "UNKNOWN");
+                }
+
+                // Mostrar resumen en consola
+                console.log(`🔐 Sesión iniciada - Rol: ${bru.getEnvVar("current_role") || "N/A"}`);
+            } 
+            else {
+                console.error("⚠️ No se encontró access token en la respuesta de login");
+            }
+        } 
+        else {
+            console.error(`❌ Login falló con código ${res.status}`);
+            console.error("Respuesta:", res.getBody());
         }
+
+        // ================================================
+        // LÓGICA DE REFRESH AUTOMÁTICO (simulada por ahora)
+        // ================================================
+
+        // Función reutilizable para refrescar token
+        bru.refreshToken = async function() {
+            console.log("🔄 Intentando refrescar token...");
+
+            // Mientras el endpoint real no exista, simulamos con un nuevo login
+            // (puedes cambiar esto cuando implementes /refresh-token)
+
+            const dni = bru.getEnvVar("test_dni") || "12345678";           // poné tu DNI de prueba
+            const password = bru.getEnvVar("test_password") || "TuPassword123";
+
+            // Crear request de refresh simulada
+            const refreshRequest = {
+                method: "POST",
+                url: "{{base_url}}/api/auth/login",
+                header: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    dni: dni,
+                    password: password
+                })
+            };
+
+            try {
+                const refreshRes = await bru.sendRequest(refreshRequest);
+                
+                if (refreshRes.status === 200) {
+                    const newBody = refreshRes.getBody();
+                    const newToken = newBody.token || newBody.accessToken;
+
+                    if (newToken) {
+                        bru.setEnvVar("jwt_token", newToken, { persist: true });
+                        console.log("✅ Token refrescado exitosamente (simulado con login)");
+                        return true;
+                    }
+                }
+                
+                console.error("❌ Falló el refresh del token");
+                return false;
+            } catch (error) {
+                console.error("Error en refresh:", error);
+                return false;
+            }
+        };
 
 settings:
   encodeUrl: true

@@ -4,3 +4,7 @@ variables:
     value: http://localhost:8080
   - name: jwt_token
     value: '""'
+  - name: current_student_id
+    value: ed000000-0000-0000-0000-000000000001   # Lucas Romero
+  - name: new_parent_id
+    value: '""'

@@ -17,7 +17,24 @@ config:
 request:
   auth:
     type: bearer
-    token: "{{token}}"
+    token: "{{jwt_token}}"
+  scripts:
+    - type: tests
+      code: |-
+        // Tests - Assertions avanzadas
+        bru.test("Status es 201 Created", () => {
+          expect(res.status).to.equal(201);
+        });
+
+        bru.test("Respuesta contiene ID", () => {
+          const body = res.getBody();
+          expect(body).to.have.property("id");
+          bru.setEnvVar("student_id", body.id);   // guarda el ID creado para siguientes requests
+        });
+
+        bru.test("Tiempo de respuesta < 800ms", () => {
+          expect(res.responseTime).to.be.lessThan(800);
+        });
 bundled: false
 extensions:
   bruno:

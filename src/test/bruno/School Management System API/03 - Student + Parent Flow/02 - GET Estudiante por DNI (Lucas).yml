@@ -1,0 +1,21 @@
+meta:
+  name: 02 - GET Estudiante por DNI (Lucas)
+  type: http
+  seq: 2
+
+get:
+  url: "{{base_url}}/api/admin/students/dni/11223344"
+
+auth:
+  type: bearer
+  token: "{{jwt_token}}"
+
+script:
+  post-response: |
+    if (res.status === 200) {
+      const body = res.getBody();
+      bru.setEnvVar("current_student_id", body.id || body.studentId);
+      console.log(`✅ Estudiante Lucas Romero encontrado - ID: ${bru.getEnvVar("current_student_id")}`);
+    } else {
+      console.error("❌ Error al obtener estudiante");
+    }
