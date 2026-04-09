@@ -1,0 +1,48 @@
+info:
+  name: Listar ciclos lectivos
+  type: http
+  seq: 3
+  tags:
+    - Academic_Years
+
+http:
+  method: GET
+  url: "{{baseUrl}}/api/admin/academic-years"
+  auth:
+    type: bearer
+    token: "{{token}}"
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+
+examples:
+  - name: 200 Response
+    description: Lista de ciclos lectivos devuelta correctamente
+    request:
+      url: "{{baseUrl}}/api/admin/academic-years"
+      method: GET
+    response:
+      status: 200
+      statusText: OK
+      headers:
+        - name: Content-Type
+          value: "*/*"
+      body:
+        type: text
+        data: |-
+          [
+            {
+              "academicYearId": "",
+              "year": 0,
+              "startDate": "",
+              "endDate": "",
+              "status": "",
+              "createdAt": "",
+              "updatedAt": ""
+            }
+          ]
+
+docs: Devuelve todos los ciclos lectivos ordenados por año descendente.

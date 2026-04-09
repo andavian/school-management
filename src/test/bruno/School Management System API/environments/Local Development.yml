@@ -1,0 +1,6 @@
+name: Local Development
+variables:
+  - name: baseUrl
+    value: http://localhost:8080
+  - name: jwt_token
+    value: '""'

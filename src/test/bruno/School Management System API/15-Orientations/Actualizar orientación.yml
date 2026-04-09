@@ -1,0 +1,185 @@
+info:
+  name: Actualizar orientación
+  type: http
+  seq: 2
+  tags:
+    - Orientations
+
+http:
+  method: PUT
+  url: "{{baseUrl}}/api/admin/orientations/:id"
+  params:
+    - name: id
+      value: ""
+      type: path
+      description: ID de la orientación a actualizar
+  body:
+    type: json
+    data: |-
+      {
+        "name": "",
+        "description": "",
+        "availableFromYear": {
+          "value": 0,
+          "displayName": "",
+          "basicCycle": false,
+          "orientedCycle": false
+        }
+      }
+  auth:
+    type: bearer
+    token: "{{token}}"
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+
+examples:
+  - name: 200 Response
+    description: Orientación actualizada
+    request:
+      url: "{{baseUrl}}/api/admin/orientations/:id"
+      method: PUT
+      params:
+        - name: id
+          value: ""
+          type: path
+          description: ID de la orientación a actualizar
+      body:
+        type: json
+        data: |-
+          {
+            "name": "",
+            "description": "",
+            "availableFromYear": {
+              "value": 0,
+              "displayName": "",
+              "basicCycle": false,
+              "orientedCycle": false
+            }
+          }
+    response:
+      status: 200
+      statusText: OK
+      headers:
+        - name: Content-Type
+          value: "*/*"
+      body:
+        type: text
+        data: |-
+          {
+            "orientationId": {
+              "value": ""
+            },
+            "name": "",
+            "code": {
+              "value": ""
+            },
+            "description": "",
+            "availableFromYear": {
+              "value": 0
+            },
+            "isActive": false,
+            "createdAt": "",
+            "updatedAt": ""
+          }
+  - name: 400 Response
+    description: Datos inválidos
+    request:
+      url: "{{baseUrl}}/api/admin/orientations/:id"
+      method: PUT
+      params:
+        - name: id
+          value: ""
+          type: path
+          description: ID de la orientación a actualizar
+      body:
+        type: json
+        data: |-
+          {
+            "name": "",
+            "description": "",
+            "availableFromYear": {
+              "value": 0,
+              "displayName": "",
+              "basicCycle": false,
+              "orientedCycle": false
+            }
+          }
+    response:
+      status: 400
+      statusText: Bad Request
+      headers:
+        - name: Content-Type
+          value: "*/*"
+      body:
+        type: text
+        data: |-
+          {
+            "orientationId": {
+              "value": ""
+            },
+            "name": "",
+            "code": {
+              "value": ""
+            },
+            "description": "",
+            "availableFromYear": {
+              "value": 0
+            },
+            "isActive": false,
+            "createdAt": "",
+            "updatedAt": ""
+          }
+  - name: 404 Response
+    description: No encontrada
+    request:
+      url: "{{baseUrl}}/api/admin/orientations/:id"
+      method: PUT
+      params:
+        - name: id
+          value: ""
+          type: path
+          description: ID de la orientación a actualizar
+      body:
+        type: json
+        data: |-
+          {
+            "name": "",
+            "description": "",
+            "availableFromYear": {
+              "value": 0,
+              "displayName": "",
+              "basicCycle": false,
+              "orientedCycle": false
+            }
+          }
+    response:
+      status: 404
+      statusText: Not Found
+      headers:
+        - name: Content-Type
+          value: "*/*"
+      body:
+        type: text
+        data: |-
+          {
+            "orientationId": {
+              "value": ""
+            },
+            "name": "",
+            "code": {
+              "value": ""
+            },
+            "description": "",
+            "availableFromYear": {
+              "value": 0
+            },
+            "isActive": false,
+            "createdAt": "",
+            "updatedAt": ""
+          }
+
+docs: Actualiza los datos de una orientación existente.

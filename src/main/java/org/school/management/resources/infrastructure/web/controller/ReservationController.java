@@ -1,3 +1,4 @@
+// src/main/java/org/school/management/resources/infrastructure/web/controller/ReservationController.java
 package org.school.management.resources.infrastructure.web.controller;
 
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -30,7 +31,9 @@ import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/resources/reservations")
-@RequiredArgsConstructor @Slf4j @Validated
+@RequiredArgsConstructor
+@Slf4j
+@Validated
 @Tag(name = "Reservations", description = "Gestión de reservas de recursos didácticos")
 @SecurityRequirement(name = "bearerAuth")
 public class ReservationController {
@@ -41,9 +44,9 @@ public class ReservationController {
     private final MarkReservationInUseUseCase markInUseUseCase;
     private final GetMyReservationsUseCase getMyReservationsUseCase;
     private final GetResourceAvailabilityUseCase availabilityUseCase;
+
     private final ResourcesWebMapper webMapper;
 
-    // ─── CREAR RESERVA ─────────────────────────────────────────────────
     @PostMapping
     @PreAuthorize("hasAnyRole('TEACHER', 'ADMIN', 'STAFF')")
     public ResponseEntity<ReservationWebDto.ReservationWebResponse> create(
@@ -51,18 +54,23 @@ public class ReservationController {
             @AuthenticationPrincipal UserDetails userDetails) {
 
         UUID userId = SecurityContextHelper.extractUserId(userDetails);
-        String requesterName = userDetails.getUsername(); // Temporal: idealmente inyectar GetProfileUseCase
+        String requesterName = userDetails.getUsername(); // Mejorar en el futuro con GetUserProfileUseCase
 
         CreateReservationRequest appRequest = new CreateReservationRequest(
-                request.resourceId(), request.reservationDate(), request.startTime(), request.endTime(),
-                request.quantityRequested(), request.purpose(), request.gradeLevelInfo()
+                request.resourceId(),
+                request.reservationDate(),
+                request.startTime(),
+                request.endTime(),
+                request.quantityRequested(),
+                request.purpose(),
+                request.gradeLevelInfo()
         );
 
         ReservationResponse response = createReservationUseCase.execute(appRequest, userId, requesterName);
-        return ResponseEntity.status(HttpStatus.CREATED).body(webMapper.toReservationWebResponse(response));
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(webMapper.toReservationWebResponse(response));
     }
 
-    // ─── MIS RESERVAS ──────────────────────────────────────────────────
     @GetMapping("/my")
     @PreAuthorize("hasAnyRole('TEACHER', 'ADMIN', 'STAFF')")
     public ResponseEntity<List<ReservationWebDto.ReservationWebResponse>> getMyReservations(
@@ -70,13 +78,14 @@ public class ReservationController {
 
         UUID userId = SecurityContextHelper.extractUserId(userDetails);
         List<ReservationResponse> responses = getMyReservationsUseCase.execute(userId);
+
         List<ReservationWebDto.ReservationWebResponse> webResponses = responses.stream()
                 .map(webMapper::toReservationWebResponse)
                 .collect(Collectors.toList());
+
         return ResponseEntity.ok(webResponses);
     }
 
-    // ─── CONSULTAR DISPONIBILIDAD ──────────────────────────────────────
     @GetMapping("/availability")
     public ResponseEntity<GetResourceAvailabilityUseCase.AvailabilityInfo> getAvailability(
             @RequestParam UUID resourceId,
@@ -88,7 +97,6 @@ public class ReservationController {
         return ResponseEntity.ok(info);
     }
 
-    // ─── MARCAR COMO EN USO (RETIRO) ───────────────────────────────────
     @PatchMapping("/{reservationId}/start")
     @PreAuthorize("hasAnyRole('ADMIN', 'STAFF')")
     public ResponseEntity<ReservationWebDto.ReservationWebResponse> markAsInUse(
@@ -100,7 +108,6 @@ public class ReservationController {
         return ResponseEntity.ok(webMapper.toReservationWebResponse(response));
     }
 
-    // ─── REGISTRAR DEVOLUCIÓN ──────────────────────────────────────────
     @PatchMapping("/{reservationId}/return")
     @PreAuthorize("hasAnyRole('ADMIN', 'STAFF')")
     public ResponseEntity<ReservationWebDto.ReservationWebResponse> markAsReturned(
@@ -112,7 +119,6 @@ public class ReservationController {
         return ResponseEntity.ok(webMapper.toReservationWebResponse(response));
     }
 
-    // ─── CANCELAR RESERVA ──────────────────────────────────────────────
     @PatchMapping("/{reservationId}/cancel")
     @PreAuthorize("hasAnyRole('TEACHER', 'ADMIN', 'STAFF')")
     public ResponseEntity<ReservationWebDto.ReservationWebResponse> cancel(
@@ -121,7 +127,11 @@ public class ReservationController {
             @AuthenticationPrincipal UserDetails userDetails) {
 
         UUID actorId = SecurityContextHelper.extractUserId(userDetails);
-        ReservationResponse response = cancelReservationUseCase.execute(reservationId, actorId, request.reason());
+
+        ReservationResponse response = cancelReservationUseCase.execute(
+                reservationId, actorId, request.reason()
+        );
+
         return ResponseEntity.ok(webMapper.toReservationWebResponse(response));
     }
 }

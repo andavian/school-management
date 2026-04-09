@@ -1,0 +1,41 @@
+info:
+  name: Listar países
+  type: http
+  seq: 7
+  tags:
+    - Geography
+
+http:
+  method: GET
+  url: "{{baseUrl}}/api/geography/countries"
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+
+examples:
+  - name: 200 Response
+    description: Lista de países
+    request:
+      url: "{{baseUrl}}/api/geography/countries"
+      method: GET
+    response:
+      status: 200
+      statusText: OK
+      headers:
+        - name: Content-Type
+          value: "*/*"
+      body:
+        type: text
+        data: |-
+          {
+            "countryId": "",
+            "name": "",
+            "isoCode": "",
+            "phoneCode": "",
+            "createdAt": ""
+          }
+
+docs: Retorna todos los países registrados en el sistema.

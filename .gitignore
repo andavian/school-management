@@ -36,3 +36,9 @@ build/
 .env.developer.example
 .env.*
 !.env.example
+
+# Bruno - Ignorar datos sensibles
+*.secret.bru
+bruno.json.lock
+environments/*-personal.bru     # entornos con tokens personales
+*.log

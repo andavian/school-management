@@ -1,3 +1,4 @@
+// src/main/java/org/school/management/resources/application/usecases/ListResourcesUseCase.java
 package org.school.management.resources.application.usecases;
 
 import lombok.RequiredArgsConstructor;
@@ -23,10 +24,11 @@ public class ListResourcesUseCase {
     private final ResourceApplicationMapper mapper;
 
     /**
-     * Lista recursos activos. Si se especifica un tipo, filtra por él.
-     * Si reservableOnly = true, excluye recursos no reservables.
+     * Lista recursos activos.
+     * Permite filtrar por tipo y/o solo reservables.
      */
     public List<ResourceResponse> execute(ResourceType type, boolean reservableOnly) {
+
         List<Resource> resources = reservableOnly
                 ? resourceRepository.findAllActiveAndReservable()
                 : resourceRepository.findAllActive();
@@ -36,7 +38,9 @@ public class ListResourcesUseCase {
                 .map(mapper::toResourceResponse)
                 .collect(Collectors.toList());
 
-        log.debug("Listados {} recursos (tipo: {}, soloReservables: {})", result.size(), type, reservableOnly);
+        log.debug("Listados {} recursos (tipo: {}, soloReservables: {})",
+                result.size(), type, reservableOnly);
+
         return result;
     }
 }

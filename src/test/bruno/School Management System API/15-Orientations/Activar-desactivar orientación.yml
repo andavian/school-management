@@ -1,0 +1,98 @@
+info:
+  name: Activar/desactivar orientación
+  type: http
+  seq: 3
+  tags:
+    - Orientations
+
+http:
+  method: PUT
+  url: "{{baseUrl}}/api/admin/orientations/:id/toggle-status"
+  params:
+    - name: id
+      value: ""
+      type: path
+      description: ID de orientación a activar/desactivar
+  auth:
+    type: bearer
+    token: "{{token}}"
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+
+examples:
+  - name: 200 Response
+    description: Estado actualizado
+    request:
+      url: "{{baseUrl}}/api/admin/orientations/:id/toggle-status"
+      method: PUT
+      params:
+        - name: id
+          value: ""
+          type: path
+          description: ID de orientación a activar/desactivar
+    response:
+      status: 200
+      statusText: OK
+      headers:
+        - name: Content-Type
+          value: "*/*"
+      body:
+        type: text
+        data: |-
+          {
+            "orientationId": {
+              "value": ""
+            },
+            "name": "",
+            "code": {
+              "value": ""
+            },
+            "description": "",
+            "availableFromYear": {
+              "value": 0
+            },
+            "isActive": false,
+            "createdAt": "",
+            "updatedAt": ""
+          }
+  - name: 404 Response
+    description: No encontrada
+    request:
+      url: "{{baseUrl}}/api/admin/orientations/:id/toggle-status"
+      method: PUT
+      params:
+        - name: id
+          value: ""
+          type: path
+          description: ID de orientación a activar/desactivar
+    response:
+      status: 404
+      statusText: Not Found
+      headers:
+        - name: Content-Type
+          value: "*/*"
+      body:
+        type: text
+        data: |-
+          {
+            "orientationId": {
+              "value": ""
+            },
+            "name": "",
+            "code": {
+              "value": ""
+            },
+            "description": "",
+            "availableFromYear": {
+              "value": 0
+            },
+            "isActive": false,
+            "createdAt": "",
+            "updatedAt": ""
+          }
+
+docs: Activa o desactiva una orientación según su estado actual.

@@ -1,0 +1,76 @@
+info:
+  name: Listar cursos
+  type: http
+  seq: 2
+  tags:
+    - Grade_Levels
+
+http:
+  method: GET
+  url: "{{baseUrl}}/api/admin/grade-levels"
+  params:
+    - name: academicYearId
+      value: 2024-uuid
+      type: query
+      description: Filtrar por ID del ciclo lectivo
+    - name: activeOnly
+      value: "true"
+      type: query
+      description: Filtrar solo activos
+  auth:
+    type: bearer
+    token: "{{token}}"
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+
+examples:
+  - name: 200 Response
+    description: Cursos obtenidos exitosamente
+    request:
+      url: "{{baseUrl}}/api/admin/grade-levels"
+      method: GET
+      params:
+        - name: academicYearId
+          value: 2024-uuid
+          type: query
+          description: Filtrar por ID del ciclo lectivo
+        - name: activeOnly
+          value: "true"
+          type: query
+          description: Filtrar solo activos
+    response:
+      status: 200
+      statusText: OK
+      headers:
+        - name: Content-Type
+          value: "*/*"
+      body:
+        type: text
+        data: |-
+          [
+            {
+              "gradeLevelId": "",
+              "academicYearId": "",
+              "yearLevel": 0,
+              "division": "",
+              "displayName": "",
+              "orientationId": "",
+              "orientationName": "",
+              "fullDisplayName": "",
+              "shift": "",
+              "maxStudents": 0,
+              "homeroomTeacherId": "",
+              "isActive": false,
+              "createdAt": "",
+              "updatedAt": ""
+            }
+          ]
+
+docs: |
+  Retorna los cursos existentes, con filtros opcionales:
+  - academicYearId: filtra por ciclo lectivo
+  - activeOnly: devuelve solo cursos activos

@@ -1,0 +1,94 @@
+info:
+  name: Obtener materia por ID
+  type: http
+  seq: 1
+  tags:
+    - Subjects
+
+http:
+  method: GET
+  url: "{{baseUrl}}/api/admin/subjects/:id"
+  params:
+    - name: id
+      value: subject-uuid
+      type: path
+      description: ID de la materia
+  auth:
+    type: bearer
+    token: "{{token}}"
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+
+examples:
+  - name: 200 Response
+    description: Materia encontrada
+    request:
+      url: "{{baseUrl}}/api/admin/subjects/:id"
+      method: GET
+      params:
+        - name: id
+          value: subject-uuid
+          type: path
+          description: ID de la materia
+    response:
+      status: 200
+      statusText: OK
+      headers:
+        - name: Content-Type
+          value: "*/*"
+      body:
+        type: text
+        data: |-
+          {
+            "subjectId": "",
+            "name": "",
+            "code": "",
+            "yearLevel": 0,
+            "orientationId": "",
+            "orientationName": "",
+            "isCommonSubject": false,
+            "weeklyHours": 0,
+            "description": "",
+            "isActive": false,
+            "createdAt": "",
+            "updatedAt": ""
+          }
+  - name: 404 Response
+    description: Materia no encontrada
+    request:
+      url: "{{baseUrl}}/api/admin/subjects/:id"
+      method: GET
+      params:
+        - name: id
+          value: subject-uuid
+          type: path
+          description: ID de la materia
+    response:
+      status: 404
+      statusText: Not Found
+      headers:
+        - name: Content-Type
+          value: "*/*"
+      body:
+        type: text
+        data: |-
+          {
+            "subjectId": "",
+            "name": "",
+            "code": "",
+            "yearLevel": 0,
+            "orientationId": "",
+            "orientationName": "",
+            "isCommonSubject": false,
+            "weeklyHours": 0,
+            "description": "",
+            "isActive": false,
+            "createdAt": "",
+            "updatedAt": ""
+          }
+
+docs: Devuelve una materia específica según su ID.

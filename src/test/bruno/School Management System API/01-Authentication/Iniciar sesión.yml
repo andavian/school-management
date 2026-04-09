@@ -1,0 +1,148 @@
+info:
+  name: Iniciar sesión
+  type: http
+  seq: 3
+  tags:
+    - Authentication
+
+http:
+  method: POST
+  url: "{{baseUrl}}/api/auth/login"
+  body:
+    type: json
+    data: |-
+      {
+        "dni": "",
+        "password": "",
+        "rememberMe": false
+      }
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        if (bru.response.getStatus() === 200) {
+          const token = bru.response.getBody().token;   // ajustá según tu respuesta real
+          bru.setEnvVar('jwt_token', token);
+          console.log('Token guardado automáticamente');
+        }
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+
+examples:
+  - name: 200 Response
+    description: Login exitoso
+    request:
+      url: "{{baseUrl}}/api/auth/login"
+      method: POST
+      body:
+        type: json
+        data: |-
+          {
+            "dni": "",
+            "password": "",
+            "rememberMe": false
+          }
+    response:
+      status: 200
+      statusText: OK
+      headers:
+        - name: Content-Type
+          value: "*/*"
+      body:
+        type: text
+        data: |-
+          {
+            "accessToken": "",
+            "refreshToken": "",
+            "tokenType": "",
+            "expiresIn": 0,
+            "user": {
+              "userId": "",
+              "dni": "",
+              "roles": [],
+              "isActive": false,
+              "createdAt": "",
+              "lastLoginAt": "",
+              "updatedAt": ""
+            }
+          }
+  - name: 400 Response
+    description: Credenciales inválidas
+    request:
+      url: "{{baseUrl}}/api/auth/login"
+      method: POST
+      body:
+        type: json
+        data: |-
+          {
+            "dni": "",
+            "password": "",
+            "rememberMe": false
+          }
+    response:
+      status: 400
+      statusText: Bad Request
+      headers:
+        - name: Content-Type
+          value: "*/*"
+      body:
+        type: text
+        data: |-
+          {
+            "success": false,
+            "message": "",
+            "errorCode": "",
+            "timestamp": "",
+            "path": "",
+            "fieldErrors": [
+              {
+                "field": "",
+                "rejectedValue": {},
+                "message": ""
+              }
+            ]
+          }
+  - name: 403 Response
+    description: Usuario inactivo
+    request:
+      url: "{{baseUrl}}/api/auth/login"
+      method: POST
+      body:
+        type: json
+        data: |-
+          {
+            "dni": "",
+            "password": "",
+            "rememberMe": false
+          }
+    response:
+      status: 403
+      statusText: Forbidden
+      headers:
+        - name: Content-Type
+          value: "*/*"
+      body:
+        type: text
+        data: |-
+          {
+            "success": false,
+            "message": "",
+            "errorCode": "",
+            "timestamp": "",
+            "path": "",
+            "fieldErrors": [
+              {
+                "field": "",
+                "rejectedValue": {},
+                "message": ""
+              }
+            ]
+          }
+
+docs: Autentica un usuario por DNI y contraseña. Devuelve JWT si las credenciales son válidas.

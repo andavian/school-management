@@ -1,0 +1,128 @@
+info:
+  name: Crear ciclo lectivo
+  type: http
+  seq: 4
+  tags:
+    - Academic_Years
+
+http:
+  method: POST
+  url: "{{baseUrl}}/api/admin/academic-years"
+  body:
+    type: json
+    data: |-
+      {
+        "year": 0,
+        "startDate": "",
+        "endDate": "",
+        "isCurrent": false
+      }
+  auth:
+    type: bearer
+    token: "{{token}}"
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+
+examples:
+  - name: 201 Response
+    description: Ciclo lectivo creado exitosamente
+    request:
+      url: "{{baseUrl}}/api/admin/academic-years"
+      method: POST
+      body:
+        type: json
+        data: |-
+          {
+            "year": 0,
+            "startDate": "",
+            "endDate": "",
+            "isCurrent": false
+          }
+    response:
+      status: 201
+      statusText: Created
+      headers:
+        - name: Content-Type
+          value: "*/*"
+      body:
+        type: text
+        data: |-
+          {
+            "academicYearId": "",
+            "year": 0,
+            "startDate": "",
+            "endDate": "",
+            "status": "",
+            "createdAt": "",
+            "updatedAt": ""
+          }
+  - name: 400 Response
+    description: Datos inválidos
+    request:
+      url: "{{baseUrl}}/api/admin/academic-years"
+      method: POST
+      body:
+        type: json
+        data: |-
+          {
+            "year": 0,
+            "startDate": "",
+            "endDate": "",
+            "isCurrent": false
+          }
+    response:
+      status: 400
+      statusText: Bad Request
+      headers:
+        - name: Content-Type
+          value: "*/*"
+      body:
+        type: text
+        data: |-
+          {
+            "academicYearId": "",
+            "year": 0,
+            "startDate": "",
+            "endDate": "",
+            "status": "",
+            "createdAt": "",
+            "updatedAt": ""
+          }
+  - name: 409 Response
+    description: El ciclo lectivo ya existe
+    request:
+      url: "{{baseUrl}}/api/admin/academic-years"
+      method: POST
+      body:
+        type: json
+        data: |-
+          {
+            "year": 0,
+            "startDate": "",
+            "endDate": "",
+            "isCurrent": false
+          }
+    response:
+      status: 409
+      statusText: Conflict
+      headers:
+        - name: Content-Type
+          value: "*/*"
+      body:
+        type: text
+        data: |-
+          {
+            "academicYearId": "",
+            "year": 0,
+            "startDate": "",
+            "endDate": "",
+            "status": "",
+            "createdAt": "",
+            "updatedAt": ""
+          }
+
+docs: Crea un nuevo ciclo lectivo. Solo accesible para ADMIN.

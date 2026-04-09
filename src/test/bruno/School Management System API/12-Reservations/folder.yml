@@ -1,0 +1,7 @@
+info:
+  name: 12-Reservations
+  type: folder
+  seq: 1
+
+request:
+  auth: inherit

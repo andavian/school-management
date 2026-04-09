@@ -1,3 +1,4 @@
+// src/main/java/org/school/management/resources/infrastructure/web/dto/ResourceWebDto.java
 package org.school.management.resources.infrastructure.web.dto;
 
 import jakarta.validation.constraints.*;
@@ -10,30 +11,55 @@ import java.util.UUID;
 
 /**
  * Contenedor Web DTO para el BC resources/.
- * Sigue el patrón del proyecto: clase final con records internos para request/response.
+ * Sigue el estándar del proyecto.
  */
 public final class ResourceWebDto {
     private ResourceWebDto() {}
 
+    // ─── REQUESTS ────────────────────────────────────────────────────────
+
     public record CreateResourceWebRequest(
-            @NotBlank @Size(max = 100) String name,
-            @NotBlank @Size(max = 30) String code,
-            @NotNull ResourceType resourceType,
-            @Size(max = 500) String description,
-            @Size(max = 200) String location,
+            @NotBlank(message = "El código es obligatorio")
+            @Size(max = 30, message = "El código no puede superar los 30 caracteres")
+            String code,
+
+            @NotBlank(message = "El nombre es obligatorio")
+            @Size(min = 3, max = 100, message = "El nombre debe tener entre 3 y 100 caracteres")
+            String name,
+
+            @NotNull(message = "El tipo de recurso es obligatorio")
+            ResourceType resourceType,
+
+            @Size(max = 500, message = "La descripción no puede superar los 500 caracteres")
+            String description,
+
+            @Size(max = 200, message = "La ubicación no puede superar los 200 caracteres")
+            String location,
+
             boolean reservable,
-            @Size(max = 500) String notes
+
+            @Size(max = 500, message = "Las notas no pueden superar los 500 caracteres")
+            String notes
     ) {}
 
     public record UpdateResourceWebRequest(
-            @Size(min = 3, max = 100) String name,
-            @Size(max = 500) String description,
-            @Size(max = 200) String location,
+            @Size(min = 3, max = 100, message = "El nombre debe tener entre 3 y 100 caracteres")
+            String name,
+
+            @Size(max = 500, message = "La descripción no puede superar los 500 caracteres")
+            String description,
+
+            @Size(max = 200, message = "La ubicación no puede superar los 200 caracteres")
+            String location,
+
             Boolean reservable,
-            @Size(max = 500) String notes
+
+            @Size(max = 500, message = "Las notas no pueden superar los 500 caracteres")
+            String notes
     ) {
         public boolean hasUpdates() {
-            return name != null || description != null || location != null || reservable != null || notes != null;
+            return name != null || description != null || location != null ||
+                    reservable != null || notes != null;
         }
     }
 
@@ -49,14 +75,27 @@ public final class ResourceWebDto {
             @Size(max = 500) String notes
     ) {}
 
+    // ─── RESPONSES ───────────────────────────────────────────────────────
+
     public record ResourceWebResponse(
-            UUID resourceId, String name, String code, ResourceType resourceType,
-            String description, String location, boolean reservable, String notes,
-            boolean isActive, List<ResourceUnitWebResponse> units
+            UUID resourceId,
+            String name,
+            String code,
+            ResourceType resourceType,
+            String description,
+            String location,
+            boolean reservable,
+            String notes,
+            boolean isActive,
+            List<ResourceUnitWebResponse> units
     ) {}
 
     public record ResourceUnitWebResponse(
-            UUID unitId, String unitCode, String serialNumber,
-            ConditionStatus conditionStatus, UnitStatus unitStatus, String notes
+            UUID unitId,
+            String unitCode,
+            String serialNumber,
+            ConditionStatus conditionStatus,
+            UnitStatus unitStatus,
+            String notes
     ) {}
 }

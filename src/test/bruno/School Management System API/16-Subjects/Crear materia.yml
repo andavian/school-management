@@ -1,0 +1,197 @@
+info:
+  name: Crear materia
+  type: http
+  seq: 4
+  tags:
+    - Subjects
+
+http:
+  method: POST
+  url: "{{baseUrl}}/api/admin/subjects"
+  body:
+    type: json
+    data: |-
+      {
+        "name": "",
+        "code": "",
+        "yearLevel": 0,
+        "orientationId": "",
+        "isMandatory": false,
+        "weeklyHours": 0,
+        "description": ""
+      }
+  auth:
+    type: bearer
+    token: "{{token}}"
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+
+examples:
+  - name: 201 Response
+    description: Materia creada correctamente
+    request:
+      url: "{{baseUrl}}/api/admin/subjects"
+      method: POST
+      body:
+        type: json
+        data: |-
+          {
+            "name": "",
+            "code": "",
+            "yearLevel": 0,
+            "orientationId": "",
+            "isMandatory": false,
+            "weeklyHours": 0,
+            "description": ""
+          }
+    response:
+      status: 201
+      statusText: Created
+      headers:
+        - name: Content-Type
+          value: "*/*"
+      body:
+        type: text
+        data: |-
+          {
+            "subjectId": "",
+            "name": "",
+            "code": "",
+            "yearLevel": 0,
+            "orientationId": "",
+            "orientationName": "",
+            "isCommonSubject": false,
+            "weeklyHours": 0,
+            "description": "",
+            "isActive": false,
+            "createdAt": "",
+            "updatedAt": ""
+          }
+  - name: 400 Response
+    description: Datos inválidos
+    request:
+      url: "{{baseUrl}}/api/admin/subjects"
+      method: POST
+      body:
+        type: json
+        data: |-
+          {
+            "name": "",
+            "code": "",
+            "yearLevel": 0,
+            "orientationId": "",
+            "isMandatory": false,
+            "weeklyHours": 0,
+            "description": ""
+          }
+    response:
+      status: 400
+      statusText: Bad Request
+      headers:
+        - name: Content-Type
+          value: "*/*"
+      body:
+        type: text
+        data: |-
+          {
+            "subjectId": "",
+            "name": "",
+            "code": "",
+            "yearLevel": 0,
+            "orientationId": "",
+            "orientationName": "",
+            "isCommonSubject": false,
+            "weeklyHours": 0,
+            "description": "",
+            "isActive": false,
+            "createdAt": "",
+            "updatedAt": ""
+          }
+  - name: 404 Response
+    description: Orientación no encontrada
+    request:
+      url: "{{baseUrl}}/api/admin/subjects"
+      method: POST
+      body:
+        type: json
+        data: |-
+          {
+            "name": "",
+            "code": "",
+            "yearLevel": 0,
+            "orientationId": "",
+            "isMandatory": false,
+            "weeklyHours": 0,
+            "description": ""
+          }
+    response:
+      status: 404
+      statusText: Not Found
+      headers:
+        - name: Content-Type
+          value: "*/*"
+      body:
+        type: text
+        data: |-
+          {
+            "subjectId": "",
+            "name": "",
+            "code": "",
+            "yearLevel": 0,
+            "orientationId": "",
+            "orientationName": "",
+            "isCommonSubject": false,
+            "weeklyHours": 0,
+            "description": "",
+            "isActive": false,
+            "createdAt": "",
+            "updatedAt": ""
+          }
+  - name: 409 Response
+    description: El código de materia ya existe
+    request:
+      url: "{{baseUrl}}/api/admin/subjects"
+      method: POST
+      body:
+        type: json
+        data: |-
+          {
+            "name": "",
+            "code": "",
+            "yearLevel": 0,
+            "orientationId": "",
+            "isMandatory": false,
+            "weeklyHours": 0,
+            "description": ""
+          }
+    response:
+      status: 409
+      statusText: Conflict
+      headers:
+        - name: Content-Type
+          value: "*/*"
+      body:
+        type: text
+        data: |-
+          {
+            "subjectId": "",
+            "name": "",
+            "code": "",
+            "yearLevel": 0,
+            "orientationId": "",
+            "orientationName": "",
+            "isCommonSubject": false,
+            "weeklyHours": 0,
+            "description": "",
+            "isActive": false,
+            "createdAt": "",
+            "updatedAt": ""
+          }
+
+docs: |
+  Crea una nueva materia dentro de la estructura académica.
+  Las materias pueden ser de formación común o vinculadas a una orientación técnica.

@@ -1,0 +1,7 @@
+info:
+  name: 03-Geography_-_Admin
+  type: folder
+  seq: 1
+
+request:
+  auth: inherit

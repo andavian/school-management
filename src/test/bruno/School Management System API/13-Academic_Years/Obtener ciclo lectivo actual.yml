@@ -1,0 +1,69 @@
+info:
+  name: Obtener ciclo lectivo actual
+  type: http
+  seq: 6
+  tags:
+    - Academic_Years
+
+http:
+  method: GET
+  url: "{{baseUrl}}/api/admin/academic-years/current"
+  auth:
+    type: bearer
+    token: "{{token}}"
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+
+examples:
+  - name: 200 Response
+    description: Ciclo actual obtenido
+    request:
+      url: "{{baseUrl}}/api/admin/academic-years/current"
+      method: GET
+    response:
+      status: 200
+      statusText: OK
+      headers:
+        - name: Content-Type
+          value: "*/*"
+      body:
+        type: text
+        data: |-
+          {
+            "academicYearId": "",
+            "year": 0,
+            "startDate": "",
+            "endDate": "",
+            "status": "",
+            "createdAt": "",
+            "updatedAt": ""
+          }
+  - name: 404 Response
+    description: No hay ciclo lectivo activo
+    request:
+      url: "{{baseUrl}}/api/admin/academic-years/current"
+      method: GET
+    response:
+      status: 404
+      statusText: Not Found
+      headers:
+        - name: Content-Type
+          value: "*/*"
+      body:
+        type: text
+        data: |-
+          {
+            "academicYearId": "",
+            "year": 0,
+            "startDate": "",
+            "endDate": "",
+            "status": "",
+            "createdAt": "",
+            "updatedAt": ""
+          }
+
+docs: Devuelve el ciclo lectivo actualmente activo.

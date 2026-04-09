@@ -1,0 +1,84 @@
+info:
+  name: Listar materias
+  type: http
+  seq: 3
+  tags:
+    - Subjects
+
+http:
+  method: GET
+  url: "{{baseUrl}}/api/admin/subjects"
+  params:
+    - name: yearLevel
+      value: "5"
+      type: query
+      description: Año para filtrar (1-7)
+    - name: orientationId
+      value: orientation-uuid
+      type: query
+      description: ID de la orientación para filtrar
+    - name: activeOnly
+      value: "true"
+      type: query
+      description: Filtrar solo materias activas
+  auth:
+    type: bearer
+    token: "{{token}}"
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+
+examples:
+  - name: 200 Response
+    description: Materias obtenidas correctamente
+    request:
+      url: "{{baseUrl}}/api/admin/subjects"
+      method: GET
+      params:
+        - name: yearLevel
+          value: "5"
+          type: query
+          description: Año para filtrar (1-7)
+        - name: orientationId
+          value: orientation-uuid
+          type: query
+          description: ID de la orientación para filtrar
+        - name: activeOnly
+          value: "true"
+          type: query
+          description: Filtrar solo materias activas
+    response:
+      status: 200
+      statusText: OK
+      headers:
+        - name: Content-Type
+          value: "*/*"
+      body:
+        type: text
+        data: |-
+          [
+            {
+              "subjectId": "",
+              "name": "",
+              "code": "",
+              "yearLevel": 0,
+              "orientationId": "",
+              "orientationName": "",
+              "isCommonSubject": false,
+              "weeklyHours": 0,
+              "description": "",
+              "isActive": false,
+              "createdAt": "",
+              "updatedAt": ""
+            }
+          ]
+
+docs: |
+  Devuelve las materias disponibles.
+  Se puede filtrar por:
+  - Año escolar (`yearLevel`)
+  - Orientación técnica (`orientationId`)
+  - Estado activo (`activeOnly`)

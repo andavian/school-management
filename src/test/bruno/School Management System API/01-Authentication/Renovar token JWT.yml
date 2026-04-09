@@ -1,0 +1,53 @@
+info:
+  name: Renovar token JWT
+  type: http
+  seq: 2
+  tags:
+    - Authentication
+
+http:
+  method: POST
+  url: "{{baseUrl}}/api/auth/refresh-token"
+  body:
+    type: json
+    data: |-
+      {
+        "refreshToken": ""
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+
+examples:
+  - name: 501 Response
+    description: Aún no implementado
+    request:
+      url: "{{baseUrl}}/api/auth/refresh-token"
+      method: POST
+      body:
+        type: json
+        data: |-
+          {
+            "refreshToken": ""
+          }
+    response:
+      status: 501
+      statusText: Not Implemented
+      headers:
+        - name: Content-Type
+          value: "*/*"
+      body:
+        type: text
+        data: |-
+          {
+            "accessToken": "",
+            "refreshToken": "",
+            "tokenType": "",
+            "expiresIn": 0
+          }
+
+docs: Renueva un token JWT expirado usando un refresh token válido.

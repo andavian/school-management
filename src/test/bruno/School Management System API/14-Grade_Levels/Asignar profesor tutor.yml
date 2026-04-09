@@ -1,0 +1,157 @@
+info:
+  name: Asignar profesor tutor
+  type: http
+  seq: 1
+  tags:
+    - Grade_Levels
+
+http:
+  method: PUT
+  url: "{{baseUrl}}/api/admin/grade-levels/:id/homeroom-teacher"
+  params:
+    - name: id
+      value: ""
+      type: path
+      description: ID del curso
+  body:
+    type: json
+    data: |-
+      {
+        "teacherId": ""
+      }
+  auth:
+    type: bearer
+    token: "{{token}}"
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+
+examples:
+  - name: 200 Response
+    description: Tutor asignado correctamente
+    request:
+      url: "{{baseUrl}}/api/admin/grade-levels/:id/homeroom-teacher"
+      method: PUT
+      params:
+        - name: id
+          value: ""
+          type: path
+          description: ID del curso
+      body:
+        type: json
+        data: |-
+          {
+            "teacherId": ""
+          }
+    response:
+      status: 200
+      statusText: OK
+      headers:
+        - name: Content-Type
+          value: "*/*"
+      body:
+        type: text
+        data: |-
+          {
+            "gradeLevelId": "",
+            "academicYearId": "",
+            "yearLevel": 0,
+            "division": "",
+            "displayName": "",
+            "orientationId": "",
+            "orientationName": "",
+            "fullDisplayName": "",
+            "shift": "",
+            "maxStudents": 0,
+            "homeroomTeacherId": "",
+            "isActive": false,
+            "createdAt": "",
+            "updatedAt": ""
+          }
+  - name: 400 Response
+    description: ID de profesor inválido
+    request:
+      url: "{{baseUrl}}/api/admin/grade-levels/:id/homeroom-teacher"
+      method: PUT
+      params:
+        - name: id
+          value: ""
+          type: path
+          description: ID del curso
+      body:
+        type: json
+        data: |-
+          {
+            "teacherId": ""
+          }
+    response:
+      status: 400
+      statusText: Bad Request
+      headers:
+        - name: Content-Type
+          value: "*/*"
+      body:
+        type: text
+        data: |-
+          {
+            "gradeLevelId": "",
+            "academicYearId": "",
+            "yearLevel": 0,
+            "division": "",
+            "displayName": "",
+            "orientationId": "",
+            "orientationName": "",
+            "fullDisplayName": "",
+            "shift": "",
+            "maxStudents": 0,
+            "homeroomTeacherId": "",
+            "isActive": false,
+            "createdAt": "",
+            "updatedAt": ""
+          }
+  - name: 404 Response
+    description: Curso no encontrado
+    request:
+      url: "{{baseUrl}}/api/admin/grade-levels/:id/homeroom-teacher"
+      method: PUT
+      params:
+        - name: id
+          value: ""
+          type: path
+          description: ID del curso
+      body:
+        type: json
+        data: |-
+          {
+            "teacherId": ""
+          }
+    response:
+      status: 404
+      statusText: Not Found
+      headers:
+        - name: Content-Type
+          value: "*/*"
+      body:
+        type: text
+        data: |-
+          {
+            "gradeLevelId": "",
+            "academicYearId": "",
+            "yearLevel": 0,
+            "division": "",
+            "displayName": "",
+            "orientationId": "",
+            "orientationName": "",
+            "fullDisplayName": "",
+            "shift": "",
+            "maxStudents": 0,
+            "homeroomTeacherId": "",
+            "isActive": false,
+            "createdAt": "",
+            "updatedAt": ""
+          }
+
+docs: Asigna un profesor como tutor (homeroom teacher) del curso.

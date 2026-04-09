@@ -1,3 +1,4 @@
+// src/main/java/org/school/management/resources/application/usecases/CancelReservationUseCase.java
 package org.school.management.resources.application.usecases;
 
 import lombok.RequiredArgsConstructor;
@@ -5,13 +6,15 @@ import lombok.extern.slf4j.Slf4j;
 import org.school.management.resources.application.dto.response.ReservationResponse;
 import org.school.management.resources.application.mapper.ResourceApplicationMapper;
 import org.school.management.resources.domain.exception.InvalidReservationStateException;
+import org.school.management.resources.domain.exception.ReservationAccessDeniedException;
+import org.school.management.resources.domain.exception.ReservationNotFoundException;
 import org.school.management.resources.domain.model.Reservation;
 import org.school.management.resources.domain.model.ResourceUnit;
 import org.school.management.resources.domain.repository.ReservationRepository;
 import org.school.management.resources.domain.repository.ResourceUnitRepository;
 import org.school.management.resources.domain.valueobject.ReservationId;
 import org.school.management.resources.domain.valueobject.ReservationStatus;
-import org.school.management.auth.domain.valueobject.UserId;
+import org.school.management.resources.domain.valueobject.UnitStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -26,37 +29,39 @@ public class CancelReservationUseCase {
     private final ResourceUnitRepository resourceUnitRepository;
     private final ResourceApplicationMapper mapper;
 
-    /**
-     * Cancela una reserva CONFIRMED y libera las unidades asignadas.
-     * Solo aplicable antes de que la reserva pase a IN_USE.
-     */
     @Transactional
     public ReservationResponse execute(UUID reservationUuid, UUID actorId, String reason) {
+
         Reservation reservation = reservationRepository.findByReservationId(ReservationId.from(reservationUuid))
-                .orElseThrow(() -> new IllegalArgumentException("Reserva no encontrada: " + reservationUuid));
+                .orElseThrow(() -> ReservationNotFoundException.byId(reservationUuid));
+
+        // Ownership + autorización
+        if (!reservation.belongsToRequester(actorId)) {
+            // ADMIN y STAFF pueden cancelar cualquier reserva (según @PreAuthorize en controller)
+            // Aquí solo validamos que si no es owner, debe tener permisos elevados (ya validado en controller)
+            throw ReservationAccessDeniedException.notOwner();
+        }
 
         if (!reservation.getStatus().isCancelable()) {
             throw InvalidReservationStateException.invalidTransition(
                     reservation.getReservationId(), reservation.getStatus(), "cancel");
         }
 
-        // Liberar unidades físicas asignadas (volver a AVAILABLE)
+        // Liberar unidades
         for (var assignedUnit : reservation.getAssignedUnits()) {
             ResourceUnit unit = resourceUnitRepository.findByUnitId(assignedUnit.getUnitId())
-                    .orElseThrow(() -> new IllegalStateException("Unidad física no encontrada: " + assignedUnit.getUnitId()));
+                    .orElseThrow(() -> new IllegalStateException("Unidad física no encontrada"));
 
-            // Solo liberar si aún está en IN_USE por esta reserva
-            if (unit.getUnitStatus() == org.school.management.resources.domain.valueobject.UnitStatus.IN_USE) {
+            if (unit.getUnitStatus() == UnitStatus.IN_USE) {
                 unit.returnFromReservation();
                 resourceUnitRepository.save(unit);
             }
         }
 
-        // Cancelar la reserva
-        reservation.cancel(UserId.of(actorId), reason);
+        reservation.cancel(actorId, reason);
         Reservation saved = reservationRepository.save(reservation);
 
-        log.info("Reserva {} cancelada por actor {} - Motivo: {}", reservationUuid, actorId, reason);
+        log.info("Reserva {} cancelada por {} - Motivo: {}", reservationUuid, actorId, reason);
         return mapper.toReservationResponse(saved);
     }
 }

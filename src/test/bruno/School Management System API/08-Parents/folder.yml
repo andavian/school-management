@@ -1,0 +1,7 @@
+info:
+  name: 08-Parents
+  type: folder
+  seq: 1
+
+request:
+  auth: inherit

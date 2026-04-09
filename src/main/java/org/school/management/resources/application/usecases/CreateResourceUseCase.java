@@ -1,7 +1,9 @@
+// src/main/java/org/school/management/resources/application/usecases/CreateResourceUseCase.java
 package org.school.management.resources.application.usecases;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.school.management.resources.application.dto.request.CreateResourceRequest;
 import org.school.management.resources.application.dto.response.ResourceResponse;
 import org.school.management.resources.application.mapper.ResourceApplicationMapper;
 import org.school.management.resources.domain.model.Resource;
@@ -21,25 +23,29 @@ public class CreateResourceUseCase {
     private final ResourceApplicationMapper mapper;
 
     @Transactional
-    public ResourceResponse execute(String code, String name, org.school.management.resources.domain.valueobject.ResourceType type,
-                                    String description, String location, boolean reservable, String notes, UUID actorId) {
-        if (resourceRepository.existsByCode(code)) {
-            throw new IllegalArgumentException("Ya existe un recurso con el código: " + code);
+    public ResourceResponse execute(CreateResourceRequest request, UUID actorId) {
+
+        if (resourceRepository.existsByCode(request.code())) {
+            throw new IllegalArgumentException("Ya existe un recurso con el código: " + request.code());
         }
 
         Resource resource = Resource.create(
                 ResourceId.generate(),
-                name,
-                code,
-                type,
-                description,
-                location,
-                reservable,
-                notes
+                request.name(),
+                request.code(),
+                request.resourceType(),
+                request.description(),
+                request.location(),
+                request.reservable(),
+                request.notes(),
+                actorId
         );
 
         Resource saved = resourceRepository.save(resource);
-        log.info("Recurso de catálogo creado: {} ({}) por actor {}", saved.getCode(), saved.getResourceType(), actorId);
+
+        log.info("Recurso creado: {} ({}) por actor {}",
+                saved.getCode(), saved.getResourceType(), actorId);
+
         return mapper.toResourceResponse(saved);
     }
 }

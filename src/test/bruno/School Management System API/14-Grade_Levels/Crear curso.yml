@@ -1,0 +1,198 @@
+info:
+  name: Crear curso
+  type: http
+  seq: 3
+  tags:
+    - Grade_Levels
+
+http:
+  method: POST
+  url: "{{baseUrl}}/api/admin/grade-levels"
+  body:
+    type: json
+    data: |-
+      {
+        "academicYearId": "",
+        "yearLevel": 0,
+        "division": "",
+        "orientationId": "",
+        "shift": "",
+        "maxStudents": 0
+      }
+  auth:
+    type: bearer
+    token: "{{token}}"
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+
+examples:
+  - name: 201 Response
+    description: Curso creado exitosamente
+    request:
+      url: "{{baseUrl}}/api/admin/grade-levels"
+      method: POST
+      body:
+        type: json
+        data: |-
+          {
+            "academicYearId": "",
+            "yearLevel": 0,
+            "division": "",
+            "orientationId": "",
+            "shift": "",
+            "maxStudents": 0
+          }
+    response:
+      status: 201
+      statusText: Created
+      headers:
+        - name: Content-Type
+          value: "*/*"
+      body:
+        type: text
+        data: |-
+          {
+            "gradeLevelId": "",
+            "academicYearId": "",
+            "yearLevel": 0,
+            "division": "",
+            "displayName": "",
+            "orientationId": "",
+            "orientationName": "",
+            "fullDisplayName": "",
+            "shift": "",
+            "maxStudents": 0,
+            "homeroomTeacherId": "",
+            "isActive": false,
+            "createdAt": "",
+            "updatedAt": ""
+          }
+  - name: 400 Response
+    description: Datos inválidos
+    request:
+      url: "{{baseUrl}}/api/admin/grade-levels"
+      method: POST
+      body:
+        type: json
+        data: |-
+          {
+            "academicYearId": "",
+            "yearLevel": 0,
+            "division": "",
+            "orientationId": "",
+            "shift": "",
+            "maxStudents": 0
+          }
+    response:
+      status: 400
+      statusText: Bad Request
+      headers:
+        - name: Content-Type
+          value: "*/*"
+      body:
+        type: text
+        data: |-
+          {
+            "gradeLevelId": "",
+            "academicYearId": "",
+            "yearLevel": 0,
+            "division": "",
+            "displayName": "",
+            "orientationId": "",
+            "orientationName": "",
+            "fullDisplayName": "",
+            "shift": "",
+            "maxStudents": 0,
+            "homeroomTeacherId": "",
+            "isActive": false,
+            "createdAt": "",
+            "updatedAt": ""
+          }
+  - name: 404 Response
+    description: Ciclo lectivo u orientación no encontrados
+    request:
+      url: "{{baseUrl}}/api/admin/grade-levels"
+      method: POST
+      body:
+        type: json
+        data: |-
+          {
+            "academicYearId": "",
+            "yearLevel": 0,
+            "division": "",
+            "orientationId": "",
+            "shift": "",
+            "maxStudents": 0
+          }
+    response:
+      status: 404
+      statusText: Not Found
+      headers:
+        - name: Content-Type
+          value: "*/*"
+      body:
+        type: text
+        data: |-
+          {
+            "gradeLevelId": "",
+            "academicYearId": "",
+            "yearLevel": 0,
+            "division": "",
+            "displayName": "",
+            "orientationId": "",
+            "orientationName": "",
+            "fullDisplayName": "",
+            "shift": "",
+            "maxStudents": 0,
+            "homeroomTeacherId": "",
+            "isActive": false,
+            "createdAt": "",
+            "updatedAt": ""
+          }
+  - name: 409 Response
+    description: El curso ya existe
+    request:
+      url: "{{baseUrl}}/api/admin/grade-levels"
+      method: POST
+      body:
+        type: json
+        data: |-
+          {
+            "academicYearId": "",
+            "yearLevel": 0,
+            "division": "",
+            "orientationId": "",
+            "shift": "",
+            "maxStudents": 0
+          }
+    response:
+      status: 409
+      statusText: Conflict
+      headers:
+        - name: Content-Type
+          value: "*/*"
+      body:
+        type: text
+        data: |-
+          {
+            "gradeLevelId": "",
+            "academicYearId": "",
+            "yearLevel": 0,
+            "division": "",
+            "displayName": "",
+            "orientationId": "",
+            "orientationName": "",
+            "fullDisplayName": "",
+            "shift": "",
+            "maxStudents": 0,
+            "homeroomTeacherId": "",
+            "isActive": false,
+            "createdAt": "",
+            "updatedAt": ""
+          }
+
+docs: Crea un nuevo curso (grade level) vinculado a un ciclo lectivo y orientación.

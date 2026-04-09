@@ -1,0 +1,98 @@
+info:
+  name: Obtener curso por ID
+  type: http
+  seq: 4
+  tags:
+    - Grade_Levels
+
+http:
+  method: GET
+  url: "{{baseUrl}}/api/admin/grade-levels/:id"
+  params:
+    - name: id
+      value: gradeLevel-uuid
+      type: path
+      description: ID del curso
+  auth:
+    type: bearer
+    token: "{{token}}"
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+
+examples:
+  - name: 200 Response
+    description: Curso encontrado
+    request:
+      url: "{{baseUrl}}/api/admin/grade-levels/:id"
+      method: GET
+      params:
+        - name: id
+          value: gradeLevel-uuid
+          type: path
+          description: ID del curso
+    response:
+      status: 200
+      statusText: OK
+      headers:
+        - name: Content-Type
+          value: "*/*"
+      body:
+        type: text
+        data: |-
+          {
+            "gradeLevelId": "",
+            "academicYearId": "",
+            "yearLevel": 0,
+            "division": "",
+            "displayName": "",
+            "orientationId": "",
+            "orientationName": "",
+            "fullDisplayName": "",
+            "shift": "",
+            "maxStudents": 0,
+            "homeroomTeacherId": "",
+            "isActive": false,
+            "createdAt": "",
+            "updatedAt": ""
+          }
+  - name: 404 Response
+    description: Curso no encontrado
+    request:
+      url: "{{baseUrl}}/api/admin/grade-levels/:id"
+      method: GET
+      params:
+        - name: id
+          value: gradeLevel-uuid
+          type: path
+          description: ID del curso
+    response:
+      status: 404
+      statusText: Not Found
+      headers:
+        - name: Content-Type
+          value: "*/*"
+      body:
+        type: text
+        data: |-
+          {
+            "gradeLevelId": "",
+            "academicYearId": "",
+            "yearLevel": 0,
+            "division": "",
+            "displayName": "",
+            "orientationId": "",
+            "orientationName": "",
+            "fullDisplayName": "",
+            "shift": "",
+            "maxStudents": 0,
+            "homeroomTeacherId": "",
+            "isActive": false,
+            "createdAt": "",
+            "updatedAt": ""
+          }
+
+docs: Devuelve los detalles de un curso específico por su ID.

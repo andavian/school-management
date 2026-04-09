@@ -1,0 +1,4 @@
+name: Production
+variables:
+  - name: baseUrl
+    value: https://api.ipet132.edu.ar

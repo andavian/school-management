@@ -1,9 +1,12 @@
+// src/main/java/org/school/management/resources/application/usecases/GetResourceByIdUseCase.java
 package org.school.management.resources.application.usecases;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.school.management.resources.application.dto.response.ResourceResponse;
 import org.school.management.resources.application.mapper.ResourceApplicationMapper;
+import org.school.management.resources.domain.exception.ResourceNotFoundException;
+import org.school.management.resources.domain.model.Resource;
 import org.school.management.resources.domain.repository.ResourceRepository;
 import org.school.management.resources.domain.valueobject.ResourceId;
 import org.springframework.stereotype.Service;
@@ -21,8 +24,10 @@ public class GetResourceByIdUseCase {
     private final ResourceApplicationMapper mapper;
 
     public ResourceResponse execute(UUID resourceId) {
-        return resourceRepository.findByResourceId(ResourceId.of(resourceId))
-                .map(mapper::toResourceResponse)
-                .orElseThrow(() -> new IllegalArgumentException("Recurso no encontrado con ID: " + resourceId));
+        Resource resource = resourceRepository.findByResourceId(ResourceId.of(resourceId))
+                .orElseThrow(() -> ResourceNotFoundException.byId(resourceId));
+
+        log.debug("Recurso encontrado: {}", resourceId);
+        return mapper.toResourceResponse(resource);
     }
 }

@@ -1,0 +1,104 @@
+info:
+  name: Crear nueva localidad
+  type: http
+  seq: 1
+  tags:
+    - Geography_-_Admin
+
+http:
+  method: POST
+  url: "{{baseUrl}}/api/admin/geography/places"
+  body:
+    type: json
+    data: |-
+      {
+        "name": "Alta Gracia",
+        "type": "CIUDAD",
+        "provinceId": "5c2d3e80-8e6b-4cbc-92b0-8967329a1aaf"
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+
+examples:
+  - name: 201 Response (Alta Gracia)
+    description: Localidad creada
+    request:
+      url: "{{baseUrl}}/api/admin/geography/places"
+      method: POST
+      body:
+        type: json
+        data: |-
+          {
+            "name": "Alta Gracia",
+            "type": "CIUDAD",
+            "provinceId": "5c2d3e80-8e6b-4cbc-92b0-8967329a1aaf"
+          }
+    response:
+      status: 201
+      statusText: Created
+      headers:
+        - name: Content-Type
+          value: "*/*"
+      body:
+        type: text
+        data: |-
+          {
+            "placeId": "",
+            "provinceId": "",
+            "name": "",
+            "type": "",
+            "typeDisplayName": "",
+            "postalCode": "",
+            "createdAt": "",
+            "provinceName": "",
+            "provinceCode": "",
+            "countryName": "",
+            "countryIsoCode": "",
+            "fullAddress": "",
+            "fullDescription": ""
+          }
+  - name: 400 Response (Alta Gracia)
+    description: Datos inválidos o provincia inexistente
+    request:
+      url: "{{baseUrl}}/api/admin/geography/places"
+      method: POST
+      body:
+        type: json
+        data: |-
+          {
+            "name": "Alta Gracia",
+            "type": "CIUDAD",
+            "provinceId": "5c2d3e80-8e6b-4cbc-92b0-8967329a1aaf"
+          }
+    response:
+      status: 400
+      statusText: Bad Request
+      headers:
+        - name: Content-Type
+          value: "*/*"
+      body:
+        type: text
+        data: |-
+          {
+            "success": false,
+            "message": "",
+            "errorCode": "",
+            "timestamp": "",
+            "path": "",
+            "fieldErrors": [
+              {
+                "field": "",
+                "rejectedValue": {},
+                "message": ""
+              }
+            ]
+          }
+
+docs: |
+  Permite crear un nuevo lugar (ciudad/localidad/pueblo) dentro de una provincia
+  y un país específico. Solo accesible para administradores.

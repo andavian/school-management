@@ -1,3 +1,4 @@
+// src/main/java/org/school/management/resources/application/usecases/GetMyReservationsUseCase.java
 package org.school.management.resources.application.usecases;
 
 import lombok.RequiredArgsConstructor;
@@ -10,7 +11,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -21,14 +21,14 @@ public class GetMyReservationsUseCase {
     private final ReservationRepository reservationRepository;
     private final ResourceApplicationMapper mapper;
 
-    /**
-     * Retorna todas las reservas asociadas a un solicitante.
-     * Útil para que docentes/admin vean su historial y estado actual.
-     */
     public List<ReservationResponse> execute(UUID requesterId) {
-        log.debug("Fetching reservations for requester: {}", requesterId);
-        return reservationRepository.findByRequesterId(requesterId).stream()
+        log.debug("Obteniendo reservas del usuario: {}", requesterId);
+
+        List<ReservationResponse> responses = reservationRepository.findByRequesterId(requesterId).stream()
                 .map(mapper::toReservationResponse)
-                .collect(Collectors.toList());
+                .toList();
+
+        log.info("Se encontraron {} reservas para el usuario {}", responses.size(), requesterId);
+        return responses;
     }
 }

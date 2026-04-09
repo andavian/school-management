@@ -1,0 +1,144 @@
+info:
+  name: listResources
+  type: http
+  seq: 1
+  tags:
+    - Resources
+
+http:
+  method: GET
+  url: "{{baseUrl}}/api/resources"
+  params:
+    - name: type
+      value: PROJECTOR
+      type: query
+      disabled: true
+    - name: type
+      value: TELEVISION
+      type: query
+      disabled: true
+    - name: type
+      value: LAPTOP
+      type: query
+      disabled: true
+    - name: type
+      value: TABLET
+      type: query
+      disabled: true
+    - name: type
+      value: MULTIMEDIA_ROOM
+      type: query
+      disabled: true
+    - name: type
+      value: LIBRARY_ROOM
+      type: query
+      disabled: true
+    - name: type
+      value: COMPUTER_LAB
+      type: query
+      disabled: true
+    - name: type
+      value: SPEAKER
+      type: query
+      disabled: true
+    - name: type
+      value: CAMERA
+      type: query
+      disabled: true
+    - name: type
+      value: OTHER
+      type: query
+      disabled: true
+    - name: reservableOnly
+      value: "false"
+      type: query
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+
+examples:
+  - name: 200 Response
+    description: OK
+    request:
+      url: "{{baseUrl}}/api/resources"
+      method: GET
+      params:
+        - name: type
+          value: PROJECTOR
+          type: query
+          disabled: true
+        - name: type
+          value: TELEVISION
+          type: query
+          disabled: true
+        - name: type
+          value: LAPTOP
+          type: query
+          disabled: true
+        - name: type
+          value: TABLET
+          type: query
+          disabled: true
+        - name: type
+          value: MULTIMEDIA_ROOM
+          type: query
+          disabled: true
+        - name: type
+          value: LIBRARY_ROOM
+          type: query
+          disabled: true
+        - name: type
+          value: COMPUTER_LAB
+          type: query
+          disabled: true
+        - name: type
+          value: SPEAKER
+          type: query
+          disabled: true
+        - name: type
+          value: CAMERA
+          type: query
+          disabled: true
+        - name: type
+          value: OTHER
+          type: query
+          disabled: true
+        - name: reservableOnly
+          value: "false"
+          type: query
+    response:
+      status: 200
+      statusText: OK
+      headers:
+        - name: Content-Type
+          value: "*/*"
+      body:
+        type: text
+        data: |-
+          [
+            {
+              "resourceId": "",
+              "name": "",
+              "code": "",
+              "resourceType": "PROJECTOR",
+              "description": "",
+              "location": "",
+              "reservable": false,
+              "notes": "",
+              "isActive": false,
+              "units": [
+                {
+                  "unitId": "",
+                  "unitCode": "",
+                  "serialNumber": "",
+                  "conditionStatus": "GOOD",
+                  "unitStatus": "AVAILABLE",
+                  "notes": ""
+                }
+              ]
+            }
+          ]

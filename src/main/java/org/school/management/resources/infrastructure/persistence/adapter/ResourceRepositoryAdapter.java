@@ -1,3 +1,4 @@
+// src/main/java/org/school/management/resources/infrastructure/persistence/adapter/ResourceRepositoryAdapter.java
 package org.school.management.resources.infrastructure.persistence.adapter;
 
 import lombok.RequiredArgsConstructor;
@@ -64,7 +65,10 @@ public class ResourceRepositoryAdapter implements ResourceRepository {
 
     @Override
     public void delete(ResourceId id) {
-        // Soft delete se maneja a nivel de dominio (resource.deactivate())
-        jpaRepository.deleteById(id.value());
+        // Soft delete recomendado
+        jpaRepository.findById(id.value()).ifPresent(entity -> {
+            entity.setActive(false);
+            jpaRepository.save(entity);
+        });
     }
 }

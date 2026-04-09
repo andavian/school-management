@@ -1,0 +1,151 @@
+info:
+  name: Crear orientación técnica
+  type: http
+  seq: 5
+  tags:
+    - Orientations
+
+http:
+  method: POST
+  url: "{{baseUrl}}/api/admin/orientations"
+  body:
+    type: json
+    data: |-
+      {
+        "name": "",
+        "code": "",
+        "description": "",
+        "availableFromYear": 0
+      }
+  auth:
+    type: bearer
+    token: "{{token}}"
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+
+examples:
+  - name: 201 Response
+    description: Orientación creada correctamente
+    request:
+      url: "{{baseUrl}}/api/admin/orientations"
+      method: POST
+      body:
+        type: json
+        data: |-
+          {
+            "name": "",
+            "code": "",
+            "description": "",
+            "availableFromYear": 0
+          }
+    response:
+      status: 201
+      statusText: Created
+      headers:
+        - name: Content-Type
+          value: "*/*"
+      body:
+        type: text
+        data: |-
+          {
+            "orientationId": {
+              "value": ""
+            },
+            "name": "",
+            "code": {
+              "value": ""
+            },
+            "description": "",
+            "availableFromYear": {
+              "value": 0
+            },
+            "isActive": false,
+            "createdAt": "",
+            "updatedAt": ""
+          }
+  - name: 400 Response
+    description: Datos inválidos
+    request:
+      url: "{{baseUrl}}/api/admin/orientations"
+      method: POST
+      body:
+        type: json
+        data: |-
+          {
+            "name": "",
+            "code": "",
+            "description": "",
+            "availableFromYear": 0
+          }
+    response:
+      status: 400
+      statusText: Bad Request
+      headers:
+        - name: Content-Type
+          value: "*/*"
+      body:
+        type: text
+        data: |-
+          {
+            "orientationId": {
+              "value": ""
+            },
+            "name": "",
+            "code": {
+              "value": ""
+            },
+            "description": "",
+            "availableFromYear": {
+              "value": 0
+            },
+            "isActive": false,
+            "createdAt": "",
+            "updatedAt": ""
+          }
+  - name: 409 Response
+    description: El código de orientación ya existe
+    request:
+      url: "{{baseUrl}}/api/admin/orientations"
+      method: POST
+      body:
+        type: json
+        data: |-
+          {
+            "name": "",
+            "code": "",
+            "description": "",
+            "availableFromYear": 0
+          }
+    response:
+      status: 409
+      statusText: Conflict
+      headers:
+        - name: Content-Type
+          value: "*/*"
+      body:
+        type: text
+        data: |-
+          {
+            "orientationId": {
+              "value": ""
+            },
+            "name": "",
+            "code": {
+              "value": ""
+            },
+            "description": "",
+            "availableFromYear": {
+              "value": 0
+            },
+            "isActive": false,
+            "createdAt": "",
+            "updatedAt": ""
+          }
+
+docs: |
+  Crea una nueva orientación técnica del nivel secundario.
+  Las orientaciones se aplican entre 4º y 7º año.

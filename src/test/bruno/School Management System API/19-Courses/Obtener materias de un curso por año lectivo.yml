@@ -1,0 +1,62 @@
+info:
+  name: Obtener materias de un curso por año lectivo
+  type: http
+  seq: 2
+  tags:
+    - Courses
+
+http:
+  method: GET
+  url: "{{baseUrl}}/api/courses/course-subjects"
+  params:
+    - name: gradeLevelId
+      value: ""
+      type: query
+    - name: academicYearId
+      value: ""
+      type: query
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+
+examples:
+  - name: 200 Response
+    description: OK
+    request:
+      url: "{{baseUrl}}/api/courses/course-subjects"
+      method: GET
+      params:
+        - name: gradeLevelId
+          value: ""
+          type: query
+        - name: academicYearId
+          value: ""
+          type: query
+    response:
+      status: 200
+      statusText: OK
+      headers:
+        - name: Content-Type
+          value: "*/*"
+      body:
+        type: text
+        data: |-
+          [
+            {
+              "courseSubjectId": "",
+              "gradeLevelId": "",
+              "subjectId": "",
+              "teacherId": "",
+              "academicYearId": "",
+              "scheduleJson": "",
+              "classroom": "",
+              "minPassingGrade": 0,
+              "status": "ACTIVE",
+              "createdAt": "",
+              "updatedAt": ""
+            }
+          ]

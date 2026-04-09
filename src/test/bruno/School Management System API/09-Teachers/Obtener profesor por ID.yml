@@ -1,0 +1,140 @@
+info:
+  name: Obtener profesor por ID
+  type: http
+  seq: 3
+  tags:
+    - Teachers
+
+http:
+  method: GET
+  url: "{{baseUrl}}/api/admin/teachers/:teacherId"
+  params:
+    - name: teacherId
+      value: ""
+      type: path
+      description: UUID del profesor
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+
+examples:
+  - name: 200 Response
+    description: Profesor encontrado
+    request:
+      url: "{{baseUrl}}/api/admin/teachers/:teacherId"
+      method: GET
+      params:
+        - name: teacherId
+          value: ""
+          type: path
+          description: UUID del profesor
+    response:
+      status: 200
+      statusText: OK
+      headers:
+        - name: Content-Type
+          value: "*/*"
+      body:
+        type: text
+        data: |-
+          {
+            "teacherId": "",
+            "userId": "",
+            "firstName": "",
+            "lastName": "",
+            "fullName": "",
+            "dni": "",
+            "cuil": "",
+            "email": "",
+            "birthDate": "",
+            "gender": "",
+            "nationality": "",
+            "phone": "",
+            "address": {
+              "street": "",
+              "number": "",
+              "floor": "",
+              "apartment": "",
+              "postalCode": "",
+              "placeId": ""
+            },
+            "birthPlace": {
+              "placeId": "",
+              "placeName": "",
+              "provinceName": "",
+              "countryName": ""
+            },
+            "residencePlace": {},
+            "specialization": "",
+            "teachingLicense": "",
+            "hireDate": "",
+            "employmentStatus": "ACTIVE",
+            "employmentType": "FULL_TIME",
+            "active": false,
+            "pendingActivation": false,
+            "activatedAt": "",
+            "createdAt": "",
+            "updatedAt": ""
+          }
+  - name: 404 Response
+    description: Profesor no encontrado
+    request:
+      url: "{{baseUrl}}/api/admin/teachers/:teacherId"
+      method: GET
+      params:
+        - name: teacherId
+          value: ""
+          type: path
+          description: UUID del profesor
+    response:
+      status: 404
+      statusText: Not Found
+      headers:
+        - name: Content-Type
+          value: "*/*"
+      body:
+        type: text
+        data: |-
+          {
+            "teacherId": "",
+            "userId": "",
+            "firstName": "",
+            "lastName": "",
+            "fullName": "",
+            "dni": "",
+            "cuil": "",
+            "email": "",
+            "birthDate": "",
+            "gender": "",
+            "nationality": "",
+            "phone": "",
+            "address": {
+              "street": "",
+              "number": "",
+              "floor": "",
+              "apartment": "",
+              "postalCode": "",
+              "placeId": ""
+            },
+            "birthPlace": {
+              "placeId": "",
+              "placeName": "",
+              "provinceName": "",
+              "countryName": ""
+            },
+            "residencePlace": {},
+            "specialization": "",
+            "teachingLicense": "",
+            "hireDate": "",
+            "employmentStatus": "ACTIVE",
+            "employmentType": "FULL_TIME",
+            "active": false,
+            "pendingActivation": false,
+            "activatedAt": "",
+            "createdAt": "",
+            "updatedAt": ""
+          }

@@ -1,0 +1,66 @@
+info:
+  name: Obtener historial de matrículas del estudiante
+  type: http
+  seq: 2
+  tags:
+    - Enrollments
+
+http:
+  method: GET
+  url: "{{baseUrl}}/api/admin/students/:studentId/enrollments"
+  params:
+    - name: studentId
+      value: ""
+      type: path
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+
+examples:
+  - name: 200 Response
+    description: OK
+    request:
+      url: "{{baseUrl}}/api/admin/students/:studentId/enrollments"
+      method: GET
+      params:
+        - name: studentId
+          value: ""
+          type: path
+    response:
+      status: 200
+      statusText: OK
+      headers:
+        - name: Content-Type
+          value: "*/*"
+      body:
+        type: text
+        data: |-
+          [
+            {
+              "enrollmentId": "",
+              "studentId": "",
+              "academicYearId": "",
+              "gradeLevelId": "",
+              "enrollmentDate": "",
+              "enrollmentType": "",
+              "status": "",
+              "isRepeating": false,
+              "previousSchool": "",
+              "transferDate": "",
+              "finalAverage": 0,
+              "passed": false,
+              "completionDate": "",
+              "withdrawalDate": "",
+              "withdrawalReasonId": "",
+              "withdrawalObservations": "",
+              "active": false,
+              "canReceiveGrades": false,
+              "durationInDays": 0,
+              "createdAt": "",
+              "updatedAt": ""
+            }
+          ]

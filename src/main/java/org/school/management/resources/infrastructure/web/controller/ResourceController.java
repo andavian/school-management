@@ -1,3 +1,4 @@
+// src/main/java/org/school/management/resources/infrastructure/web/controller/ResourceController.java
 package org.school.management.resources.infrastructure.web.controller;
 
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -6,6 +7,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.school.management.auth.infra.web.SecurityContextHelper;
+import org.school.management.resources.application.dto.request.CreateResourceRequest;
 import org.school.management.resources.application.dto.request.CreateResourceUnitRequest;
 import org.school.management.resources.application.dto.request.UpdateResourceRequest;
 import org.school.management.resources.application.dto.request.UpdateUnitStatusRequest;
@@ -29,17 +31,20 @@ import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/resources")
-@RequiredArgsConstructor @Slf4j @Validated
+@RequiredArgsConstructor
+@Slf4j
+@Validated
 @Tag(name = "Resources", description = "Gestión de catálogo de recursos y unidades físicas")
 @SecurityRequirement(name = "bearerAuth")
 public class ResourceController {
 
-    private final CreateResourceUnitUseCase createResourceUnitUseCase;
-    private final UpdateUnitStatusUseCase updateUnitStatusUseCase;
-    private final ListResourcesUseCase listResourcesUseCase;
-    private final GetResourceByIdUseCase getResourceByIdUseCase;
     private final CreateResourceUseCase createResourceUseCase;
     private final UpdateResourceUseCase updateResourceUseCase;
+    private final GetResourceByIdUseCase getResourceByIdUseCase;
+    private final ListResourcesUseCase listResourcesUseCase;
+
+    private final CreateResourceUnitUseCase createResourceUnitUseCase;
+    private final UpdateUnitStatusUseCase updateUnitStatusUseCase;
 
     private final ResourcesWebMapper webMapper;
 
@@ -48,23 +53,26 @@ public class ResourceController {
     @PostMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'STAFF')")
     public ResponseEntity<ResourceWebDto.ResourceWebResponse> createResource(
-            @Valid @RequestBody ResourceWebDto.CreateResourceWebRequest request,
+            @Valid @RequestBody ResourceWebDto.CreateResourceWebRequest webRequest,
             @AuthenticationPrincipal UserDetails userDetails) {
 
         UUID actorId = SecurityContextHelper.extractUserId(userDetails);
 
-        ResourceResponse response = createResourceUseCase.execute(
-                request.code(),
-                request.name(),
-                request.resourceType(),
-                request.description(),
-                request.location(),
-                request.reservable(),
-                request.notes(),
-                actorId
+        // Mapeo de Web Request → Application Request
+        CreateResourceRequest appRequest = new CreateResourceRequest(
+                webRequest.code(),
+                webRequest.name(),
+                webRequest.resourceType(),
+                webRequest.description(),
+                webRequest.location(),
+                webRequest.reservable(),
+                webRequest.notes()
         );
 
-        return ResponseEntity.status(HttpStatus.CREATED).body(webMapper.toResourceWebResponse(response));
+        ResourceResponse response = createResourceUseCase.execute(appRequest, actorId);
+
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(webMapper.toResourceWebResponse(response));
     }
 
     @GetMapping
@@ -76,6 +84,7 @@ public class ResourceController {
         List<ResourceWebDto.ResourceWebResponse> webResponses = responses.stream()
                 .map(webMapper::toResourceWebResponse)
                 .collect(Collectors.toList());
+
         return ResponseEntity.ok(webResponses);
     }
 
@@ -91,9 +100,12 @@ public class ResourceController {
             @PathVariable UUID resourceId,
             @Valid @RequestBody ResourceWebDto.UpdateResourceWebRequest request) {
 
-        // Mapeo Web Request -> Application Request
         UpdateResourceRequest appRequest = new UpdateResourceRequest(
-                request.name(), request.description(), request.location(), request.reservable(), request.notes()
+                request.name(),
+                request.description(),
+                request.location(),
+                request.reservable(),
+                request.notes()
         );
 
         ResourceResponse response = updateResourceUseCase.execute(resourceId, appRequest);
@@ -111,13 +123,16 @@ public class ResourceController {
 
         UUID actorId = SecurityContextHelper.extractUserId(userDetails);
 
-        // Mapeo Web Request -> Application Request
         CreateResourceUnitRequest appRequest = new CreateResourceUnitRequest(
-                resourceId, request.unitCode(), request.serialNumber(), request.conditionStatus()
+                resourceId,
+                request.unitCode(),
+                request.serialNumber(),
+                request.conditionStatus()
         );
 
         ResourceUnitResponse response = createResourceUnitUseCase.execute(appRequest, actorId);
-        return ResponseEntity.status(HttpStatus.CREATED).body(webMapper.toResourceUnitWebResponse(response));
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(webMapper.toResourceUnitWebResponse(response));
     }
 
     @PatchMapping("/units/{unitId}")
@@ -126,9 +141,10 @@ public class ResourceController {
             @PathVariable UUID unitId,
             @Valid @RequestBody ResourceWebDto.UpdateUnitStatusWebRequest request) {
 
-        // Mapeo Web Request -> Application Request
         UpdateUnitStatusRequest appRequest = new UpdateUnitStatusRequest(
-                request.unitStatus(), request.conditionStatus(), request.notes()
+                request.unitStatus(),
+                request.conditionStatus(),
+                request.notes()
         );
 
         ResourceUnitResponse response = updateUnitStatusUseCase.execute(unitId, appRequest);

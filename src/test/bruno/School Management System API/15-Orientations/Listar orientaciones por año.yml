@@ -1,0 +1,104 @@
+info:
+  name: Listar orientaciones por año
+  type: http
+  seq: 6
+  tags:
+    - Orientations
+
+http:
+  method: GET
+  url: "{{baseUrl}}/api/admin/orientations/year-level/:yearLevel"
+  params:
+    - name: yearLevel
+      value: "6"
+      type: path
+      description: Año escolar (4-7)
+  auth:
+    type: bearer
+    token: "{{token}}"
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+
+examples:
+  - name: 200 Response
+    description: Orientaciones obtenidas
+    request:
+      url: "{{baseUrl}}/api/admin/orientations/year-level/:yearLevel"
+      method: GET
+      params:
+        - name: yearLevel
+          value: "6"
+          type: path
+          description: Año escolar (4-7)
+    response:
+      status: 200
+      statusText: OK
+      headers:
+        - name: Content-Type
+          value: "*/*"
+      body:
+        type: text
+        data: |-
+          [
+            {
+              "orientationId": {
+                "value": ""
+              },
+              "name": "",
+              "code": {
+                "value": ""
+              },
+              "description": "",
+              "availableFromYear": {
+                "value": 0
+              },
+              "isActive": false,
+              "createdAt": "",
+              "updatedAt": ""
+            }
+          ]
+  - name: 400 Response
+    description: Año fuera del rango permitido
+    request:
+      url: "{{baseUrl}}/api/admin/orientations/year-level/:yearLevel"
+      method: GET
+      params:
+        - name: yearLevel
+          value: "6"
+          type: path
+          description: Año escolar (4-7)
+    response:
+      status: 400
+      statusText: Bad Request
+      headers:
+        - name: Content-Type
+          value: "*/*"
+      body:
+        type: text
+        data: |-
+          [
+            {
+              "orientationId": {
+                "value": ""
+              },
+              "name": "",
+              "code": {
+                "value": ""
+              },
+              "description": "",
+              "availableFromYear": {
+                "value": 0
+              },
+              "isActive": false,
+              "createdAt": "",
+              "updatedAt": ""
+            }
+          ]
+
+docs: |
+  Devuelve las orientaciones habilitadas para un año específico
+  entre 4° y 7° del nivel medio técnico.

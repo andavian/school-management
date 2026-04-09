@@ -1,7 +1,7 @@
+// src/main/java/org/school/management/resources/infrastructure/persistence/mapper/ResourcePersistenceMapper.java
 package org.school.management.resources.infrastructure.persistence.mapper;
 
 import org.mapstruct.Mapper;
-import org.mapstruct.Mapping;
 import org.mapstruct.NullValuePropertyMappingStrategy;
 import org.school.management.resources.domain.model.Resource;
 import org.school.management.resources.domain.valueobject.ResourceId;
@@ -11,6 +11,8 @@ import org.school.management.resources.infrastructure.persistence.entity.Resourc
 public interface ResourcePersistenceMapper {
 
     default ResourceEntity toEntity(Resource domain) {
+        if (domain == null) return null;
+
         ResourceEntity entity = new ResourceEntity();
         entity.setResourceId(domain.getResourceId().value());
         entity.setName(domain.getName());
@@ -21,11 +23,14 @@ public interface ResourcePersistenceMapper {
         entity.setReservable(domain.isReservable());
         entity.setNotes(domain.getNotes());
         entity.setActive(domain.isActive());
-        // created_at/updated_at se manejan vía @PrePersist/@PreUpdate en la entidad
+        entity.setCreatedBy(domain.getCreatedBy());           // ← Agregado
+        // createdAt y updatedAt se manejan con @PrePersist / @PreUpdate
         return entity;
     }
 
     default Resource toDomain(ResourceEntity entity) {
+        if (entity == null) return null;
+
         return Resource.builder()
                 .resourceId(ResourceId.of(entity.getResourceId()))
                 .name(entity.getName())
@@ -36,6 +41,7 @@ public interface ResourcePersistenceMapper {
                 .reservable(entity.isReservable())
                 .notes(entity.getNotes())
                 .active(entity.isActive())
+                .createdBy(entity.getCreatedBy())               // ← Agregado
                 .createdAt(entity.getCreatedAt())
                 .updatedAt(entity.getUpdatedAt())
                 .build();

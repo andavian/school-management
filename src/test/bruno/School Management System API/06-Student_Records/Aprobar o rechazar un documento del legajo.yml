@@ -1,0 +1,105 @@
+info:
+  name: Aprobar o rechazar un documento del legajo
+  type: http
+  seq: 4
+  tags:
+    - Student_Records
+
+http:
+  method: PATCH
+  url: "{{baseUrl}}/api/admin/students/:studentId/record/documents/:documentId"
+  params:
+    - name: studentId
+      value: ""
+      type: path
+    - name: documentId
+      value: ""
+      type: path
+    - name: action
+      value: ""
+      type: query
+    - name: observations
+      value: ""
+      type: query
+      disabled: true
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+
+examples:
+  - name: 200 Response
+    description: OK
+    request:
+      url: "{{baseUrl}}/api/admin/students/:studentId/record/documents/:documentId"
+      method: PATCH
+      params:
+        - name: studentId
+          value: ""
+          type: path
+        - name: documentId
+          value: ""
+          type: path
+        - name: action
+          value: ""
+          type: query
+        - name: observations
+          value: ""
+          type: query
+          disabled: true
+    response:
+      status: 200
+      statusText: OK
+      headers:
+        - name: Content-Type
+          value: "*/*"
+      body:
+        type: text
+        data: |-
+          {
+            "recordId": "",
+            "studentId": "",
+            "recordNumber": "",
+            "registryId": "",
+            "folioNumber": 0,
+            "status": "",
+            "completenessPercentage": 0,
+            "reviewedBy": "",
+            "reviewedAt": "",
+            "reviewObservations": "",
+            "documents": [
+              {
+                "documentId": "",
+                "documentTypeId": "",
+                "title": "",
+                "description": "",
+                "fileName": "",
+                "mimeType": "",
+                "fileSizeBytes": 0,
+                "fileSizeMB": 0,
+                "issueDate": "",
+                "expiryDate": "",
+                "issuingAuthority": "",
+                "status": "",
+                "reviewObservations": "",
+                "approved": false,
+                "rejected": false,
+                "pending": false,
+                "valid": false,
+                "expired": false,
+                "expiringSoon": false,
+                "uploadedAt": "",
+                "updatedAt": ""
+              }
+            ],
+            "totalDocuments": 0,
+            "complete": false,
+            "hasExpiredDocuments": false,
+            "hasExpiringSoonDocuments": false,
+            "documentCountByStatus": {},
+            "createdAt": "",
+            "updatedAt": ""
+          }

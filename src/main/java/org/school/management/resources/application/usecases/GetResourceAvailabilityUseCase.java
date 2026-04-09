@@ -1,3 +1,4 @@
+// src/main/java/org/school/management/resources/application/usecases/GetResourceAvailabilityUseCase.java
 package org.school.management.resources.application.usecases;
 
 import lombok.RequiredArgsConstructor;
@@ -17,11 +18,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-/**
- * Use Case de consulta para calcular disponibilidad real de unidades físicas
- * en un rango horario específico. Cruza unidades operativamente disponibles
- * con reservas activas que se solapan en el tiempo.
- */
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -31,32 +27,43 @@ public class GetResourceAvailabilityUseCase {
     private final ResourceUnitRepository resourceUnitRepository;
     private final ReservationRepository reservationRepository;
 
-    /**
-     * DTO interno de respuesta para este caso de uso.
-     * Expone contadores y códigos de unidades libres para el frontend.
-     */
-    public record AvailabilityInfo(int totalAvailable, int currentlyReserved, int freeInRange, List<String> freeUnitCodes) {}
+    public record AvailabilityInfo(
+            int totalAvailable,
+            int currentlyReserved,
+            int freeInRange,
+            List<String> freeUnitCodes
+    ) {}
 
     /**
-     * Calcula disponibilidad cruzando el pool de unidades AVAILABLE con reservas CONFIRMED/IN_USE.
+     * Calcula disponibilidad real cruzando unidades AVAILABLE con reservas activas en el horario.
      */
     public AvailabilityInfo execute(ResourceId resourceId, LocalDate date, LocalTime start, LocalTime end) {
-        // 1. Pool base: unidades cuyo estado operativo es AVAILABLE
-        List<ResourceUnit> availablePool = resourceUnitRepository.findByResourceIdAndStatus(resourceId, UnitStatus.AVAILABLE);
 
-        // 2. Unidades bloqueadas por reservas activas en ese horario (query JPQL optimizada)
-        Set<UnitId> busyUnitIds = reservationRepository.findReservedUnitIdsForDateRange(resourceId, date, start, end);
+        // 1. Pool de unidades físicamente disponibles
+        List<ResourceUnit> availablePool = resourceUnitRepository
+                .findByResourceIdAndStatus(resourceId, UnitStatus.AVAILABLE);
 
-        // 3. Filtrar y contar realmente libres
-        long freeCount = availablePool.stream()
+        // 2. Unidades bloqueadas por reservas en ese rango horario
+        Set<UnitId> busyUnitIds = reservationRepository
+                .findReservedUnitIdsForDateRange(resourceId, date, start, end);
+
+        // 3. Filtrar unidades realmente libres
+        List<ResourceUnit> freeUnits = availablePool.stream()
                 .filter(u -> !busyUnitIds.contains(u.getUnitId()))
-                .count();
+                .toList();
 
-        List<String> freeCodes = availablePool.stream()
-                .filter(u -> !busyUnitIds.contains(u.getUnitId()))
+        List<String> freeCodes = freeUnits.stream()
                 .map(ResourceUnit::getUnitCode)
-                .collect(Collectors.toList());
+                .toList();
 
-        return new AvailabilityInfo(availablePool.size(), busyUnitIds.size(), (int) freeCount, freeCodes);
+        log.debug("Disponibilidad para recurso {} en {} {}–{}: {} libres de {}",
+                resourceId, date, start, end, freeUnits.size(), availablePool.size());
+
+        return new AvailabilityInfo(
+                availablePool.size(),
+                busyUnitIds.size(),
+                freeUnits.size(),
+                freeCodes
+        );
     }
 }

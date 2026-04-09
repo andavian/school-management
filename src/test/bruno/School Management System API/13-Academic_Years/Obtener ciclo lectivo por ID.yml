@@ -1,0 +1,84 @@
+info:
+  name: Obtener ciclo lectivo por ID
+  type: http
+  seq: 5
+  tags:
+    - Academic_Years
+
+http:
+  method: GET
+  url: "{{baseUrl}}/api/admin/academic-years/:id"
+  params:
+    - name: id
+      value: 2024-uuid
+      type: path
+      description: ID del ciclo lectivo
+  auth:
+    type: bearer
+    token: "{{token}}"
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+
+examples:
+  - name: 200 Response
+    description: Ciclo lectivo encontrado
+    request:
+      url: "{{baseUrl}}/api/admin/academic-years/:id"
+      method: GET
+      params:
+        - name: id
+          value: 2024-uuid
+          type: path
+          description: ID del ciclo lectivo
+    response:
+      status: 200
+      statusText: OK
+      headers:
+        - name: Content-Type
+          value: "*/*"
+      body:
+        type: text
+        data: |-
+          {
+            "academicYearId": "",
+            "year": 0,
+            "startDate": "",
+            "endDate": "",
+            "status": "",
+            "createdAt": "",
+            "updatedAt": ""
+          }
+  - name: 404 Response
+    description: Ciclo lectivo no encontrado
+    request:
+      url: "{{baseUrl}}/api/admin/academic-years/:id"
+      method: GET
+      params:
+        - name: id
+          value: 2024-uuid
+          type: path
+          description: ID del ciclo lectivo
+    response:
+      status: 404
+      statusText: Not Found
+      headers:
+        - name: Content-Type
+          value: "*/*"
+      body:
+        type: text
+        data: |-
+          {
+            "academicYearId": "",
+            "year": 0,
+            "startDate": "",
+            "endDate": "",
+            "status": "",
+            "createdAt": "",
+            "updatedAt": ""
+          }
+
+docs: Devuelve un ciclo lectivo específico por su ID.

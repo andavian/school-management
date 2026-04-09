@@ -1,0 +1,300 @@
+info:
+  name: Actualizar profesor
+  type: http
+  seq: 4
+  tags:
+    - Teachers
+
+http:
+  method: PATCH
+  url: "{{baseUrl}}/api/admin/teachers/:teacherId"
+  params:
+    - name: teacherId
+      value: ""
+      type: path
+      description: UUID del profesor
+  body:
+    type: json
+    data: |-
+      {
+        "firstName": "",
+        "lastName": "",
+        "birthDate": "",
+        "birthPlaceId": "",
+        "gender": "",
+        "nationality": "",
+        "phone": "",
+        "email": "",
+        "address": {
+          "street": "",
+          "number": "",
+          "floor": "",
+          "apartment": "",
+          "placeId": "",
+          "postalCode": ""
+        },
+        "specialization": "",
+        "teachingLicense": "",
+        "employmentType": "FULL_TIME",
+        "employmentStatus": "ACTIVE"
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+
+examples:
+  - name: 200 Response
+    description: Profesor actualizado
+    request:
+      url: "{{baseUrl}}/api/admin/teachers/:teacherId"
+      method: PATCH
+      params:
+        - name: teacherId
+          value: ""
+          type: path
+          description: UUID del profesor
+      body:
+        type: json
+        data: |-
+          {
+            "firstName": "",
+            "lastName": "",
+            "birthDate": "",
+            "birthPlaceId": "",
+            "gender": "",
+            "nationality": "",
+            "phone": "",
+            "email": "",
+            "address": {
+              "street": "",
+              "number": "",
+              "floor": "",
+              "apartment": "",
+              "placeId": "",
+              "postalCode": ""
+            },
+            "specialization": "",
+            "teachingLicense": "",
+            "employmentType": "FULL_TIME",
+            "employmentStatus": "ACTIVE"
+          }
+    response:
+      status: 200
+      statusText: OK
+      headers:
+        - name: Content-Type
+          value: "*/*"
+      body:
+        type: text
+        data: |-
+          {
+            "teacherId": "",
+            "userId": "",
+            "firstName": "",
+            "lastName": "",
+            "fullName": "",
+            "dni": "",
+            "cuil": "",
+            "email": "",
+            "birthDate": "",
+            "gender": "",
+            "nationality": "",
+            "phone": "",
+            "address": {
+              "street": "",
+              "number": "",
+              "floor": "",
+              "apartment": "",
+              "postalCode": "",
+              "placeId": ""
+            },
+            "birthPlace": {
+              "placeId": "",
+              "placeName": "",
+              "provinceName": "",
+              "countryName": ""
+            },
+            "residencePlace": {},
+            "specialization": "",
+            "teachingLicense": "",
+            "hireDate": "",
+            "employmentStatus": "ACTIVE",
+            "employmentType": "FULL_TIME",
+            "active": false,
+            "pendingActivation": false,
+            "activatedAt": "",
+            "createdAt": "",
+            "updatedAt": ""
+          }
+  - name: 404 Response
+    description: Profesor no encontrado
+    request:
+      url: "{{baseUrl}}/api/admin/teachers/:teacherId"
+      method: PATCH
+      params:
+        - name: teacherId
+          value: ""
+          type: path
+          description: UUID del profesor
+      body:
+        type: json
+        data: |-
+          {
+            "firstName": "",
+            "lastName": "",
+            "birthDate": "",
+            "birthPlaceId": "",
+            "gender": "",
+            "nationality": "",
+            "phone": "",
+            "email": "",
+            "address": {
+              "street": "",
+              "number": "",
+              "floor": "",
+              "apartment": "",
+              "placeId": "",
+              "postalCode": ""
+            },
+            "specialization": "",
+            "teachingLicense": "",
+            "employmentType": "FULL_TIME",
+            "employmentStatus": "ACTIVE"
+          }
+    response:
+      status: 404
+      statusText: Not Found
+      headers:
+        - name: Content-Type
+          value: "*/*"
+      body:
+        type: text
+        data: |-
+          {
+            "teacherId": "",
+            "userId": "",
+            "firstName": "",
+            "lastName": "",
+            "fullName": "",
+            "dni": "",
+            "cuil": "",
+            "email": "",
+            "birthDate": "",
+            "gender": "",
+            "nationality": "",
+            "phone": "",
+            "address": {
+              "street": "",
+              "number": "",
+              "floor": "",
+              "apartment": "",
+              "postalCode": "",
+              "placeId": ""
+            },
+            "birthPlace": {
+              "placeId": "",
+              "placeName": "",
+              "provinceName": "",
+              "countryName": ""
+            },
+            "residencePlace": {},
+            "specialization": "",
+            "teachingLicense": "",
+            "hireDate": "",
+            "employmentStatus": "ACTIVE",
+            "employmentType": "FULL_TIME",
+            "active": false,
+            "pendingActivation": false,
+            "activatedAt": "",
+            "createdAt": "",
+            "updatedAt": ""
+          }
+  - name: 422 Response
+    description: Datos inválidos
+    request:
+      url: "{{baseUrl}}/api/admin/teachers/:teacherId"
+      method: PATCH
+      params:
+        - name: teacherId
+          value: ""
+          type: path
+          description: UUID del profesor
+      body:
+        type: json
+        data: |-
+          {
+            "firstName": "",
+            "lastName": "",
+            "birthDate": "",
+            "birthPlaceId": "",
+            "gender": "",
+            "nationality": "",
+            "phone": "",
+            "email": "",
+            "address": {
+              "street": "",
+              "number": "",
+              "floor": "",
+              "apartment": "",
+              "placeId": "",
+              "postalCode": ""
+            },
+            "specialization": "",
+            "teachingLicense": "",
+            "employmentType": "FULL_TIME",
+            "employmentStatus": "ACTIVE"
+          }
+    response:
+      status: 422
+      statusText: Unprocessable Entity
+      headers:
+        - name: Content-Type
+          value: "*/*"
+      body:
+        type: text
+        data: |-
+          {
+            "teacherId": "",
+            "userId": "",
+            "firstName": "",
+            "lastName": "",
+            "fullName": "",
+            "dni": "",
+            "cuil": "",
+            "email": "",
+            "birthDate": "",
+            "gender": "",
+            "nationality": "",
+            "phone": "",
+            "address": {
+              "street": "",
+              "number": "",
+              "floor": "",
+              "apartment": "",
+              "postalCode": "",
+              "placeId": ""
+            },
+            "birthPlace": {
+              "placeId": "",
+              "placeName": "",
+              "provinceName": "",
+              "countryName": ""
+            },
+            "residencePlace": {},
+            "specialization": "",
+            "teachingLicense": "",
+            "hireDate": "",
+            "employmentStatus": "ACTIVE",
+            "employmentType": "FULL_TIME",
+            "active": false,
+            "pendingActivation": false,
+            "activatedAt": "",
+            "createdAt": "",
+            "updatedAt": ""
+          }
+
+docs: PATCH semántico — null conserva el valor existente. Soporta actualización de datos personales, contacto y profesionales.

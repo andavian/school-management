@@ -1,0 +1,7 @@
+info:
+  name: 19-Courses
+  type: folder
+  seq: 1
+
+request:
+  auth: inherit
