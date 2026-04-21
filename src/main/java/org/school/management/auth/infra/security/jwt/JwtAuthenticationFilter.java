@@ -1,4 +1,4 @@
-package org.school.management.auth.infra.security;
+package org.school.management.auth.infra.security.jwt;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.FilterChain;
@@ -11,7 +11,6 @@ import org.school.management.auth.domain.repository.BlacklistedTokenRepository;
 import org.school.management.auth.infra.security.exception.InvalidTokenException;
 import org.school.management.auth.infra.security.exception.TokenExpiredException;
 import org.school.management.auth.infra.security.util.TokenHashUtil;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -29,7 +28,6 @@ import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 @Component

@@ -21,8 +21,7 @@ public record Cuil(String value) {
             "34"  // Mujeres extranjeras / especiales
     );
 
-    // Pesos para dígito verificador oficial
-    private static final int[] WEIGHTS = {5, 4, 3, 2, 7, 6, 5, 4, 3, 2};
+
 
     public Cuil {
         if (value == null || value.isBlank()) {
@@ -47,14 +46,37 @@ public record Cuil(String value) {
         value = cleaned;
     }
 
-    private static boolean isValidCheckDigit(String cuil11) {
+    private static boolean isValidCheckDigit(String cleanedCuil) {
+        if (cleanedCuil.length() != 11) return false;
+
+        int[] weights = {5, 4, 3, 2, 7, 6, 5, 4, 3, 2};
         int sum = 0;
+
         for (int i = 0; i < 10; i++) {
-            sum += Character.getNumericValue(cuil11.charAt(i)) * WEIGHTS[i];
+            sum += Character.getNumericValue(cleanedCuil.charAt(i)) * weights[i];
         }
-        int checkDigit = (11 - (sum % 11)) % 11;
-        if (checkDigit == 10) checkDigit = 9; // Regla especial ANSES/AFIP
-        return checkDigit == Character.getNumericValue(cuil11.charAt(10));
+
+        int resto = sum % 11;
+        int calculatedDigit;
+
+        if (resto == 0) {
+            calculatedDigit = 0;
+        } else if (resto == 1) {
+            // Regla especial: Si el resto es 1, el prefijo DEBE ser 23
+            String prefix = cleanedCuil.substring(0, 2);
+            if (!prefix.equals("23")) {
+                return false; // Si el resto es 1 y no es prefijo 23, es inválido
+            }
+
+            // Aquí podrías diferenciar por género si tuvieras el dato,
+            // pero el dígito estará físicamente en la última posición:
+            calculatedDigit = Character.getNumericValue(cleanedCuil.charAt(10));
+            return (calculatedDigit == 4 || calculatedDigit == 9);
+        } else {
+            calculatedDigit = 11 - resto;
+        }
+
+        return calculatedDigit == Character.getNumericValue(cleanedCuil.charAt(10));
     }
 
     public static Cuil of(String value) {
@@ -90,9 +112,9 @@ public record Cuil(String value) {
             case "20" -> CuilType.MALE_ARGENTINEAN;
             case "27" -> CuilType.FEMALE_ARGENTINEAN;
             case "24" -> CuilType.FOREIGN_MERCOSUR;
-            case "23", "30" -> CuilType.LEGAL_ENTITY;
-            case "33" -> CuilType.MALE_FOREIGN;
-            case "34" -> CuilType.FEMALE_FOREIGN;
+            case "23" -> CuilType.SPECIAL;
+            case "30","33", "34" -> CuilType.LEGAL_ENTITY;
+
             default -> CuilType.UNKNOWN;
         };
     }

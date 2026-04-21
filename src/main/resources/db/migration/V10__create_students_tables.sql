@@ -49,7 +49,7 @@ CREATE TABLE student_health_records (
     student_id          BINARY(16) NOT NULL UNIQUE, -- 1:1 con student_personal_data
 
     -- Datos médicos
-    blood_type          VARCHAR(5),
+    blood_type          VARCHAR(10),
     health_insurance    VARCHAR(100),
     health_insurance_number VARCHAR(50),
     allergies           TEXT,

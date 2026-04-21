@@ -1,0 +1,90 @@
+info:
+  name: 01 - POST Crear Estudiante Completo
+  type: http
+  seq: 1
+  tags:
+    - Students
+
+http:
+  method: POST
+  url: "{{baseUrl}}/api/admin/students"
+  body:
+    type: json
+    data: |-
+      {
+        "dni": "99887766",
+        "firstName": "Valentina",
+        "lastName": "Moreno",
+        "birthDate": "2011-06-12",
+        "gender": "FEMALE",
+        "cuil": "27998877666",
+        "email": "valentina.moreno@gmail.com",
+        "phone": "3515123456",
+        
+        "nationality": "Argentina",
+        "birthPlaceId": "{{cordoba_place_id}}",
+        "residencePlaceId": "{{cordoba_place_id}}",
+        
+        "addressStreet": "Av. Colón",
+        "addressNumber": "1234",
+        
+        "gradeLevelId": "{{grade_level_1a_id}}",
+        "enrollmentType": "NEW",
+        
+        "healthData": {
+          "bloodType": "A+",
+          "allergies": "Polen y ácaros",
+          "medications": "Ninguna",
+          "medicalObservations": "Requiere lentes para ver de lejos",
+          "emergencyContactFirstName": "Diego",
+          "emergencyContactLastName":"Moreno",
+          "emergencyContactPhone":"3515999888"
+        },
+        
+        "parent": {
+          "firstName": "Diego",
+          "lastName": "Moreno",
+          "dni": "22334455",
+          "cuil": "20223344551",
+          "phone": "3515999888",
+          "email": "diego.moreno@gmail.com",
+          "relationship": "FATHER"
+        }
+      }
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        // === ASSERTIONS FUERTES ===
+        bru.test("Status debe ser 201 Created", () => {
+          expect(res.status).to.equal(201);
+        });
+
+        bru.test("Respuesta contiene ID del estudiante", () => {
+          const body = res.getBody();
+          const studentId = body.id || body.studentId || body.data?.id;
+          expect(studentId).to.not.be.null;
+          expect(studentId).to.not.be.undefined;
+          bru.setEnvVar("new_created_student_id", studentId);
+        });
+
+        bru.test("Datos personales correctos", () => {
+          const body = res.getBody();
+          expect(body.firstName).to.equal("Valentina");
+          expect(body.lastName).to.equal("Moreno");
+          expect(body.dni).to.equal("99887766");
+        });
+
+        bru.test("Health Record fue creado", () => {
+          const body = res.getBody();
+          expect(body.healthRecord).to.not.be.null;
+        });
+
+        bru.test("Enrollment fue creada", () => {
+          const body = res.getBody();
+          expect(body.enrollment).to.not.be.null;
+        });
+
+        console.log(`✅ Estudiante creado exitosamente → ID: ${bru.getEnvVar("new_created_student_id")}`);

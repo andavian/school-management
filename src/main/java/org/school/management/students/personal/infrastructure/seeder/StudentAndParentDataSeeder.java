@@ -143,7 +143,7 @@ public class StudentAndParentDataSeeder implements ApplicationRunner {
     }
 
     private UUID resolveAdminUserId() {
-        return userRepository.findByDni("00000001")
+        return userRepository.findByDni("10000001")
                 .map(u -> u.getUserId())
                 .orElseThrow(() -> new IllegalStateException(
                         "Admin user (DNI 00000001) not found. Run V3 migration first."));
@@ -166,7 +166,7 @@ public class StudentAndParentDataSeeder implements ApplicationRunner {
         seedStudent(
                 STUDENT_1_ID, STUDENT_1_USER_ID,
                 "Lucas", "Romero",
-                "11223344", "20112233444",
+                "11223344", "23112233449",
                 "lucas.romero@gmail.com",
                 LocalDate.of(2010, 3, 20),
                 AcademicDataSeeder.GL_2025_1A,
@@ -174,7 +174,7 @@ public class StudentAndParentDataSeeder implements ApplicationRunner {
                 placeId, adminUserId, studentRole,
                 PARENT_1_ID, PARENT_1_USER_ID,
                 "Roberto", "Romero",
-                "98765432", "20987654325",
+                "28431623", "20284316232",
                 "roberto.romero@gmail.com", "3514101010",
                 ParentRelationship.FATHER, parentRole
         );
@@ -183,7 +183,7 @@ public class StudentAndParentDataSeeder implements ApplicationRunner {
         seedStudent(
                 STUDENT_2_ID, STUDENT_2_USER_ID,
                 "Sofía", "Torres",
-                "87654321", "27876543211",
+                "87654321", "20876543213",
                 null,
                 LocalDate.of(2010, 7, 5),
                 AcademicDataSeeder.GL_2025_1A,
@@ -191,7 +191,7 @@ public class StudentAndParentDataSeeder implements ApplicationRunner {
                 placeId, adminUserId, studentRole,
                 PARENT_2_ID, PARENT_2_USER_ID,
                 "Carmen", "Torres",
-                "76543210", "27765432103",
+                "76543210", "20765432102",
                 "carmen.torres@gmail.com", "3514202020",
                 ParentRelationship.MOTHER, parentRole
         );
@@ -200,7 +200,7 @@ public class StudentAndParentDataSeeder implements ApplicationRunner {
         seedStudent(
                 STUDENT_3_ID, STUDENT_3_USER_ID,
                 "Martín", "Díaz",
-                "44556677", "20445566774",
+                "44556677", "20445566771",
                 "martin.diaz@gmail.com",
                 LocalDate.of(2007, 11, 12),
                 AcademicDataSeeder.GL_2025_4A,
@@ -208,7 +208,7 @@ public class StudentAndParentDataSeeder implements ApplicationRunner {
                 placeId, adminUserId, studentRole,
                 PARENT_3_ID, PARENT_3_USER_ID,
                 "Hugo", "Díaz",
-                "33445566", "20334455669",
+                "33445566", "23334455669",
                 "hugo.diaz@gmail.com", "3514303030",
                 ParentRelationship.FATHER, parentRole
         );
@@ -217,7 +217,7 @@ public class StudentAndParentDataSeeder implements ApplicationRunner {
         seedStudent(
                 STUDENT_4_ID, STUDENT_4_USER_ID,
                 "Ana", "Gómez",
-                "55667788", "27556677888",
+                "55667788", "20556677882",
                 "ana.gomez@gmail.com",
                 LocalDate.of(2007, 4, 28),
                 AcademicDataSeeder.GL_2025_4C,
@@ -225,7 +225,7 @@ public class StudentAndParentDataSeeder implements ApplicationRunner {
                 placeId, adminUserId, studentRole,
                 PARENT_4_ID, PARENT_4_USER_ID,
                 "Patricia", "Gómez",
-                "66778899", "27667788999",
+                "66778899", "20667788997",
                 "patricia.gomez@gmail.com", "3514404040",
                 ParentRelationship.MOTHER, parentRole
         );

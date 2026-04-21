@@ -270,8 +270,9 @@ public class CreateStudentUseCase {
     // ── Helper: crear nuevo padre ─────────────────────────────────────────
 
     private Parent createNewParent(CreateStudentRequest.ParentRequest request, UserId createdBy) {
-        log.debug("Parent not found — creating new parent with DNI: {}", request.dni());
-
+        log.info("DEBUG COMPLETO PARENT: {}", request.toString());
+        log.info("Parent not found — creating new parent with DNI: {}", request.dni());
+        log.info("Intentando crear padre con CUIL: '{}'", request.cuil());
         // Generar password segura para el padre
         String rawPassword = generateSecurePassword();
 

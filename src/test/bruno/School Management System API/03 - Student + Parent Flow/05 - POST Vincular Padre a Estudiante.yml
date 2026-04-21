@@ -1,26 +1,27 @@
-meta:
+info:
   name: 05 - POST Vincular Padre a Estudiante
   type: http
   seq: 5
+  tags:
+    - Parents
 
-post:
-  url: "{{base_url}}/api/admin/students/{{current_student_id}}/parents"
+http:
+  method: POST
+  url: "{{baseUrl}}/api/admin/students/{{current_student_id}}/parents"
+  body:
+    type: json
+    data: |-
+      {
+        "parentDni": "98765432"
+      }
+  auth: inherit
 
-auth:
-  type: bearer
-  token: "{{jwt_token}}"
-
-body:
-  type: json
-  raw: |
-    {
-      "parentDni": "98765432"
-    }
-
-script:
-  post-response: |
-    if (res.status === 201) {
-      console.log("✅ Padre vinculado correctamente al estudiante");
-    } else {
-      console.error("❌ Error al vincular padre:", res.getBody());
-    }
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        if (res.status === 201) {
+          console.log("✅ Padre vinculado correctamente al estudiante");
+        } else {
+          console.error("❌ Error al vincular padre:", res.getBody());
+        }

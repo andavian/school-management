@@ -3,6 +3,8 @@ package org.school.management.auth.domain.repository;
 import org.school.management.auth.domain.model.User;
 import org.school.management.auth.domain.valueobject.UserId;
 import org.school.management.shared.person.domain.valueobject.Dni;
+import org.springframework.data.jpa.repository.Modifying;
+
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -10,6 +12,7 @@ import java.util.Optional;
 public interface UserRepository {
 
     // CRUD Básico
+    @Modifying(clearAutomatically = true)
     User save(User user);
     Optional<User> findById(UserId id);
 

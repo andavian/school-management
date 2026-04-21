@@ -10,7 +10,7 @@
 Sistema de gestión escolar para el **IPET 132** (Argentina).
 **Stack:** Java 17 + Spring Boot 3.3.4 + Spring Security 6 + MySQL 8
 **Package raíz:** `org.school.management`
-**Estado actual:** Auth ✅ + Geography ✅ + Academic ✅ + Students ✅ + Teachers ✅ + Email Service ✅ + Grades ✅ + Course ✅ + Attendance ✅ + Rate Limiting ✅ + Storage (OCI) ✅ + Teaching Materials ✅
+**Estado actual:** Auth ✅ + Geography ✅ + Academic ✅ + Students ✅ + Teachers ✅ + Email Service ✅ + Grades ✅ + Course ✅ + Attendance ✅ + Rate Limiting ✅ + Storage (OCI) ✅ + Teaching Materials ✅+ Resources ✅
 
 ---
 
@@ -45,6 +45,7 @@ course/              → Asignación profesor-materia-curso ✅ COMPLETO
 attendance/          → Asistencia diaria y por materia ✅ COMPLETO
 storage/             → Almacenamiento de archivos en OCI Object Storage ✅ COMPLETO
 teaching-materials/  → Material didáctico de profesores ✅ COMPLETO
+resources/           → Gestión de recursos didácticos, unidades físicas y sistema de reservas ✅
 ```
 
 **Regla:** Un bounded context **no importa clases completas de otro**.
@@ -699,6 +700,7 @@ teaching-materials/
 ```
 
 **Endpoints teaching-materials:**
+
 | Método | Path | Rol | Descripción |
 |--------|------|-----|-------------|
 | POST | `/api/materials` | TEACHER | Subir material (multipart/form-data) |
@@ -715,6 +717,104 @@ teaching-materials/
 - `GET /my-courses` recibe `courseSubjectIds` como query params — el frontend los obtiene previamente vía `GET /api/courses/enrollments/{enrollmentId}/courses`
 - `DeleteMaterialUseCase` falla fuerte si OCI falla — no quedan registros huérfanos en BD
 - `UpdateMaterialUseCase` no permite cambiar el archivo — solo metadata y visibilidad
+
+### `resources/` ✅ COMPLETO
+
+```
+resources/
+├── domain/
+│   ├── model/
+│   │   ├── Resource
+│   │   │    — create(...) factory method con validaciones
+│   │   │    — updateMetadata(name, description, location, reservable, notes)
+│   │   │    — deactivate()
+│   │   ├── ResourceUnit
+│   │   │    — create(...)
+│   │   │    — assignToReservation(), returnFromReservation()
+│   │   │    — markForMaintenance(), completeMaintenance(), markAsOnLoan(), returnFromLoan(), retire()
+│   │   ├── Reservation (Aggregate Root)
+│   │   │    — create(...)
+│   │   │    — markAsInUse(), markAsReturned(observations), cancel(actorId, reason)
+│   │   │    — assignUnit(unit), belongsToRequester(userId)
+│   │   └── ReservationUnit (relación)
+│   ├── valueobject/
+│   │   ├── ResourceId, UnitId, ReservationId, ReservationUnitId
+│   │   ├── ResourceType (PROJECTOR, LAPTOP, etc.)
+│   │   ├── UnitStatus (AVAILABLE, IN_USE, MAINTENANCE, ON_LOAN, RETIRED)
+│   │   ├── ConditionStatus (GOOD, FAIR, POOR)
+│   │   └── ReservationStatus (CONFIRMED, IN_USE, RETURNED, CANCELLED)
+│   ├── repository/
+│   │   ├── ResourceRepository, ResourceUnitRepository, ReservationRepository
+│   └── exception/
+│       ├── ResourceNotFoundException
+│       ├── ReservationNotFoundException
+│       ├── InsufficientResourceUnitsException
+│       ├── InvalidReservationStateException
+│       └── ReservationAccessDeniedException
+├── application/
+│   ├── dto/request/
+│   │   ├── CreateResourceRequest, UpdateResourceRequest
+│   │   ├── CreateResourceUnitRequest, UpdateUnitStatusRequest
+│   │   ├── CreateReservationRequest, CancelReservationRequest, ReturnReservationRequest
+│   ├── dto/response/
+│   │   ├── ResourceResponse, ResourceUnitResponse, ReservationResponse
+│   ├── mapper/
+│   │   ├── ResourceApplicationMapper
+│   └── usecases/
+│       ├── CreateResourceUseCase
+│       ├── UpdateResourceUseCase
+│       ├── GetResourceByIdUseCase, ListResourcesUseCase
+│       ├── CreateResourceUnitUseCase, UpdateUnitStatusUseCase
+│       ├── CreateReservationUseCase
+│       ├── GetMyReservationsUseCase, GetResourceAvailabilityUseCase
+│       ├── MarkReservationInUseUseCase
+│       ├── ReturnReservationUseCase
+│       └── CancelReservationUseCase
+└── infrastructure/
+├── persistence/
+│   ├── entity/ ResourceEntity, ResourceUnitEntity, ReservationEntity, ReservationUnitEntity
+│   ├── repository/ ResourceJpaRepository, ResourceUnitJpaRepository,
+│   │               ReservationJpaRepository, ReservationUnitJpaRepository
+│   ├── adapter/ ResourceRepositoryAdapter, ResourceUnitRepositoryAdapter,
+│   │            ReservationRepositoryAdapter
+│   └── mapper/ ResourcePersistenceMapper, ResourceUnitPersistenceMapper,
+│               ReservationPersistenceMapper
+└── web/
+├── dto/ ResourceWebDto, ReservationWebDto
+├── mapper/ ResourcesWebMapper
+├── controller/ ResourceController, ReservationController
+└── exception/ ResourcesExceptionHandler
+text
+```
+
+**Endpoints resources:**
+
+| Método | Path | Rol | Descripción |
+|--------|------|-----|-------------|
+| POST | `/api/resources` | ADMIN, STAFF | Crear recurso en el catálogo |
+| GET | `/api/resources` | Todos | Listar recursos (con filtro por tipo y reservable) |
+| GET | `/api/resources/{resourceId}` | Todos | Obtener detalle de un recurso |
+| PATCH | `/api/resources/{resourceId}` | ADMIN, STAFF | Actualizar recurso (PATCH semántico) |
+| POST | `/api/resources/{resourceId}/units` | ADMIN, STAFF | Crear unidad física |
+| PATCH | `/api/resources/units/{unitId}` | ADMIN, STAFF | Actualizar estado y condición de unidad |
+| POST | `/api/resources/reservations` | TEACHER, ADMIN, STAFF | Crear reserva |
+| GET | `/api/resources/reservations/my` | TEACHER, ADMIN, STAFF | Ver mis reservas |
+| GET | `/api/resources/reservations/availability` | Todos | Consultar disponibilidad en un rango horario |
+| PATCH | `/api/resources/reservations/{reservationId}/start` | ADMIN, STAFF | Marcar reserva como en uso (retiro físico) |
+| PATCH | `/api/resources/reservations/{reservationId}/return` | ADMIN, STAFF | Registrar devolución de la reserva |
+| PATCH | `/api/resources/reservations/{reservationId}/cancel` | TEACHER, ADMIN, STAFF | Cancelar reserva |
+
+**Decisiones clave `resources/`:**
+
+- `Resource` y `Reservation` son Aggregates con comportamiento rico (transiciones de estado validadas en el dominio)
+- `ReservationDomainService` fue eliminado — la lógica de disponibilidad y asignación se movió directamente a `CreateReservationUseCase` para mayor cohesión
+- Disponibilidad calcula en tiempo real cruzando unidades `AVAILABLE` con reservas activas que se solapan en horario
+- Ownership: TEACHER puede crear y cancelar **sus propias** reservas; ADMIN/STAFF pueden gestionar todas
+- `UnitStatus` controla el ciclo de vida operativo de cada unidad física (`AVAILABLE → IN_USE → AVAILABLE`)
+- `ConditionStatus` (GOOD/FAIR/POOR) es independiente del estado operativo
+- No se permite reservar recursos con `reservable = false`
+- Todas las transiciones de estado (`markAsInUse`, `markAsReturned`, `cancel`, etc.) validan reglas en el modelo de dominio
+- Uso consistente de `UUID` en lugar de `UserId` para evitar acoplamiento con `auth/`
 
 ---
 
@@ -830,28 +930,31 @@ class CreateStudentUseCaseTest {
 
 ## 🗄️ Migraciones Flyway
 
-| Versión | Contenido |
-|---------|-----------|
-| V1 | Tabla `users` |
-| V2 | Tabla `blacklisted_tokens` |
-| V3 | Admin por defecto (dev) |
-| V4 | Tabla `refresh_tokens` |
-| V5 | `countries`, `provinces`, `places` |
-| V6 | `academic_years`, `orientations`, `grade_levels`, `subjects`, `qualification_registries` |
-| V7 | `study_plans`, `evaluation_periods`, extensiones academic |
-| V10 | `student_personal_data`, `student_health_records` |
-| V11 | `document_types`, `student_records`, `record_documents` |
-| V12 | `parents`, `student_parents` (incluye `cuil` en `parents`) |
-| V13 | `teachers` |
-| V14 | `withdrawal_reasons`, `student_enrollments` |
-| V15 | `courses`, `course_subjects`, `student_course_subjects` |
-| V17 | `evaluation_types`, `evaluations`, `period_grades`, `final_grades` |
-| V19 | `countries`, `provinces` — datos Argentina (seed SQL) |
-| V20 | `places` — localidades Argentina (seed SQL) |
-| V21 | `attendance_daily_records`, `attendance_course_records`, `attendance_period_summaries` |
-| V22 | `teaching_materials` ✅ |
+| Versión | Contenido                                                                                                                                           |
+|---------|-----------------------------------------------------------------------------------------------------------------------------------------------------|
+| V1      | Tabla `roles`                                                                                                                                       |
+| V2      | Tabla `users`                                                                                                                                       |
+| V3      | Tabla `blacklisted_tokens`                                                                                                                          |
+| V4      | Tabla `refresh_tokens`                                                                                                                              |
+| v5      | `password_resets`                                                                                                                                   |
+| v6      | `recovery_codes`                                                                                                                                    |
+| V7      | `recovery codes`                                                                                                                                    |
+| V8      | `countries`, `provinces`, `places`                                                                                                                  |
+| V9      | `academic_years`, `orientations`, `grade_levels`, `subjects`, `qualification_registries`, `study_plans`, `evaluation_periods`, extensiones academic |
+| V10     | `student_personal_data`, `student_health_records`                                                                                                   |
+| V11     | `document_types`, `student_records`, `record_documents`                                                                                             |
+| V12     | `parents`, `student_parents` (incluye `cuil` en `parents`)                                                                                          |
+| V13     | `teachers`                                                                                                                                          |
+| V14     | `withdrawal_reasons`, `student_enrollments`                                                                                                         |
+| V15     | `courses`, `course_subjects`, `student_course_subjects`                                                                                             |
+| V16     | `evaluation_types`, `evaluations`, `period_grades`, `final_grades`                                                                                  |
+| V17     | `countries`, `provinces` — datos Argentina (seed SQL)                                                                                               |
+| V18     | `places` — localidades Argentina (seed SQL)                                                                                                         |
+| V19     | `attendance_daily_records`, `attendance_course_records`, `attendance_period_summaries`                                                              |
+| V20     | `teaching_materials` ✅                                                                                                                              |
+| V21     | `resources`, `resource_units`, `reservations`, `reservation_units`                                                                                                     |
 
-**Próxima migración disponible: V23**
+**Próxima migración disponible: V22**
 
 ---
 
@@ -873,9 +976,9 @@ docker run -p 1025:1025 -p 8025:8025 mailhog/mailhog
 
 ## 🔑 Credenciales de Prueba (perfil `dev`)
 
-| Rol | DNI | Password |
-|-----|-----|----------|
-| ADMIN | `00000001` | `Admin123!` |
+| Rol | DNI        | Password |
+|-----|------------|----------|
+| ADMIN | `10000001` | `Admin123!` |
 | TEACHER | `12345678` | `Teacher123!` (Juan García — Matemática) |
 | TEACHER | `23456789` | `Teacher123!` (María López — Física) |
 | TEACHER | `34567890` | `Teacher123!` (Carlos Fernández — Electrotecnia) |
@@ -901,14 +1004,14 @@ docker run -p 1025:1025 -p 8025:8025 mailhog/mailhog
 - **`course/` — COMPLETO** — 5 endpoints + seeder
 - **`attendance/` — COMPLETO** — 7 endpoints + V21
 - **`storage/` — COMPLETO** — OCI Object Storage, puerto + adaptador
-- **`teaching-materials/` — COMPLETO** — 5 endpoints, upload OCI, ownership check, V22
+- **`teaching-materials/` — COMPLETO** — 5 endpoints, upload OCI, ownership check
+- **`resources/` — COMPLETO** — Gestión completa de recursos didácticos (proyectores, netbooks, salas multimedia, etc.), unidades físicas y sistema de reservas (disponibilidad en tiempo real, asignación automática, devolución, cancelación y control de acceso)
 - **Rate Limiting** — Bucket4j in-memory, 3 endpoints protegidos, configurable por perfil
 - **98 tests unitarios** — auth (8), teachers (11), parents (11), students (10), grades (19), course (9), attendance (30)
-- Flyway V1–V7, V10–V15, V17, V19, V20, V21, V22
+- Flyway V1–V21
 
 ### ⏳ Pendiente
 
-- [ ] Crear bucket OCI (`ipet132-documents`) y configurar variables de entorno OCI en `.env`
-- [ ] Probar endpoints de upload con bucket real (records + materials)
 - [ ] Auditoría (registrar quién hizo qué y cuándo)
 - [ ] Métricas / monitoreo
+- [ ] Notificaciones

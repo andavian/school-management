@@ -69,7 +69,7 @@ public class StudentEnrollmentEntity {
     @Column(name = "final_average", precision = 3, scale = 2)
     private BigDecimal finalAverage;
 
-    @Column(name = "passed")
+    @Column(name = "passed", nullable = true)
     private Boolean passed;
 
     @Column(name = "completion_date")

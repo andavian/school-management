@@ -108,7 +108,7 @@ public class TeacherDataSeeder implements ApplicationRunner {
     }
 
     private UUID resolveAdminUserId() {
-        return userRepository.findByDni("00000001")
+        return userRepository.findByDni("10000001")
                 .map(u -> u.getUserId())
                 .orElseThrow(() -> new IllegalStateException(
                         "Admin user (DNI 00000001) not found. Run V3 migration first."));

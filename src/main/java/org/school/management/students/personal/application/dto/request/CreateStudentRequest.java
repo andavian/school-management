@@ -1,5 +1,6 @@
 package org.school.management.students.personal.application.dto.request;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.*;
 
@@ -113,6 +114,7 @@ public record CreateStudentRequest(
                     regexp = "^(A|B|AB|O)[+-]$",
                     message = "Grupo sanguíneo inválido. Valores válidos: A+, A-, B+, B-, AB+, AB-, O+, O-"
             )
+            @Size(max = 10, message = "El tipo de sangre es demasiado largo")
             String bloodType,
 
             @Size(max = 100, message = "La obra social no puede superar los 100 caracteres")
@@ -155,6 +157,7 @@ public record CreateStudentRequest(
             @NotBlank(message = "El DNI del tutor es obligatorio")
             @Pattern(regexp = "^\\d{8}$", message = "El DNI debe tener exactamente 8 dígitos")
             String dni,
+
 
             @NotBlank(message = "El CUIL es obligatorio")
             @Pattern(regexp = "^\\d{11}$", message = "El CUIL debe tener 11 dígitos sin guiones")

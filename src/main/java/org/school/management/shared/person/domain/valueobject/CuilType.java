@@ -3,6 +3,7 @@ package org.school.management.shared.person.domain.valueobject;
 public enum CuilType {
     MALE_ARGENTINEAN("Hombre Argentino"),
     FEMALE_ARGENTINEAN("Mujer Argentina"),
+    SPECIAL("Especial"),
     MALE_FOREIGN("Hombre Extranjero"),
     FEMALE_FOREIGN("Mujer Extranjera"),
     FOREIGN_MERCOSUR("Extranjero Mercosur"),

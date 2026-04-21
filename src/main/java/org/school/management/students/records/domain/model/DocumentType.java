@@ -9,7 +9,7 @@ import java.util.Objects;
 /**
  * Entity: Tipo de Documento
  *
- * Catálogo de tipos de documentos que pueden formar parte del legajo
+ * Catálogo de tipos de documentos que pueden formar parte del legajo.
  * Ejemplos: DNI_FRENTE, DNI_DORSO, ACTA_NACIMIENTO, CERTIFICADO_SALUD, etc.
  */
 @Getter
@@ -26,6 +26,9 @@ public class DocumentType {
     private boolean isMandatory;
     private String description;
     private Integer validForYears;  // NULL = permanente
+
+    // AGREGADO: campo is_active para habilitar/deshabilitar tipos del catálogo
+    private boolean isActive;
 
     // ============ Domain Logic ============
 
@@ -60,6 +63,15 @@ public class DocumentType {
         this.isMandatory = false;
     }
 
+    // AGREGADO: métodos de ciclo de vida del tipo de documento
+    public void activate() {
+        this.isActive = true;
+    }
+
+    public void deactivate() {
+        this.isActive = false;
+    }
+
     public boolean isPermanent() {
         return validForYears == null;
     }
@@ -92,9 +104,9 @@ public class DocumentType {
             }
 
             return new DocumentType(
-                    documentTypeId, name, code, category, isMandatory, description, validForYears
+                    documentTypeId, name, code, category,
+                    isMandatory, description, validForYears, isActive
             );
         }
     }
 }
-

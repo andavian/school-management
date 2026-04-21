@@ -11,12 +11,11 @@ import org.school.management.auth.domain.model.User;
 import org.school.management.auth.domain.repository.UserRepository;
 import org.school.management.auth.domain.valueobject.PlainPassword;
 import org.school.management.auth.domain.valueobject.HashedPassword;
-import org.school.management.auth.infra.security.JwtTokenProvider;
+import org.school.management.auth.infra.security.jwt.JwtTokenProvider;
 import org.school.management.auth.infra.security.UserPrincipal;
 import org.school.management.shared.person.domain.valueobject.Dni;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
@@ -28,13 +27,15 @@ public class LoginUseCase {
     private final HashedPassword.PasswordEncoder passwordEncoder;
     private final JwtTokenProvider jwtTokenProvider;
 
-    @Transactional
+
     public LoginResponse execute(LoginRequest request) {
+
         log.info("Intento de login con DNI: {}", request.dni());
 
         // Convertir DNI del record a Value Object
         Dni dni = mapper.toDni(request.dni());
         PlainPassword plainPassword = mapper.toPlainPassword(request.password());
+
 
         // Buscar usuario por DNI
         User user = userRepository.findByDni(dni)

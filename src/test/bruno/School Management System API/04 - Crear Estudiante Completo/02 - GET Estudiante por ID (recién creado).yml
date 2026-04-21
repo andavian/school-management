@@ -1,0 +1,46 @@
+info:
+  name: 02 - GET Estudiante por ID (con Assertions)
+  type: http
+  seq: 2
+  tags:
+    - Students
+
+http:
+  method: GET
+  url: "{{baseUrl}}/api/admin/students/{{new_created_student_id}}"
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        bru.test("Status debe ser 200 OK", () => {
+          expect(res.status).to.equal(200);
+        });
+
+        bru.test("Estudiante tiene datos completos", () => {
+          const body = res.getBody();
+          expect(body.id).to.not.be.null;
+          expect(body.dni).to.equal("99887766");
+          expect(body.firstName).to.equal("Valentina");
+          expect(body.nationality).to.equal("Argentina");
+        });
+
+        bru.test("Tiene Health Record asociado", () => {
+          const body = res.getBody();
+          expect(body.healthRecord).to.not.be.null;
+          expect(body.healthRecord.bloodType).to.equal("A+");
+        });
+
+        bru.test("Tiene Enrollment activa", () => {
+          const body = res.getBody();
+          expect(body.enrollment).to.not.be.null;
+        });
+
+        console.log("✅ GET por ID validado correctamente");
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

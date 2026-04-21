@@ -504,16 +504,16 @@ public class AcademicDataSeeder implements ApplicationRunner {
         log.info("Seeding qualification registries...");
 
         registryRepository.save(buildRegistry(
-                REGISTRY_2024_ID, ACADEMIC_YEAR_2024_ID, "REG-2024-000001",
+                REGISTRY_2024_ID, ACADEMIC_YEAR_2024_ID, "REG-2024-001",
                 1, 500, "CLOSED"
         ));
-        log.info("  ✓ Registry: REG-2024-000001 (CLOSED)");
+        log.info("  ✓ Registry: REG-2024-001 (CLOSED)");
 
         registryRepository.save(buildRegistry(
-                REGISTRY_2025_ID, ACADEMIC_YEAR_2025_ID, "REG-2025-000001",
+                REGISTRY_2025_ID, ACADEMIC_YEAR_2025_ID, "REG-2025-001",
                 1, 500, "ACTIVE"
         ));
-        log.info("  ✓ Registry: REG-2025-000001 (ACTIVE)");
+        log.info("  ✓ Registry: REG-2025-001 (ACTIVE)");
 
         log.info("✓ Created 2 qualification registries");
     }

@@ -18,7 +18,7 @@ import org.school.management.auth.domain.repository.UserRepository;
 import org.school.management.auth.domain.valueobject.HashedPassword;
 import org.school.management.auth.domain.valueobject.RoleName;
 import org.school.management.auth.domain.valueobject.UserId;
-import org.school.management.auth.infra.security.JwtTokenProvider;
+import org.school.management.auth.infra.security.jwt.JwtTokenProvider;
 import org.school.management.shared.domain.event.AccountActivatedEvent;
 import org.school.management.shared.domain.event.DomainEventPublisher;
 import org.school.management.shared.person.domain.valueobject.Dni;
@@ -26,7 +26,6 @@ import org.school.management.shared.person.domain.valueobject.Dni;
 import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.Set;
-import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;

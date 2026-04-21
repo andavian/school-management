@@ -2,6 +2,7 @@ package org.school.management.auth.infra.web.dto.requests;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
+import org.school.management.auth.domain.valueobject.PlainPassword;
 
 public record LoginApiRequest(
         @NotBlank(message = "DNI es requerido")
@@ -14,7 +15,7 @@ public record LoginApiRequest(
         Boolean rememberMe
 ) {
     public LoginApiRequest {
-        if (!rememberMe) {
+        if (Boolean.FALSE.equals(rememberMe)) {
             rememberMe = false;
         }
     }

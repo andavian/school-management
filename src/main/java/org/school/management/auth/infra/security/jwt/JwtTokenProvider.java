@@ -1,4 +1,4 @@
-package org.school.management.auth.infra.security;
+package org.school.management.auth.infra.security.jwt;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
@@ -7,8 +7,8 @@ import io.jsonwebtoken.MalformedJwtException;
 import io.jsonwebtoken.security.Keys;
 import io.jsonwebtoken.security.SignatureException;
 import lombok.extern.slf4j.Slf4j;
-import org.school.management.auth.domain.model.User;
 import org.school.management.auth.domain.valueobject.UserId;
+import org.school.management.auth.infra.security.UserPrincipal;
 import org.school.management.auth.infra.security.exception.InvalidTokenException;
 import org.school.management.auth.infra.security.exception.TokenExpiredException;
 import org.school.management.auth.infra.security.exception.TokenProcessingException;

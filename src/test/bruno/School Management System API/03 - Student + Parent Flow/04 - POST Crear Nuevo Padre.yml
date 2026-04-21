@@ -1,36 +1,22 @@
-meta:
+info:
   name: 04 - POST Crear Nuevo Padre
   type: http
   seq: 4
+  tags:
+    - Parents
 
-post:
-  url: "{{base_url}}/api/admin/parents"
-
-auth:
-  type: bearer
-  token: "{{jwt_token}}"
-
-body:
-  type: json
-  raw: |
-    {
-      "firstName": "Miguel Ángel",
-      "lastName": "Romero",
-      "dni": "33445566",
-      "phone": "3514556677",
-      "email": "miguel.romero@gmail.com",
-      "relationship": "PADRE"
-    }
-
-script:
-  post-response: |
-    if (res.status === 201 || res.status === 200) {
-      const body = res.getBody();
-      const parentId = body.id || body.parentId;
-      if (parentId) {
-        bru.setEnvVar("new_parent_id", parentId);
-        console.log(`✅ Padre creado - ID: ${parentId}`);
+http:
+  method: POST
+  url: "{{baseUrl}}/api/admin/parents"
+  body:
+    type: json
+    data: |-
+      {
+        "firstName": "Miguel Ángel",
+        "lastName": "Romero",
+        "dni": "33445566",
+        "phone": "3514556677",
+        "email": "miguel.romero@gmail.com",
+        "relationship": "PADRE"
       }
-    } else {
-      console.error("❌ Error al crear padre");
-    }
+  auth: inherit

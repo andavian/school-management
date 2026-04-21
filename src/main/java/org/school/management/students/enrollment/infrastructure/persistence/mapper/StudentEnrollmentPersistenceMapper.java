@@ -37,6 +37,8 @@ public interface StudentEnrollmentPersistenceMapper {
     @Mapping(target = "gradeLevelId",      expression = "java(domain.getGradeLevelId().value())")
     @Mapping(target = "withdrawalReasonId",
             expression = "java(domain.getWithdrawalReasonId() != null ? domain.getWithdrawalReasonId().value() : null)")
+    @Mapping(target = "passed",
+            expression = "java(domain.hasPassed() != null ? domain.hasPassed() : null)")
     StudentEnrollmentEntity toEntity(StudentEnrollment domain);
 
     // ── entity → domain ───────────────────────────────────────────────────

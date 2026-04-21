@@ -1,34 +1,42 @@
-meta:
+info:
   name: 01 - POST Login Admin
   type: http
   seq: 1
+  tags:
+    - Authentication
 
-post:
-  url: "{{base_url}}/api/auth/login"
-
-body:
-  type: json
-  raw: |
-    {
-      "dni": "00000001",
-      "password": "Admin123!"
-    }
-
-auth:
-  type: none
-
-script:
-  post-response: |
-    if (res.status === 200) {
-      const body = res.getBody();
-      const token = body.token || body.accessToken || body.data?.token;
-
-      if (token) {
-        bru.setEnvVar("jwt_token", token, { persist: true });
-        console.log("✅ Token ADMIN guardado correctamente");
-      } else {
-        console.error("⚠️ No se encontró token en la respuesta");
+http:
+  method: POST
+  url: "{{baseUrl}}/api/auth/login"
+  body:
+    type: json
+    data: |-
+      {
+        "dni": "10000001",
+        "password": "Admin123!",
+        "rememberMe": "false"
       }
-    } else {
-      console.error(`❌ Login falló con status ${res.status}`);
-    }
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        if (res.status === 200 || res.status === 201) {
+          const body = res.getBody();
+          const token = body.token || body.accessToken || body.data?.token;
+
+          if (token) {
+            bru.setEnvVar("jwt_token", token, { persist: true });
+            console.log("✅ Token ADMIN guardado correctamente");
+          } else {
+            console.error("⚠️ No se encontró token en la respuesta");
+          }
+        } else {
+          console.error(`❌ Login falló con status ${res.status}`);
+        }
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

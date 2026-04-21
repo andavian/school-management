@@ -1,0 +1,7 @@
+info:
+  name: 04 - Crear Estudiante Completo
+  type: folder
+  seq: 21
+
+request:
+  auth: inherit

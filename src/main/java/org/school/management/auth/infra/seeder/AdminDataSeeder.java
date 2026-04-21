@@ -66,9 +66,9 @@ public class AdminDataSeeder implements ApplicationRunner {
     private void seedAdminUsers(RoleEntity superRole, RoleEntity adminRole, RoleEntity principalRole) {
 
         List<AdminUserData> users = List.of(
-                new AdminUserData(SUPER_ADMIN_ID, "00000001", "Admin123!", Set.of(superRole, adminRole), "SUPER ADMIN"),
-                new AdminUserData(ADMIN_ID, "00000002", "Admin123!", Set.of(adminRole), "ADMINISTRATIVE"),
-                new AdminUserData(PRINCIPAL_ID, "00000003", "Principal123!", Set.of(principalRole), "DIRECTOR/PRINCIPAL")
+                new AdminUserData(SUPER_ADMIN_ID, "10000001", "Admin123!", Set.of(superRole, adminRole), "SUPER ADMIN"),
+                new AdminUserData(ADMIN_ID, "10000002", "Admin123!", Set.of(adminRole), "ADMINISTRATIVE"),
+                new AdminUserData(PRINCIPAL_ID, "10000003", "Principal123!", Set.of(principalRole), "DIRECTOR/PRINCIPAL")
         );
 
         for (AdminUserData data : users) {

@@ -45,6 +45,9 @@ Sistema de gestión escolar para el **IPET 132** (Argentina) que permite:
 - **Rate limiting por IP** — Bucket4j in-memory, 5 intentos/min en login (prod)
 - **Almacenamiento OCI** — archivos en OCI Object Storage, URL pública + presigned URLs
 - **Ownership check en materiales** — TEACHER solo puede editar/eliminar su propio material
+- **Gestión de recursos didácticos** — Catálogo de proyectores, netbooks, televisores, salas multimedia, etc.
+- **Unidades físicas** con estado y condición
+- **Sistema completo de reservas** con validación de disponibilidad en tiempo real y asignación automática
 
 ---
 
@@ -89,6 +92,7 @@ course/              → Asignación profesor-materia-curso ✅ COMPLETO
 attendance/          → Asistencia diaria y por materia ✅ COMPLETO
 storage/             → Almacenamiento de archivos en OCI Object Storage ✅ COMPLETO
 teaching-materials/  → Material didáctico de profesores ✅ COMPLETO
+resources/           → Gestión de recursos didácticos institucionales y sistema de reservas. ✅ COMPLETO
 ```
 
 ---
@@ -335,32 +339,65 @@ Material didáctico subido por profesores, asociado a cursos específicos, con c
 - Sin FK a `teachers` en BD — evita acoplamiento entre BCs a nivel de esquema
 - Tipos: `APUNTE`, `EJERCICIO`, `EXAMEN`, `GUIA`, `VIDEO`, `OTRO`
 
+### ✅ Resources — **COMPLETO** (Nuevo)
+
+Gestión de recursos didácticos institucionales y sistema de reservas.
+
+**Funcionalidades principales:**
+- Catálogo de recursos (`PROJECTOR`, `LAPTOP`, `MULTIMEDIA_ROOM`, `COMPUTER_LAB`, etc.)
+- Unidades físicas individuales con código único, número de serie y estado
+- Sistema de reservas con validación de disponibilidad horaria
+- Asignación automática de unidades físicas disponibles
+- Estados de reserva: `CONFIRMED`, `IN_USE`, `RETURNED`, `CANCELLED`
+- Control de devolución y cancelación con liberación de unidades
+
+**Endpoints principales:**
+
+| Método | Path | Rol | Descripción |
+|--------|------|-----|-------------|
+| POST | `/api/resources` | ADMIN, STAFF | Crear recurso en catálogo |
+| GET | `/api/resources` | Todos | Listar recursos (con filtros) |
+| GET | `/api/resources/{resourceId}` | Todos | Obtener detalle |
+| PATCH | `/api/resources/{resourceId}` | ADMIN, STAFF | Actualizar recurso |
+| POST | `/api/resources/{resourceId}/units` | ADMIN, STAFF | Crear unidad física |
+| PATCH | `/api/resources/units/{unitId}` | ADMIN, STAFF | Actualizar estado de unidad |
+| POST | `/api/resources/reservations` | TEACHER, ADMIN, STAFF | Crear reserva |
+| GET | `/api/resources/reservations/my` | TEACHER, ADMIN, STAFF | Ver mis reservas |
+| GET | `/api/resources/reservations/availability` | Todos | Consultar disponibilidad en rango horario |
+| PATCH | `/api/resources/reservations/{id}/start` | ADMIN, STAFF | Marcar como en uso (retiro) |
+| PATCH | `/api/resources/reservations/{id}/return` | ADMIN, STAFF | Registrar devolución |
+| PATCH | `/api/resources/reservations/{id}/cancel` | TEACHER, ADMIN, STAFF | Cancelar reserva |
+
 ---
 
 ## 🗄️ Migraciones Flyway
 
-| Migración | Descripción |
-|-----------|-------------|
-| `V1` | Tabla `users` |
-| `V2` | Tabla `blacklisted_tokens` |
-| `V3` | Admin por defecto (solo dev) |
-| `V4` | Tabla `refresh_tokens` |
-| `V5` | `countries`, `provinces`, `places` |
-| `V6` | `academic_years`, `orientations`, `grade_levels`, `subjects`, `qualification_registries` |
-| `V7` | `study_plans`, `evaluation_periods` |
-| `V10` | `student_personal_data`, `student_health_records` |
-| `V11` | `document_types`, `student_records`, `record_documents` |
-| `V12` | `parents` (con `cuil`), `student_parents` |
-| `V13` | `teachers` |
-| `V14` | `withdrawal_reasons`, `student_enrollments` |
-| `V15` | `courses`, `course_subjects`, `student_course_subjects` |
-| `V17` | `evaluation_types`, `evaluations`, `period_grades`, `final_grades` |
-| `V19` | `countries`, `provinces` — datos Argentina |
-| `V20` | `places` — localidades Argentina |
-| `V21` | `attendance_daily_records`, `attendance_course_records`, `attendance_period_summaries` |
-| `V22` | `teaching_materials` ✅ |
 
-**Próxima migración disponible: V23**
+| Versión | Contenido                                                                                                                                           |
+|---------|-----------------------------------------------------------------------------------------------------------------------------------------------------|
+| V1      | Tabla `roles`                                                                                                                                       |
+| V2      | Tabla `users`                                                                                                                                       |
+| V3      | Tabla `blacklisted_tokens`                                                                                                                          |
+| V4      | Tabla `refresh_tokens`                                                                                                                              |
+| v5      | `password_resets`                                                                                                                                   |
+| v6      | `recovery_codes`                                                                                                                                    |
+| V7      | `recovery codes`                                                                                                                                    |
+| V8      | `countries`, `provinces`, `places`                                                                                                                  |
+| V9      | `academic_years`, `orientations`, `grade_levels`, `subjects`, `qualification_registries`, `study_plans`, `evaluation_periods`, extensiones academic |
+| V10     | `student_personal_data`, `student_health_records`                                                                                                   |
+| V11     | `document_types`, `student_records`, `record_documents`                                                                                             |
+| V12     | `parents`, `student_parents` (incluye `cuil` en `parents`)                                                                                          |
+| V13     | `teachers`                                                                                                                                          |
+| V14     | `withdrawal_reasons`, `student_enrollments`                                                                                                         |
+| V15     | `courses`, `course_subjects`, `student_course_subjects`                                                                                             |
+| V16     | `evaluation_types`, `evaluations`, `period_grades`, `final_grades`                                                                                  |
+| V17     | `countries`, `provinces` — datos Argentina (seed SQL)                                                                                               |
+| V18     | `places` — localidades Argentina (seed SQL)                                                                                                         |
+| V19     | `attendance_daily_records`, `attendance_course_records`, `attendance_period_summaries`                                                              |
+| V20     | `teaching_materials` ✅                                                                                                                              |
+| V21     | `resources`, `resource_units`, `reservations`, `reservation_units`                                                                                                     |
+
+**Próxima migración disponible: V22**
 
 ---
 
@@ -420,9 +457,9 @@ OCI_BUCKET_NAME=ipet132-documents
 
 ## 🔑 Credenciales de Prueba (perfil `dev`)
 
-| Rol | DNI | Password |
-|-----|-----|----------|
-| ADMIN | `00000001` | `Admin123!` |
+| Rol | DNI        | Password |
+|-----|------------|----------|
+| ADMIN | `10000001` | `Admin123!` |
 | TEACHER | `12345678` | `Teacher123!` (Juan García — Matemática) |
 | TEACHER | `23456789` | `Teacher123!` (María López — Física) |
 | TEACHER | `34567890` | `Teacher123!` (Carlos Fernández — Electrotecnia) |
@@ -493,15 +530,16 @@ Tests unitarios implementados con JUnit 5 + Mockito + AssertJ.
 - **`course/` — COMPLETO** — 5 endpoints + seeder
 - **`attendance/` — COMPLETO** — 7 endpoints + V21
 - **`storage/` — COMPLETO** — OCI Object Storage, puerto + adaptador
-- **`teaching-materials/` — COMPLETO** — 5 endpoints, upload OCI, ownership check, V22
+- **`teaching-materials/` — COMPLETO** — 5 endpoints, upload OCI, ownership check.
+- **`resources/` — **COMPLETO** — Catálogo de recursos didácticos, unidades físicas y sistema completo de reservas
+- **Rate Limiting**, **98+ tests unitarios**
 - **Rate Limiting** — Bucket4j in-memory, 3 endpoints protegidos, configurable por perfil
 - **98 tests unitarios**
-- Flyway V1–V7, V10–V15, V17, V19, V20, V21, V22
+- Flyway V1–V21
 
 ### ⏳ Pendiente
 
-- [ ] Crear bucket OCI (`ipet132-documents`) y configurar variables de entorno OCI en `.env`
-- [ ] Probar endpoints de upload con bucket real (records + materials)
+- [ ] Notificaciones
 - [ ] Auditoría (registrar quién hizo qué y cuándo)
 - [ ] Métricas / monitoreo
 
@@ -528,6 +566,6 @@ Tests unitarios implementados con JUnit 5 + Mockito + AssertJ.
 
 ---
 
-**Última actualización:** Abril 2026
-**Versión:** 9.0.0
-**Estado:** En desarrollo activo — teaching-materials ✅ completo
+**Última actualización:** Abril 2026  
+**Versión:** 0.10.0  
+**Estado:** En desarrollo activo — `resources/` ✅ completado

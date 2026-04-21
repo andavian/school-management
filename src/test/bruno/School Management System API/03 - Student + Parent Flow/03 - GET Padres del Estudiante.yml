@@ -1,21 +1,20 @@
-meta:
+info:
   name: 03 - GET Padres del Estudiante
   type: http
   seq: 3
+  tags:
+    - Students
 
-get:
-  url: "{{base_url}}/api/admin/students/{{current_student_id}}/parents"
+http:
+  method: GET
+  url: "{{baseUrl}}/api/admin/students/{{current_student_id}}/parents"
+  auth: inherit
 
-auth:
-  type: bearer
-  token: "{{jwt_token}}"
-
-script:
-  post-response: |
-    if (res.status === 200) {
-      const parents = res.getBody();
-      console.log(`👨‍👩‍👧 Padres vinculados: ${parents.length}`);
-      parents.forEach((p, i) => {
-        console.log(`   ${i+1}. ${p.firstName} ${p.lastName} (${p.relationship})`);
-      });
-    }
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        if (res.status === 200) {
+          const parents = res.getBody();
+          console.log(`👨‍👩‍👧 Padres vinculados: ${parents.length}`);
+        }

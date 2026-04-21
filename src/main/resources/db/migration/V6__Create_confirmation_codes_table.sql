@@ -1,7 +1,7 @@
 CREATE TABLE IF NOT EXISTS confirmation_codes (
     id BINARY(16) PRIMARY KEY,
     user_dni VARCHAR(20) NOT NULL,
-    code VARCHAR(100) NOT NULL,
+    code_hash VARCHAR(64) NOT NULL UNIQUE,
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     expires_at DATETIME NOT NULL,
     used_at DATETIME DEFAULT NULL,

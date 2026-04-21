@@ -6,7 +6,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.school.management.auth.domain.model.User;
+import org.school.management.auth.infra.web.SecurityContextHelper;
 import org.school.management.students.parents.application.usecases.CreateParentUseCase;
 import org.school.management.students.parents.application.usecases.GetParentsByStudentIdUseCase;
 import org.school.management.students.parents.application.usecases.LinkParentToStudentUseCase;
@@ -44,14 +44,12 @@ public class ParentController {
             @Valid @RequestBody ParentWebDto.CreateParentWebRequest webRequest,
             @AuthenticationPrincipal UserDetails userDetails) {
 
-        UUID createdBy = extractUserId(userDetails);
-        log.debug("POST parent — createdBy: {}", createdBy);
 
         return ResponseEntity.status(HttpStatus.CREATED).body(
                 mapper.toWebResponse(
                         createParentUseCase.execute(
                                 mapper.toApplicationRequest(webRequest),
-                                createdBy
+                                SecurityContextHelper.extractUserId(userDetails)
                         )
                 )
         );
@@ -67,7 +65,7 @@ public class ParentController {
             @AuthenticationPrincipal UserDetails userDetails) {
 
         log.debug("PATCH parent — parentId: {}, requestedBy: {}",
-                parentId, extractUserId(userDetails));
+                parentId, SecurityContextHelper.extractUserId(userDetails));
 
         return ResponseEntity.ok(
                 mapper.toWebResponse(
@@ -88,7 +86,7 @@ public class ParentController {
             @AuthenticationPrincipal UserDetails userDetails) {
 
         log.debug("GET parents — studentId: {}, requestedBy: {}",
-                studentId, extractUserId(userDetails));
+                studentId, SecurityContextHelper.extractUserId(userDetails));
 
         List<ParentWebDto.StudentParentWebResponse> response =
                 getParentsByStudentIdUseCase.execute(studentId)
@@ -109,7 +107,7 @@ public class ParentController {
             @AuthenticationPrincipal UserDetails userDetails) {
 
         log.debug("POST link parent — studentId: {}, parentDni: {}, requestedBy: {}",
-                studentId, webRequest.parentDni(), extractUserId(userDetails));
+                studentId, webRequest.parentDni(), SecurityContextHelper.extractUserId(userDetails));
 
         return ResponseEntity.status(HttpStatus.CREATED).body(
                 mapper.toStudentParentWebResponse(
@@ -121,13 +119,5 @@ public class ParentController {
         );
     }
 
-    // ── Utilidad ──────────────────────────────────────────────────────────
-    private UUID extractUserId(UserDetails userDetails) {
-        if (userDetails instanceof User user) {
-            return user.getUserId().value();
-        }
-        throw new IllegalStateException(
-                "Principal inesperado: " + userDetails.getClass().getName()
-        );
-    }
+
 }

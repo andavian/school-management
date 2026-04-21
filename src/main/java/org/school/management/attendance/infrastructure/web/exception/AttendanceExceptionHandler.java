@@ -4,6 +4,7 @@ package org.school.management.attendance.infrastructure.web.exception;
 import lombok.extern.slf4j.Slf4j;
 import org.school.management.attendance.domain.exception.AttendanceAlreadyRecordedException;
 import org.school.management.attendance.domain.exception.AttendanceNotFoundException;
+import org.school.management.attendance.domain.exception.InvalidAttendanceOperationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -36,9 +37,9 @@ public class AttendanceExceptionHandler {
         return problem;
     }
 
-    @ExceptionHandler(IllegalStateException.class)
-    public ProblemDetail handleIllegalState(IllegalStateException ex) {
-        log.error("IllegalStateException in attendance: {}", ex.getMessage());
+    @ExceptionHandler(InvalidAttendanceOperationException.class) // <-- Ahora es específica
+    public ProblemDetail handleInvalidAttendanceOperation(InvalidAttendanceOperationException ex) {
+        log.warn("Invalid attendance operation: {}", ex.getMessage());
         ProblemDetail problem = ProblemDetail.forStatusAndDetail(
                 HttpStatus.UNPROCESSABLE_ENTITY, ex.getMessage());
         problem.setTitle("Invalid Attendance Operation");
@@ -46,4 +47,5 @@ public class AttendanceExceptionHandler {
         problem.setProperty("timestamp", Instant.now());
         return problem;
     }
+
 }

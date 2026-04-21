@@ -7,6 +7,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.school.management.auth.domain.model.User;
+import org.school.management.auth.infra.security.UserPrincipal;
 import org.school.management.auth.infra.web.SecurityContextHelper;
 import org.school.management.students.records.application.dto.request.UploadDocumentRequest;
 import org.school.management.students.records.application.dto.response.RecordDocumentResponse;
@@ -51,10 +52,10 @@ public class RecordController {
     @Operation(summary = "Obtener el legajo completo del estudiante")
     public ResponseEntity<RecordWebDto.StudentRecordWebResponse> getRecord(
             @PathVariable UUID studentId,
-            @AuthenticationPrincipal UserDetails userDetails) {
+            @AuthenticationPrincipal UserPrincipal principal) {
 
         log.debug("GET record — studentId: {}, requestedBy: {}",
-                studentId, extractUserId(userDetails));
+                studentId, SecurityContextHelper.extractUserId(principal));
 
         return ResponseEntity.ok(
                 mapper.toWebResponse(
@@ -70,9 +71,9 @@ public class RecordController {
     public ResponseEntity<RecordWebDto.StudentRecordWebResponse> addDocument(
             @PathVariable UUID studentId,
             @Valid @RequestBody RecordWebDto.AddDocumentWebRequest webRequest,
-            @AuthenticationPrincipal UserDetails userDetails) {
+            @AuthenticationPrincipal UserPrincipal principal) {
 
-        UUID uploadedBy = extractUserId(userDetails);
+        UUID uploadedBy = SecurityContextHelper.extractUserId(principal);
         log.debug("POST document — studentId: {}, uploadedBy: {}", studentId, uploadedBy);
 
         return ResponseEntity.status(HttpStatus.CREATED).body(
@@ -108,7 +109,7 @@ public class RecordController {
             @RequestPart(value = "expiryDate", required = false)
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate expiryDate,
             @RequestPart(value = "issuingAuthority", required = false) String issuingAuthority,
-            @AuthenticationPrincipal UserDetails userDetails) {
+            @AuthenticationPrincipal UserPrincipal principal) {
 
         log.info("POST upload — studentId: {}, recordId: {}, file: {}",
                 studentId, recordId, file.getOriginalFilename());
@@ -119,7 +120,7 @@ public class RecordController {
         );
 
         RecordDocumentResponse response = uploadRecordDocumentUseCase.execute(
-                recordId, request, file, extractUserId(userDetails)
+                recordId, request, file, SecurityContextHelper.extractUserId(principal)
         );
 
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
@@ -134,7 +135,7 @@ public class RecordController {
             @PathVariable UUID documentId,
             @RequestParam String action,
             @RequestParam(required = false) String observations,
-            @AuthenticationPrincipal UserDetails userDetails) {
+            @AuthenticationPrincipal UserPrincipal principal) {
 
         log.debug("PATCH document — studentId: {}, documentId: {}, action: {}",
                 studentId, documentId, action);
@@ -158,9 +159,9 @@ public class RecordController {
     public ResponseEntity<RecordWebDto.StudentRecordWebResponse> updateRecordStatus(
             @PathVariable UUID studentId,
             @Valid @RequestBody RecordWebDto.UpdateRecordStatusWebRequest webRequest,
-            @AuthenticationPrincipal UserDetails userDetails) {
+            @AuthenticationPrincipal UserPrincipal principal) {
 
-        UUID reviewedBy = extractUserId(userDetails);
+        UUID reviewedBy = SecurityContextHelper.extractUserId(principal);
         log.debug("PATCH record status — studentId: {}, action: {}, reviewedBy: {}",
                 studentId, webRequest.recordAction(), reviewedBy);
 
@@ -175,16 +176,5 @@ public class RecordController {
         );
     }
 
-    // ── Utilidad ──────────────────────────────────────────────────────────
 
-    // Nota: este método debería reemplazarse por SecurityContextHelper.extractUserId()
-    // Es una deuda técnica existente en este controller — no modificar sin task específica.
-    private UUID extractUserId(UserDetails userDetails) {
-        if (userDetails instanceof User user) {
-            return user.getUserId().value();
-        }
-        throw new IllegalStateException(
-                "Principal inesperado: " + userDetails.getClass().getName()
-        );
-    }
 }

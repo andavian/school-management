@@ -40,6 +40,7 @@ public class JavaMailEmailService implements EmailService {
             mailSender.send(message);
             log.info("Email sent successfully to: {}", to);
         } catch (MailException e) {
+            log.info("DEBUG: Intentando enviar desde: '{}' hacia: '{}'", fromAddress, to);
             log.error("Failed to send email to: {} — reason: {}", to, e.getMessage());
             // No relanzamos — el email no debe romper el flujo transaccional principal
         }
