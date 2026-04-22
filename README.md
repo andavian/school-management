@@ -15,6 +15,7 @@ Sistema de gestión escolar para el **IPET 132** (Argentina) que permite:
 - ✅ Gestión de geografía argentina (países, provincias, localidades)
 - ✅ Gestión académica completa (años, orientaciones, cursos, materias, legajo)
 - ✅ Módulo de estudiantes — **COMPLETO** (personal, salud, inscripción, legajo, padres)
+- ✅ Catálogo de tipos de documento — **COMPLETO** (CRUD + toggle is_active, 6 endpoints, 12 tipos predefinidos)
 - ✅ Módulo de docentes — **COMPLETO** (con flujo de activación de cuenta por email)
 - ✅ Servicio de email — **COMPLETO** (OCI SMTP, link de activación, async)
 - ✅ Módulo de calificaciones — **COMPLETO** (evaluaciones, notas de período, nota final, libro matriz)
@@ -24,6 +25,8 @@ Sistema de gestión escolar para el **IPET 132** (Argentina) que permite:
 - ✅ Rate limiting — **COMPLETO** (Bucket4j in-memory, por IP, endpoints de auth protegidos)
 - ✅ Almacenamiento de archivos — **COMPLETO** (OCI Object Storage, documentos del legajo + material didáctico)
 - ✅ Material didáctico de profesores — **COMPLETO** (upload a OCI, control de visibilidad, ownership check)
+- ✅ Gestión de recursos didácticos — **COMPLETO** (catálogo, unidades físicas, sistema de reservas)
+- ✅ Seeders de desarrollo — **COMPLETO** (cadena completa con 4 escenarios de legajo para pruebas)
 
 ### 🎯 Características Principales
 
@@ -45,9 +48,11 @@ Sistema de gestión escolar para el **IPET 132** (Argentina) que permite:
 - **Rate limiting por IP** — Bucket4j in-memory, 5 intentos/min en login (prod)
 - **Almacenamiento OCI** — archivos en OCI Object Storage, URL pública + presigned URLs
 - **Ownership check en materiales** — TEACHER solo puede editar/eliminar su propio material
+- **Catálogo de tipos de documento** — CRUD con toggle `is_active`, 12 tipos predefinidos por categoría (PERSONAL, ACADEMIC, MEDICAL, LEGAL)
 - **Gestión de recursos didácticos** — Catálogo de proyectores, netbooks, televisores, salas multimedia, etc.
 - **Unidades físicas** con estado y condición
 - **Sistema completo de reservas** con validación de disponibilidad en tiempo real y asignación automática
+- **Seeders completos** — cadena `@Order(3→5→6→7→8→9→10)` con 4 escenarios de legajo para pruebas E2E
 
 ---
 
@@ -163,6 +168,7 @@ src/main/java/org/school/management/
 │   ├── health/     ✅
 │   ├── enrollment/ ✅
 │   ├── records/    ✅ — legajo + UploadRecordDocumentUseCase + RecordDocumentRepository
+│   │               ✅ — DocumentType CRUD (catálogo + toggle is_active, 6 endpoints)
 │   └── parents/    ✅
 │
 ├── teachers/                                        # BOUNDED CONTEXT: Profesores ✅ COMPLETO
@@ -512,7 +518,12 @@ Tests unitarios implementados con JUnit 5 + Mockito + AssertJ.
 | `JustifyAbsenceUseCaseTest` | attendance | 5 |
 | `CorrectAttendanceUseCaseTest` | attendance | 4 |
 | `GetAtRiskStudentsUseCaseTest` | attendance | 3 |
-| **Total** | | **98** |
+| `GetDocumentTypesUseCaseTest` | document-types | 5 |
+| `GetDocumentTypeByIdUseCaseTest` | document-types | 2 |
+| `CreateDocumentTypeUseCaseTest` | document-types | 4 |
+| `UpdateDocumentTypeUseCaseTest` | document-types | 3 |
+| `ToggleDocumentTypeStatusUseCaseTest` | document-types | 4 |
+| **Total** | | **114** |
 
 ---
 
@@ -524,22 +535,23 @@ Tests unitarios implementados con JUnit 5 + Mockito + AssertJ.
 - `shared/email/` — EmailService + JavaMailEmailService (OCI SMTP) + AsyncConfig
 - `shared/event/` — DomainEvent, AccountActivatedEvent, DomainEventPublisher
 - **`students/` — COMPLETO** — 5 agregados + upload de documentos a OCI
+- **`students/records/DocumentType` — COMPLETO** — CRUD + toggle is_active, 6 endpoints, 12 tipos predefinidos, 16 tests
 - **`teachers/` — COMPLETO** — flujo activación via eventos de dominio
 - **`parents/` — COMPLETO** — cuil obligatorio, placeId consistente
 - **`grades/` — COMPLETO** — 7 endpoints + seeder
 - **`course/` — COMPLETO** — 5 endpoints + seeder
-- **`attendance/` — COMPLETO** — 7 endpoints + V21
+- **`attendance/` — COMPLETO** — 7 endpoints + V19
 - **`storage/` — COMPLETO** — OCI Object Storage, puerto + adaptador
-- **`teaching-materials/` — COMPLETO** — 5 endpoints, upload OCI, ownership check.
-- **`resources/` — **COMPLETO** — Catálogo de recursos didácticos, unidades físicas y sistema completo de reservas
-- **Rate Limiting**, **98+ tests unitarios**
+- **`teaching-materials/` — COMPLETO** — 5 endpoints, upload OCI, ownership check
+- **`resources/` — COMPLETO** — Catálogo de recursos didácticos, unidades físicas y sistema completo de reservas
 - **Rate Limiting** — Bucket4j in-memory, 3 endpoints protegidos, configurable por perfil
-- **98 tests unitarios**
+- **114 tests unitarios** — auth (8), teachers (11), parents (11), students (10), grades (19), course (9), attendance (30), document-types (16)
+- **Seeders completos** — cadena `@Order(3→5→6→7→8→9→10)` con escenarios realistas para pruebas
 - Flyway V1–V21
 
 ### ⏳ Pendiente
 
-- [ ] Notificaciones
+- [ ] Notificaciones — base lista: EmailService + DomainEventPublisher ya implementados
 - [ ] Auditoría (registrar quién hizo qué y cuándo)
 - [ ] Métricas / monitoreo
 
@@ -563,9 +575,12 @@ Tests unitarios implementados con JUnit 5 + Mockito + AssertJ.
 | **`GET /my-courses` con query params** | El frontend ya conoce los courseSubjectIds del estudiante — no se duplica la lógica de inscripción |
 | **DNI sin dígito verificador** | El DNI argentino es correlativo — el validador fue removido para corrección |
 | **Instancia real para modelos con `final` + `@Builder`** | Mockito no puede interceptar métodos en campos `final` — construir con builder |
+| **`DocumentType.isActive` con toggle semántico** | Dos endpoints explícitos `/activate` y `/deactivate` en lugar de un PATCH genérico con booleano |
+| **`record_id` resuelto en runtime en RecordDocumentSeeder** | Los UUIDs de records son generados dinámicamente en StudentAndParentDataSeeder — no se acoplan via constantes |
+| **Seeders con `@Order` explícito** | Cadena determinística `3→5→6→7→8→9→10` garantiza dependencias entre seeders sin condiciones en runtime |
 
 ---
 
-**Última actualización:** Abril 2026  
-**Versión:** 0.10.0  
-**Estado:** En desarrollo activo — `resources/` ✅ completado
+**Última actualización:** Abril 2026
+**Versión:** 0.11.0
+**Estado:** En desarrollo activo — `DocumentType catalog` ✅ completado

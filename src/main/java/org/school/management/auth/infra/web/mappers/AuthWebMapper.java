@@ -5,13 +5,11 @@ import org.mapstruct.Mapping;
 import org.school.management.auth.application.dto.requests.ChangePasswordRequest;
 import org.school.management.auth.application.dto.requests.LoginRequest;
 import org.school.management.auth.application.dto.responses.LoginResponse;
+import org.school.management.auth.application.dto.responses.RefreshTokenResponse;
 import org.school.management.auth.application.dto.responses.UserResponse;
 import org.school.management.auth.infra.web.dto.requests.ChangePasswordApiRequest;
 import org.school.management.auth.infra.web.dto.requests.LoginApiRequest;
-import org.school.management.auth.infra.web.dto.response.ErrorApiResponse;
-import org.school.management.auth.infra.web.dto.response.LoginApiResponse;
-import org.school.management.auth.infra.web.dto.response.SuccessApiResponse;
-import org.school.management.auth.infra.web.dto.response.UserApiResponse;
+import org.school.management.auth.infra.web.dto.response.*;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -58,6 +56,15 @@ public interface AuthWebMapper {
                 LocalDateTime.now(),
                 path,
                 List.of()
+        );
+    }
+
+    default RefreshTokenApiResponse toApiResponse(RefreshTokenResponse response) {
+        return new RefreshTokenApiResponse(
+                response.accessToken(),
+                response.refreshToken(),
+                "Bearer",
+                3600L // ⚠️ alinealo con tu JWT expiration real
         );
     }
 }

@@ -3,6 +3,7 @@ package org.school.management.auth.domain.model;
 import lombok.Builder;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
+import org.school.management.auth.domain.valueobject.RefreshTokenId;
 import org.school.management.shared.person.domain.valueobject.Dni;
 
 import java.time.LocalDateTime;

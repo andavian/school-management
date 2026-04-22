@@ -16,42 +16,26 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 import java.time.Duration;
+import java.time.LocalDateTime;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-/**
- * Filtro de rate limiting basado en Bucket4j (in-memory, sin Redis).
- *
- * <p>Aplica límites por IP para los endpoints de autenticación más sensibles:</p>
- * <ul>
- *   <li>{@code POST /api/auth/login} — evita fuerza bruta</li>
- *   <li>{@code POST /api/auth/activate-account} — evita intentos masivos</li>
- *   <li>{@code POST /api/auth/refresh-token} — evita abuso de renovación</li>
- * </ul>
- *
- * <p>Cuando se supera el límite responde {@code 429 Too Many Requests}
- * con {@code Retry-After} en segundos y cuerpo JSON compatible con
- * el formato {@code ErrorApiResponse} del proyecto.</p>
- *
- * <p>Los buckets se almacenan en {@link ConcurrentHashMap} — apropiado para
- * un único nodo. Si en el futuro se escala a múltiples instancias, migrar
- * a Bucket4j + Redis o Hazelcast.</p>
- */
 @Component
 @RequiredArgsConstructor
 @Slf4j
 public class RateLimitFilter extends OncePerRequestFilter {
 
-    private static final String LOGIN_PATH           = "/api/auth/login";
+    private static final String LOGIN_PATH            = "/api/auth/login";
     private static final String ACTIVATE_ACCOUNT_PATH = "/api/auth/activate-account";
-    private static final String REFRESH_TOKEN_PATH   = "/api/auth/refresh-token";
+    private static final String REFRESH_TOKEN_PATH    = "/api/auth/refresh-token";
+
+    private static final long BUCKET_TTL_MS = 30 * 60 * 1000; // 30 minutos
 
     private final RateLimitProperties properties;
 
-    // Un ConcurrentHashMap por endpoint: key = IP, value = Bucket
-    private final Map<String, Bucket> loginBuckets           = new ConcurrentHashMap<>();
-    private final Map<String, Bucket> activateAccountBuckets = new ConcurrentHashMap<>();
-    private final Map<String, Bucket> refreshTokenBuckets    = new ConcurrentHashMap<>();
+    private final Map<String, BucketWrapper> loginBuckets           = new ConcurrentHashMap<>();
+    private final Map<String, BucketWrapper> activateAccountBuckets = new ConcurrentHashMap<>();
+    private final Map<String, BucketWrapper> refreshTokenBuckets    = new ConcurrentHashMap<>();
 
     @Override
     protected void doFilterInternal(HttpServletRequest request,
@@ -64,51 +48,75 @@ public class RateLimitFilter extends OncePerRequestFilter {
             return;
         }
 
-        String path   = request.getRequestURI();
-        String method = request.getMethod();
-
-        // Solo aplicar a POST en los endpoints protegidos
-        if (!"POST".equalsIgnoreCase(method)) {
+        if (!"POST".equalsIgnoreCase(request.getMethod())) {
             filterChain.doFilter(request, response);
             return;
         }
 
+        String path = request.getRequestURI();
+        String ip   = resolveClientIp(request);
+
         RateLimitProperties.EndpointLimit limit;
-        Map<String, Bucket> bucketMap = null;
+        Map<String, BucketWrapper> bucketMap;
+        String key;
 
         if (LOGIN_PATH.equals(path)) {
             limit     = properties.getLogin();
             bucketMap = loginBuckets;
+
+            String dni = request.getParameter("dni"); // si viene en JSON no aplica (ver nota abajo)
+            key = ip + ":" + (dni != null ? dni : "unknown");
+
         } else if (ACTIVATE_ACCOUNT_PATH.equals(path)) {
             limit     = properties.getActivateAccount();
             bucketMap = activateAccountBuckets;
+            key = ip;
+
         } else if (REFRESH_TOKEN_PATH.equals(path)) {
             limit     = properties.getRefreshToken();
             bucketMap = refreshTokenBuckets;
-        } else {
-            limit = null;
-        }
 
-        if (limit == null) {
+            String token = request.getParameter("refreshToken");
+            key = ip + ":" + (token != null ? token.hashCode() : "unknown");
+
+        } else {
             filterChain.doFilter(request, response);
             return;
         }
 
-        String ip     = resolveClientIp(request);
-        Bucket bucket = bucketMap.computeIfAbsent(ip, k -> buildBucket(limit));
+        Bucket bucket = resolveBucket(bucketMap, key, limit);
 
         if (bucket.tryConsume(1)) {
-            // Agregar header informativo con tokens restantes
-            long remaining = bucket.getAvailableTokens();
-            response.setHeader("X-RateLimit-Remaining", String.valueOf(remaining));
+            response.setHeader("X-RateLimit-Remaining",
+                    String.valueOf(bucket.getAvailableTokens()));
+
             filterChain.doFilter(request, response);
         } else {
-            log.warn("Rate limit exceeded — IP: {}, path: {}", ip, path);
-            rejectRequest(response, limit.getRefillSeconds());
+            log.warn("Rate limit exceeded — key={} path={}", key, path);
+            rejectRequest(response, request, limit.getRefillSeconds());
         }
     }
 
-    // ── helpers ───────────────────────────────────────────────────────────
+    // ─────────────────────────────────────────────
+
+    private Bucket resolveBucket(Map<String, BucketWrapper> map,
+                                 String key,
+                                 RateLimitProperties.EndpointLimit limit) {
+
+        long now = System.currentTimeMillis();
+
+        BucketWrapper wrapper = map.compute(key, (k, existing) -> {
+
+            if (existing == null || (now - existing.lastAccess) > BUCKET_TTL_MS) {
+                return new BucketWrapper(buildBucket(limit), now);
+            }
+
+            existing.lastAccess = now;
+            return existing;
+        });
+
+        return wrapper.bucket;
+    }
 
     private Bucket buildBucket(RateLimitProperties.EndpointLimit limit) {
         Bandwidth bandwidth = Bandwidth.classic(
@@ -121,30 +129,49 @@ public class RateLimitFilter extends OncePerRequestFilter {
         return Bucket.builder().addLimit(bandwidth).build();
     }
 
-    /**
-     * Resuelve la IP real del cliente respetando proxies/load balancers.
-     * Usa {@code X-Forwarded-For} si está presente, caso contrario {@code remoteAddr}.
-     */
     private String resolveClientIp(HttpServletRequest request) {
         String forwarded = request.getHeader("X-Forwarded-For");
         if (forwarded != null && !forwarded.isBlank()) {
-            // X-Forwarded-For puede contener múltiples IPs — tomar la primera
             return forwarded.split(",")[0].trim();
         }
         return request.getRemoteAddr();
     }
 
-    private void rejectRequest(HttpServletResponse response, int retryAfterSeconds)
-            throws IOException {
+    private void rejectRequest(HttpServletResponse response,
+                               HttpServletRequest request,
+                               int retryAfterSeconds) throws IOException {
+
         response.setStatus(HttpStatus.TOO_MANY_REQUESTS.value());
         response.setContentType(MediaType.APPLICATION_JSON_VALUE);
         response.setHeader("Retry-After", String.valueOf(retryAfterSeconds));
-        response.getWriter().write("""
-                {
-                  "success": false,
-                  "message": "Demasiados intentos. Por favor esperá %d segundos antes de reintentar.",
-                  "errorCode": "TOO_MANY_REQUESTS"
-                }
-                """.formatted(retryAfterSeconds));
+
+        String body = """
+        {
+          "success": false,
+          "message": "Demasiados intentos. Esperá %d segundos antes de reintentar.",
+          "errorCode": "TOO_MANY_REQUESTS",
+          "timestamp": "%s",
+          "path": "%s",
+          "errors": []
+        }
+        """.formatted(
+                retryAfterSeconds,
+                LocalDateTime.now(),
+                request.getRequestURI()
+        );
+
+        response.getWriter().write(body);
+    }
+
+    // ─────────────────────────────────────────────
+
+    private static class BucketWrapper {
+        Bucket bucket;
+        long lastAccess;
+
+        BucketWrapper(Bucket bucket, long lastAccess) {
+            this.bucket = bucket;
+            this.lastAccess = lastAccess;
+        }
     }
 }

@@ -29,7 +29,7 @@ public class RateLimitProperties {
 
     private EndpointLimit login           = new EndpointLimit(5,  5,  60);
     private EndpointLimit activateAccount = new EndpointLimit(3,  3,  60);
-    private EndpointLimit refreshToken    = new EndpointLimit(10, 10, 60);
+    private EndpointLimit refreshToken    = new EndpointLimit(20, 20, 60);
 
     @Getter
     @Setter

@@ -5,10 +5,7 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.school.management.auth.application.usecases.ActivateAccountUseCase;
-import org.school.management.auth.application.usecases.ChangePasswordUseCase;
-import org.school.management.auth.application.usecases.GetUserProfileUseCase;
-import org.school.management.auth.application.usecases.LoginUseCase;
+import org.school.management.auth.application.usecases.*;
 import org.school.management.auth.infra.web.SecurityContextHelper;
 import org.school.management.auth.infra.web.dto.response.*;
 import org.school.management.auth.infra.web.dto.requests.*;
@@ -43,13 +40,15 @@ public class AuthController {
     private final ActivateAccountUseCase activateTeacherAccountUseCase;
     private final ChangePasswordUseCase changePasswordUseCase;
     private final GetUserProfileUseCase getUserProfileUseCase;
+    private final RefreshTokenUseCase refreshTokenUseCase;
+    private final LogoutUseCase logoutUseCase;
     private final AuthWebMapper webMapper;
 
     // ── POST /api/auth/login ──────────────────────────────────────────────
 
     @Operation(
             summary = "Iniciar sesión",
-            description = "Autentica un usuario por DNI y contraseña. Devuelve JWT si las credenciales son válidas."
+            description = "Autentica un usuario por DNI y contraseña. Devuelve access token y refresh token."
     )
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Login exitoso",
@@ -61,13 +60,29 @@ public class AuthController {
     })
     @PostMapping("/login")
     public ResponseEntity<LoginApiResponse> login(
-            @Valid @RequestBody LoginApiRequest request) {
+            @Valid @RequestBody LoginApiRequest request,
+            @RequestHeader(value = "X-Forwarded-For", required = false) String forwardedFor,
+            @RequestHeader(value = "User-Agent", required = false) String userAgent,
+            jakarta.servlet.http.HttpServletRequest httpRequest) {
 
-        log.info("POST /api/auth/login — DNI: {}", request.dni());
+        String clientIp = extractClientIp(forwardedFor, httpRequest);
+
+        log.info("POST /api/auth/login — DNI: {} ip={} ua={}",
+                request.dni(),
+                clientIp,
+                userAgent);
 
         var applicationRequest = webMapper.toApplicationDto(request);
-        var loginResponse = loginUseCase.execute(applicationRequest);
-        return ResponseEntity.ok(webMapper.toApiResponse(loginResponse));
+
+        var loginResponse = loginUseCase.execute(
+                applicationRequest,
+                clientIp,
+                userAgent
+        );
+
+        return ResponseEntity.ok(
+                webMapper.toApiResponse(loginResponse)
+        );
     }
 
     // ── POST /api/auth/activate-account ──────────────────────────────────
@@ -151,16 +166,53 @@ public class AuthController {
 
     // ── POST /api/auth/refresh-token ──────────────────────────────────────
 
-    @Operation(summary = "Renovar token JWT",
-            description = "Renueva un token JWT expirado usando un refresh token válido.")
+    @Operation(
+            summary = "Renovar access token",
+            description = "Genera un nuevo access token mediante rotación segura de refresh token."
+    )
     @ApiResponses({
-            @ApiResponse(responseCode = "501", description = "Aún no implementado")
+            @ApiResponse(responseCode = "200", description = "Token renovado correctamente",
+                    content = @Content(schema = @Schema(implementation = RefreshTokenApiResponse.class))),
+            @ApiResponse(responseCode = "401", description = "Refresh token inválido, expirado o reutilizado",
+                    content = @Content(schema = @Schema(implementation = ErrorApiResponse.class)))
     })
     @PostMapping("/refresh-token")
     public ResponseEntity<RefreshTokenApiResponse> refreshToken(
+            @Valid @RequestBody RefreshTokenApiRequest request,
+            @RequestHeader(value = "X-Forwarded-For", required = false) String forwardedFor,
+            @RequestHeader(value = "User-Agent", required = false) String userAgent,
+            jakarta.servlet.http.HttpServletRequest httpRequest) {
+
+        String clientIp = extractClientIp(forwardedFor, httpRequest);
+
+        log.info("POST /api/auth/refresh-token — ip={} ua={}", clientIp, userAgent);
+
+        var response = refreshTokenUseCase.execute(
+                request.refreshToken(),
+                clientIp,
+                userAgent
+        );
+
+        return ResponseEntity.ok(webMapper.toApiResponse(response));
+    }
+
+    @PostMapping("/logout")
+    public ResponseEntity<SuccessApiResponse> logout(
             @Valid @RequestBody RefreshTokenApiRequest request) {
 
-        log.info("POST /api/auth/refresh-token");
-        throw new UnsupportedOperationException("Refresh token no implementado aún");
+        log.info("POST /api/auth/logout");
+
+        logoutUseCase.logout(request.refreshToken());
+
+        return ResponseEntity.ok(
+                webMapper.createSuccessResponse("Sesión cerrada correctamente")
+        );
+    }
+
+    private String extractClientIp(String forwardedFor, jakarta.servlet.http.HttpServletRequest request) {
+        if (forwardedFor != null && !forwardedFor.isBlank()) {
+            return forwardedFor.split(",")[0].trim();
+        }
+        return request.getRemoteAddr();
     }
 }

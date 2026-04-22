@@ -83,7 +83,6 @@ public class GlobalExceptionHandler {
     // ============================================
 
     @ExceptionHandler({
-            DniAlreadyExistsException.class,
             DniAlreadyExistsException.class
     })
     public ResponseEntity<ErrorApiResponse> handleDniAlreadyExists(

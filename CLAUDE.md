@@ -10,7 +10,7 @@
 Sistema de gestión escolar para el **IPET 132** (Argentina).
 **Stack:** Java 17 + Spring Boot 3.3.4 + Spring Security 6 + MySQL 8
 **Package raíz:** `org.school.management`
-**Estado actual:** Auth ✅ + Geography ✅ + Academic ✅ + Students ✅ + Teachers ✅ + Email Service ✅ + Grades ✅ + Course ✅ + Attendance ✅ + Rate Limiting ✅ + Storage (OCI) ✅ + Teaching Materials ✅+ Resources ✅
+**Estado actual:** Auth ✅ + Geography ✅ + Academic ✅ + Students ✅ + Teachers ✅ + Email Service ✅ + Grades ✅ + Course ✅ + Attendance ✅ + Rate Limiting ✅ + Storage (OCI) ✅ + Teaching Materials ✅ + Resources ✅ + DocumentType Catalog ✅
 
 ---
 
@@ -55,7 +55,7 @@ Solo se comparten IDs (ej: `GradeLevelId`, `PlaceId`) o tipos del Shared Kernel.
 
 **Excepción documentada 2:** `auth/` usa `infra` como nombre de paquete en lugar de `infrastructure` — excepción histórica documentada, no replicar en nuevos BCs.
 
-**Deuda técnica documentada:** `RecordController` tiene `extractUserId()` duplicado en lugar de usar `SecurityContextHelper` — no corregir sin task específica.
+**Deuda técnica documentada:** ninguna activa en esta versión.
 
 ### 3. Screaming Architecture
 
@@ -528,6 +528,7 @@ students/
 ├── records/     ✅ COMPLETO — legajo por DNI, workflow aprobación documentos
 │                             + UploadRecordDocumentUseCase (subida a OCI)
 │                             + RecordDocumentRepository (puerto + adapter)
+│                             + DocumentType CRUD completo (catálogo + toggle is_active)
 └── parents/     ✅ COMPLETO — entidad global, vínculo estudiante-padre
 ```
 
@@ -538,6 +539,20 @@ students/
 - `StudentRecordPersistenceMapper` — mapea `fileSizeBytes` del dominio a `fileSize` en la entidad JPA
 - Endpoint de upload: `POST /api/admin/students/{studentId}/record/{recordId}/upload` (multipart/form-data)
 - Tipos permitidos: `application/pdf`, `image/jpeg`, `image/png` — máx 10 MB
+- `DocumentType.isActive` controla si el tipo está disponible para nuevos documentos — toggle via PATCH `/activate` y `/deactivate`
+- `DocumentTypeId` tiene `of(UUID)`, `from(UUID)`, `from(String)` y `generate()` — patrón estándar del proyecto
+- `DocumentTypeSeeder` — `@Order(3)`, UUIDs fijos públicos referenciables desde otros seeders
+- `RecordDocumentSeeder` — `@Order(9)`, 27 documentos en 4 escenarios de prueba distintos
+
+**Endpoints DocumentType:**
+| Método | Path | Rol | Descripción |
+|--------|------|-----|-------------|
+| GET | `/api/admin/document-types` | ADMIN, STAFF | Listar (filtros: `onlyActive`, `category`, `onlyMandatory`) |
+| GET | `/api/admin/document-types/{id}` | ADMIN, STAFF | Obtener por ID |
+| POST | `/api/admin/document-types` | ADMIN | Crear nuevo tipo |
+| PATCH | `/api/admin/document-types/{id}` | ADMIN | Actualizar nombre, categoría, descripción |
+| PATCH | `/api/admin/document-types/{id}/activate` | ADMIN | Activar tipo |
+| PATCH | `/api/admin/document-types/{id}/deactivate` | ADMIN | Desactivar tipo |
 
 **Decisiones clave `parents/`:**
 - `cuil` es obligatorio — campo `final` en `Parent`, validado en `create()`
@@ -952,7 +967,7 @@ class CreateStudentUseCaseTest {
 | V18     | `places` — localidades Argentina (seed SQL)                                                                                                         |
 | V19     | `attendance_daily_records`, `attendance_course_records`, `attendance_period_summaries`                                                              |
 | V20     | `teaching_materials` ✅                                                                                                                              |
-| V21     | `resources`, `resource_units`, `reservations`, `reservation_units`                                                                                                     |
+| V21     | `resources`, `resource_units`, `reservations`, `reservation_units` ✅                                                                               |
 
 **Próxima migración disponible: V22**
 
@@ -998,20 +1013,22 @@ docker run -p 1025:1025 -p 8025:8025 mailhog/mailhog
 - `shared/email/` — EmailService + JavaMailEmailService (OCI SMTP) + AsyncConfig
 - `shared/event/` — DomainEvent, AccountActivatedEvent, DomainEventPublisher
 - **`students/` — COMPLETO** — 5 agregados + upload de documentos a OCI
+- **`students/records/DocumentType` — COMPLETO** — CRUD + toggle is_active, 6 endpoints, seeder con 12 tipos, 16 tests unitarios
 - **`teachers/` — COMPLETO** — flujo activación via eventos de dominio
 - **`parents/` — COMPLETO** — cuil obligatorio, placeId consistente
 - **`grades/` — COMPLETO** — 7 endpoints + seeder
 - **`course/` — COMPLETO** — 5 endpoints + seeder
-- **`attendance/` — COMPLETO** — 7 endpoints + V21
+- **`attendance/` — COMPLETO** — 7 endpoints + V19
 - **`storage/` — COMPLETO** — OCI Object Storage, puerto + adaptador
 - **`teaching-materials/` — COMPLETO** — 5 endpoints, upload OCI, ownership check
 - **`resources/` — COMPLETO** — Gestión completa de recursos didácticos (proyectores, netbooks, salas multimedia, etc.), unidades físicas y sistema de reservas (disponibilidad en tiempo real, asignación automática, devolución, cancelación y control de acceso)
 - **Rate Limiting** — Bucket4j in-memory, 3 endpoints protegidos, configurable por perfil
-- **98 tests unitarios** — auth (8), teachers (11), parents (11), students (10), grades (19), course (9), attendance (30)
+- **114 tests unitarios** — auth (8), teachers (11), parents (11), students (10), grades (19), course (9), attendance (30), document-types (16)
+- **Seeders completos** — cadena `@Order(3→5→6→7→8→9→10)`: DocumentType → Academic → Course → Teacher → Student+Parent → RecordDocument → Grades
 - Flyway V1–V21
 
 ### ⏳ Pendiente
 
+- [ ] Notificaciones — base lista: EmailService + DomainEventPublisher ya implementados
 - [ ] Auditoría (registrar quién hizo qué y cuándo)
 - [ ] Métricas / monitoreo
-- [ ] Notificaciones

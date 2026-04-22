@@ -40,11 +40,11 @@ public class JwtTokenProvider {
     @Value("${app.security.jwt.access-token-expiration}")
     private long accessTokenExpirationSeconds;
 
-    @Value("${app.security.jwt.refresh-token-expiration}")
-    private long refreshTokenExpirationSeconds;
-
-    @Value("${app.security.jwt.confirmation-token-expiration:172800}")
-    private long confirmationTokenExpirationSeconds; // default: 48h = 172 800 seg
+//    @Value("${app.security.jwt.refresh-token-expiration}")
+//    private long refreshTokenExpirationSeconds;
+//
+//    @Value("${app.security.jwt.confirmation-token-expiration:172800}")
+//    private long confirmationTokenExpirationSeconds; // default: 48h = 172 800 seg
 
     @Value("${app.security.jwt.issuer}")
     private String issuer;
@@ -104,34 +104,34 @@ public class JwtTokenProvider {
         return buildToken(userId, userDetails.getUsername(), claims, accessTokenExpirationSeconds, "ACCESS");
     }
 
-    public String generateRefreshToken(UserDetails userDetails) {
-        Map<String, Object> claims = new HashMap<>();
-        // 👇 Limitar claims: solo lo básico
-        UserId userId = (userDetails instanceof UserPrincipal principal)
-                ? principal.user().getUserId()
-                : null;
+//    public String generateRefreshToken(UserDetails userDetails) {
+//        Map<String, Object> claims = new HashMap<>();
+//        // 👇 Limitar claims: solo lo básico
+//        UserId userId = (userDetails instanceof UserPrincipal principal)
+//                ? principal.user().getUserId()
+//                : null;
+//
+//        assert userId != null;
+//        return buildToken(userId, userDetails.getUsername(), claims, refreshTokenExpirationSeconds, "REFRESH");
+//    }
 
-        assert userId != null;
-        return buildToken(userId, userDetails.getUsername(), claims, refreshTokenExpirationSeconds, "REFRESH");
-    }
-
-    public String generateConfirmationToken(UserDetails userDetails) {
-        Map<String, Object> claims = new HashMap<>();
-        claims.put("purpose", "account_confirmation");
-
-        // Extraemos el UserId de forma segura a través del adaptador UserPrincipal
-        UserId userId = (userDetails instanceof UserPrincipal principal)
-                ? principal.user().getUserId()
-                : null;
-
-        if (userId != null) {
-            claims.put("userId", userId.value().toString());
-        }
-
-        // Usamos los métodos de la interfaz UserDetails para el subject
-        assert userId != null;
-        return buildToken(userId, userDetails.getUsername(), claims, confirmationTokenExpirationSeconds, "CONFIRMATION");
-    }
+//    public String generateConfirmationToken(UserDetails userDetails) {
+//        Map<String, Object> claims = new HashMap<>();
+//        claims.put("purpose", "account_confirmation");
+//
+//        // Extraemos el UserId de forma segura a través del adaptador UserPrincipal
+//        UserId userId = (userDetails instanceof UserPrincipal principal)
+//                ? principal.user().getUserId()
+//                : null;
+//
+//        if (userId != null) {
+//            claims.put("userId", userId.value().toString());
+//        }
+//
+//        // Usamos los métodos de la interfaz UserDetails para el subject
+//        assert userId != null;
+//        return buildToken(userId, userDetails.getUsername(), claims, confirmationTokenExpirationSeconds, "CONFIRMATION");
+//    }
 
     // ============================================
     // Manejo de errores específico
@@ -223,53 +223,53 @@ public class JwtTokenProvider {
         }
     }
 
-    public boolean isRefreshTokenValid(String token, UserDetails userDetails) {
-        try {
-            final String username = getUsernameFromToken(token);
-            final String tokenType = getTokenType(token);
+//    public boolean isRefreshTokenValid(String token, UserDetails userDetails) {
+//        try {
+//            final String username = getUsernameFromToken(token);
+//            final String tokenType = getTokenType(token);
+//
+//            return username.equals(userDetails.getUsername())
+//                    && !isTokenExpired(token)
+//                    && "REFRESH".equals(tokenType);
+//
+//        } catch (Exception e) {
+//            log.error("Error validando refresh token: {}", e.getMessage());
+//            return false;
+//        }
+//    }
 
-            return username.equals(userDetails.getUsername())
-                    && !isTokenExpired(token)
-                    && "REFRESH".equals(tokenType);
-
-        } catch (Exception e) {
-            log.error("Error validando refresh token: {}", e.getMessage());
-            return false;
-        }
-    }
-
-    public boolean isConfirmationTokenValid(String token) {
-        try {
-            String purpose = getClaim(token, claims -> claims.get("purpose", String.class));
-            String tokenType = getTokenType(token);
-
-            return "account_confirmation".equals(purpose)
-                    && "CONFIRMATION".equals(tokenType)
-                    && !isTokenExpired(token);
-
-        } catch (Exception e) {
-            log.error("Error validando token de confirmación: {}", e.getMessage());
-            return false;
-        }
-    }
+//    public boolean isConfirmationTokenValid(String token) {
+//        try {
+//            String purpose = getClaim(token, claims -> claims.get("purpose", String.class));
+//            String tokenType = getTokenType(token);
+//
+//            return "account_confirmation".equals(purpose)
+//                    && "CONFIRMATION".equals(tokenType)
+//                    && !isTokenExpired(token);
+//
+//        } catch (Exception e) {
+//            log.error("Error validando token de confirmación: {}", e.getMessage());
+//            return false;
+//        }
+//    }
 
     // ============================================
     // MEJORA 8: Utilidades adicionales
     // ============================================
-    public long getTokenExpirationTime(String tokenType) {
-        return switch (tokenType.toUpperCase()) {
-            case "ACCESS" -> accessTokenExpirationSeconds;
-            case "REFRESH" -> refreshTokenExpirationSeconds;
-            case "CONFIRMATION" -> confirmationTokenExpirationSeconds;
-            default -> accessTokenExpirationSeconds;
-        };
-    }
+//    public long getTokenExpirationTime(String tokenType) {
+//        return switch (tokenType.toUpperCase()) {
+//            case "ACCESS" -> accessTokenExpirationSeconds;
+//            case "REFRESH" -> refreshTokenExpirationSeconds;
+//            case "CONFIRMATION" -> confirmationTokenExpirationSeconds;
+//            default -> accessTokenExpirationSeconds;
+//        };
+//    }
 
-    public boolean canTokenBeRefreshed(String token) {
-        try {
-            return !isTokenExpired(token) && "REFRESH".equals(getTokenType(token));
-        } catch (Exception e) {
-            return false;
-        }
-    }
+//    public boolean canTokenBeRefreshed(String token) {
+//        try {
+//            return !isTokenExpired(token) && "REFRESH".equals(getTokenType(token));
+//        } catch (Exception e) {
+//            return false;
+//        }
+//    }
 }

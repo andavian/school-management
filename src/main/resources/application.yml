@@ -298,8 +298,8 @@ app:
       refill-tokens: 3
       refill-seconds: 60
     refresh-token:
-      capacity: 10
-      refill-tokens: 10
+      capacity: 20
+      refill-tokens: 20
       refill-seconds: 60
 
   storage:

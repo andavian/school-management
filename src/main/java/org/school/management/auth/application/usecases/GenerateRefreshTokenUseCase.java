@@ -4,6 +4,7 @@ import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.school.management.auth.domain.model.RefreshToken;
 import org.school.management.auth.domain.repository.RefreshTokenRepository;
+import org.school.management.auth.domain.valueobject.RefreshTokenId;
 import org.school.management.auth.infra.security.token.SecureTokenGenerator;
 import org.school.management.auth.infra.security.token.TokenHasher;
 import org.school.management.shared.person.domain.valueobject.Dni;
