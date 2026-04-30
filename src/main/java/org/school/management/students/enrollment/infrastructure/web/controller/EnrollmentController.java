@@ -1,12 +1,13 @@
 package org.school.management.students.enrollment.infrastructure.web.controller;
 
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.tags.Tag;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.school.management.auth.domain.model.User;
+import org.school.management.auth.infra.security.UserPrincipal;
+import org.school.management.auth.infra.web.SecurityContextHelper;
 import org.school.management.students.enrollment.application.usecases.GetActiveEnrollmentUseCase;
 import org.school.management.students.enrollment.application.usecases.GetEnrollmentByStudentIdUseCase;
 import org.school.management.students.enrollment.application.usecases.UpdateEnrollmentUseCase;
@@ -15,7 +16,6 @@ import org.school.management.students.enrollment.infrastructure.web.mapper.Enrol
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -40,10 +40,10 @@ public class EnrollmentController {
     @Operation(summary = "Obtener historial de matrículas del estudiante")
     public ResponseEntity<List<EnrollmentWebDto.EnrollmentWebResponse>> getAllEnrollments(
             @PathVariable UUID studentId,
-            @AuthenticationPrincipal UserDetails userDetails) {
+            @AuthenticationPrincipal UserPrincipal userPrincipal) {
 
         log.debug("GET enrollments — studentId: {}, requestedBy: {}",
-                studentId, extractUserId(userDetails));
+                studentId, SecurityContextHelper.extractUserId(userPrincipal));
 
         List<EnrollmentWebDto.EnrollmentWebResponse> response =
                 getEnrollmentByStudentIdUseCase.execute(studentId)
@@ -61,10 +61,10 @@ public class EnrollmentController {
     public ResponseEntity<EnrollmentWebDto.EnrollmentWebResponse> getEnrollmentByYear(
             @PathVariable UUID studentId,
             @PathVariable UUID academicYearId,
-            @AuthenticationPrincipal UserDetails userDetails) {
+            @AuthenticationPrincipal UserPrincipal userPrincipal) {
 
         log.debug("GET enrollment — studentId: {}, academicYearId: {}, requestedBy: {}",
-                studentId, academicYearId, extractUserId(userDetails));
+                studentId, academicYearId, SecurityContextHelper.extractUserId(userPrincipal));
 
         EnrollmentWebDto.EnrollmentWebResponse response = mapper.toWebResponse(
                 getActiveEnrollmentUseCase.execute(studentId, academicYearId)
@@ -81,10 +81,10 @@ public class EnrollmentController {
             @PathVariable UUID studentId,
             @PathVariable UUID enrollmentId,
             @Valid @RequestBody EnrollmentWebDto.UpdateEnrollmentWebRequest webRequest,
-            @AuthenticationPrincipal UserDetails userDetails) {
+            @AuthenticationPrincipal UserPrincipal userPrincipal) {
 
         log.debug("PATCH enrollment — enrollmentId: {}, requestedBy: {}",
-                enrollmentId, extractUserId(userDetails));
+                enrollmentId, SecurityContextHelper.extractUserId(userPrincipal));
 
         EnrollmentWebDto.EnrollmentWebResponse response = mapper.toWebResponse(
                 updateEnrollmentUseCase.execute(
@@ -96,13 +96,5 @@ public class EnrollmentController {
         return ResponseEntity.ok(response);
     }
 
-    // ── Utilidad ──────────────────────────────────────────────────────────
-    private UUID extractUserId(UserDetails userDetails) {
-        if (userDetails instanceof User user) {
-            return user.getUserId().value();
-        }
-        throw new IllegalStateException(
-                "Principal inesperado: " + userDetails.getClass().getName()
-        );
-    }
+
 }

@@ -15,4 +15,6 @@ public interface RefreshTokenRepository {
     List<RefreshToken> findAllByUserDni(Dni dni);
 
     void revokeAllByUserDni(Dni dni);
+
+    void revoke(RefreshToken token);
 }

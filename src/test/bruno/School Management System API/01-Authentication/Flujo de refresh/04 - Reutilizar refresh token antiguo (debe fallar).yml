@@ -1,0 +1,30 @@
+info:
+  name: 04 - Reutilizar refresh token antiguo (debe fallar)
+  type: http
+  seq: 4
+  tags:
+    - Authentication
+
+http:
+  method: POST
+  url: "{{baseUrl}}/api/auth/refresh-token"
+  body:
+    type: json
+    data: |-
+      {
+        "refreshToken": "{{old_refresh_token}}"
+      }
+
+runtime:
+  scripts:
+    - type: tests
+      code: |-
+        test("Token viejo debe ser rechazado", function() {
+            expect(res.status).to.equal(401);
+        });
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

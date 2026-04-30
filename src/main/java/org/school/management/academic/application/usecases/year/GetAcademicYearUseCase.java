@@ -24,7 +24,7 @@ public class GetAcademicYearUseCase {
         log.debug("Getting academic year: {}", academicYearId);
 
         AcademicYear academicYear = academicYearRepository
-                .findById(new AcademicYearId(java.util.UUID.fromString(academicYearId)))
+                .findByAcademicYearId(new AcademicYearId(java.util.UUID.fromString(academicYearId)))
                 .orElseThrow(() -> new AcademicYearNotFoundException(
                         "Academic year not found: " + academicYearId
                 ));

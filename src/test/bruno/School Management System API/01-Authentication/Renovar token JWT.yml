@@ -8,6 +8,13 @@ info:
 http:
   method: POST
   url: "{{baseUrl}}/api/auth/refresh-token"
+  headers:
+    - name: X-Forwarded-For
+      value: ""
+      disabled: true
+    - name: User-Agent
+      value: ""
+      disabled: true
   body:
     type: json
     data: |-

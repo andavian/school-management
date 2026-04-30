@@ -1,0 +1,40 @@
+info:
+  name: 02 - POST Refresh Token
+  type: http
+  seq: 2
+  tags:
+    - Authentication
+
+http:
+  method: POST
+  url: "{{baseUrl}}/api/auth/refresh-token"
+  body:
+    type: json
+    data: |-
+      {
+        "refreshToken": "{{refresh_token}}"
+      }
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        if (res.status === 200) {
+            const body = res.getBody();
+            const oldRefresh = bru.getEnvVar("refresh_token");
+            bru.setEnvVar("old_refresh_token", oldRefresh, { persist: true });
+            bru.setEnvVar("jwt_token", body.accessToken, { persist: true });
+            bru.setEnvVar("refresh_token", body.refreshToken, { persist: true });
+        }
+    - type: tests
+      code: |-
+        test("Refresh exitoso y rotación", function() {
+            expect(res.status).to.equal(200);
+            expect(res.getBody()).to.have.property("accessToken");
+        });
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

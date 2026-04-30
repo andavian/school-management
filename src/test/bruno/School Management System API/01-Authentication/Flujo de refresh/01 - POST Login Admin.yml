@@ -1,0 +1,46 @@
+info:
+  name: 01 - POST Login Admin
+  type: http
+  seq: 1
+  tags:
+    - Authentication
+
+http:
+  method: POST
+  url: "{{baseUrl}}/api/auth/login"
+  body:
+    type: json
+    data: |-
+      {
+        "dni": "10000001",
+        "password": "Admin123!",
+        "rememberMe": "false"
+      }
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        if (res.status === 200 || res.status === 201) {
+            const body = res.getBody();
+            const accessToken = body.accessToken;
+            const refreshToken = body.refreshToken;
+            if (accessToken) {
+                bru.setEnvVar("jwt_token", accessToken, { persist: true });
+                bru.setEnvVar("refresh_token", refreshToken, { persist: true });
+            }
+        }
+    - type: tests
+      code: |-
+        test("Login exitoso y tokens guardados", function() {
+            expect(res.status).to.equal(200);
+            const body = res.getBody();
+            expect(body).to.have.property("accessToken");
+            expect(body.accessToken).to.be.a("string").and.not.empty;
+        });
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

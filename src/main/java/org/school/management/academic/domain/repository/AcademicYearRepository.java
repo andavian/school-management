@@ -10,7 +10,7 @@ import java.util.Optional;
 
 public interface AcademicYearRepository {
     AcademicYear save(AcademicYear academicYear);
-    Optional<AcademicYear> findById(AcademicYearId academicYearId);
+    Optional<AcademicYear> findByAcademicYearId(AcademicYearId academicYearId);
     Optional<AcademicYear> findByYear(int year);
     Optional<AcademicYear> findCurrentYear();
     Optional<AcademicYear> findByDate(LocalDate date);

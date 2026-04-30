@@ -7,25 +7,9 @@ info:
 
 http:
   method: POST
-  url: "{{base_url}}/api/admin/students/{{current_student_id}}/record/{{record_id}}/upload"
+  url: "{{baseUrl}}/api/admin/students/{{current_student_id}}/record/{{record_id}}/upload"
   body:
     type: multipart-form
-    formData:
-      - name: file
-        type: file
-        value: ""                     # ← Aquí seleccionás el archivo PDF o imagen desde Bruno
-      - name: documentTypeId
-        type: text
-        value: "{{document_type_id}}"
-      - name: title
-        type: text
-        value: "DNI Escaneado - Frente y Dorso"
-      - name: description
-        type: text
-        value: "Documento de identidad del estudiante"
-      - name: issueDate
-        type: text
-        value: "2025-01-15"
   auth: inherit
 
 runtime:
@@ -37,3 +21,9 @@ runtime:
         } else {
           console.error("❌ Error al subir archivo:", res.getBody());
         }
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

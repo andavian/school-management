@@ -136,6 +136,8 @@ public interface AcademicApplicationMapper {
         return id != null ? id.value().toString() : null;
     }
 
+
+
     default Integer mapPeriodNumber(PeriodNumber number) {
         return number != null ? number.value() : null;
     }

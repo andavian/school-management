@@ -35,6 +35,4 @@ public interface EvaluationPeriodRepository {
     boolean existsByAcademicYearAndPeriodNumber(AcademicYearId academicYearId, int periodNumber);
 
     int getMaxPeriodNumber(AcademicYearId academicYearId);
-
-    void delete(PeriodId id);
 }

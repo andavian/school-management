@@ -1,7 +1,7 @@
 info:
   name: Actualizar estado del legajo — SUBMIT, APPROVE o REJECT
   type: http
-  seq: 3
+  seq: 4
   tags:
     - Student_Records
 

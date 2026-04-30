@@ -1,0 +1,26 @@
+info:
+  name: 05 - GET Estudiante Creado
+  type: http
+  seq: 5
+
+http:
+  method: GET
+  url: "{{baseUrl}}/api/admin/students/{{new_student_id}}"
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: tests
+      code: |-
+        test("Estudiante encontrado con datos correctos", function() {
+            expect(res.status).to.equal(200);
+            var body = res.getBody();
+            expect(body.studentId).to.equal(bru.getEnvVar("new_student_id"));
+            expect(body.firstName).to.equal("Valentina");
+        });
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

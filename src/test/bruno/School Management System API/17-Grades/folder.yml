@@ -1,7 +1,7 @@
 info:
   name: 17-Grades
   type: folder
-  seq: 17
+  seq: 18
 
 request:
   auth: inherit

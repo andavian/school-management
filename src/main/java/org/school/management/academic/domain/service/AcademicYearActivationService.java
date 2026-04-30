@@ -36,7 +36,7 @@ public class AcademicYearActivationService {
         log.info("Activating academic year: {}", academicYearId);
 
         // Obtener el año a activar
-        AcademicYear yearToActivate = academicYearRepository.findById(academicYearId)
+        AcademicYear yearToActivate = academicYearRepository.findByAcademicYearId(academicYearId)
                 .orElseThrow(() -> new AcademicYearNotFoundException(
                         "Academic year not found: " + academicYearId
                 ));
@@ -72,7 +72,7 @@ public class AcademicYearActivationService {
     public AcademicYear closeYear(AcademicYearId academicYearId) {
         log.info("Closing academic year: {}", academicYearId);
 
-        AcademicYear year = academicYearRepository.findById(academicYearId)
+        AcademicYear year = academicYearRepository.findByAcademicYearId(academicYearId)
                 .orElseThrow(() -> new AcademicYearNotFoundException(
                         "Academic year not found: " + academicYearId
                 ));
@@ -101,7 +101,7 @@ public class AcademicYearActivationService {
      * Verifica si se puede activar un año académico
      */
     public boolean canActivateYear(AcademicYearId academicYearId) {
-        Optional<AcademicYear> yearOpt = academicYearRepository.findById(academicYearId);
+        Optional<AcademicYear> yearOpt = academicYearRepository.findByAcademicYearId(academicYearId);
         return yearOpt.isPresent() && !yearOpt.get().isCurrent();
     }
 

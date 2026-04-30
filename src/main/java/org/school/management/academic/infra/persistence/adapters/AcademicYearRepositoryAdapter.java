@@ -33,7 +33,7 @@ public class AcademicYearRepositoryAdapter implements AcademicYearRepository {
     }
 
     @Override
-    public Optional<AcademicYear> findById(AcademicYearId id) {
+    public Optional<AcademicYear> findByAcademicYearId(AcademicYearId id) {
         return jpaRepository.findById(id.value())
                 .map(mapper::toDomain);
     }

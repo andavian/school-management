@@ -2,8 +2,6 @@ name: Local Development
 variables:
   - name: baseUrl
     value: http://localhost:8080
-  - name: jwt_token
-    value: eyJhbGciOiJIUzM4NCJ9.eyJpc0N1cnJlbnQiOnRydWUsInJvbGVzIjpbIlJPTEVfU1VQRVJfQURNSU4iLCJST0xFX0FETUlOIl0sImlzcyI6InNjaG9vbC1tYW5hZ2VtZW50LWRldiIsInRva2VuVHlwZSI6IkFDQ0VTUyIsInVzZXJJZCI6ImEwMDAwMDAwLTAwMDAtMDAwMC0wMDAwLTAwMDAwMDAwMDAwMSIsImlhdCI6MTc3NjQyOTc4OCwianRpIjoiZTBmOTgzM2ItN2YwMy00ZDU4LWIyM2ItMGFjZjk3NjIyODUxIiwic3ViIjoiMTAwMDAwMDEiLCJleHAiOjE3NzY0MzMzODh9.WHN3R5D9kI97REkKiK7TRb7lfs7IcFnRADqsdkqFNSAjlk-YTUV79jwEJRnodL1j
   - name: current_student_id
     value: ed000000-0000-0000-0000-000000000001
   - name: new_parent_id
@@ -16,3 +14,25 @@ variables:
     value: 01250000-0000-0000-0000-000000000101
   - name: current_record_id
     value: '""'
+  - secret: true
+    name: logout_refresh_token
+  - secret: true
+    name: jwt_token
+  - secret: true
+    name: refresh_token
+  - secret: true
+    name: old_refresh_token
+  - name: new_student_id
+    value: 9d1fc316-1431-45f8-ae78-74acbd11e0c7
+  - name: academic_year_id
+    value: a0000000-0000-0000-0000-000000002025
+  - name: grade_level_id
+    value: 01250000-0000-0000-0000-000000000101
+  - name: residence_place_id
+    value: d1317587-3f11-11f1-ac89-cc4740a8b54c
+  - name: birth_place_id
+    value: d1317587-3f11-11f1-ac89-cc4740a8b54c
+  - name: daily_attendance_id
+    value: 6a9b8361-304f-4820-82a4-dbd50d9f2e14
+  - name: enrollment_id
+    value: fae5cae0-7c6a-40c9-9cac-b694cb14abcb

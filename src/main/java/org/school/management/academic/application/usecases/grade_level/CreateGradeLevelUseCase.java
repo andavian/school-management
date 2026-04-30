@@ -40,7 +40,7 @@ public class CreateGradeLevelUseCase {
                 UUID.fromString(request.academicYearId())
         );
 
-        academicYearRepository.findById(academicYearId)
+        academicYearRepository.findByAcademicYearId(academicYearId)
                 .orElseThrow(() -> new AcademicYearNotFoundException(
                         "Academic year not found: " + request.academicYearId()
                 ));

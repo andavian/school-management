@@ -13,6 +13,7 @@ http:
       value: ARG
       type: path
       description: Código ISO del país
+  auth: inherit
 
 settings:
   encodeUrl: true

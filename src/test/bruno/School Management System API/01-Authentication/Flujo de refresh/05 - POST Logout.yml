@@ -1,0 +1,39 @@
+info:
+  name: 05 - POST Logout
+  type: http
+  seq: 5
+  tags:
+    - Authentication
+
+http:
+  method: POST
+  url: "{{baseUrl}}/api/auth/logout"
+  body:
+    type: json
+    data: |-
+      {
+        "refreshToken": "{{refresh_token}}"
+      }
+  auth:
+    type: bearer
+    token: "{{jwt_token}}"
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        if (res.status === 200) {
+            const usedToken = bru.getEnvVar("refresh_token");
+            bru.setEnvVar("logout_refresh_token", usedToken, { persist: true });
+        }
+    - type: tests
+      code: |-
+        test("Logout exitoso", function() {
+            expect(res.status).to.equal(200);
+        });
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

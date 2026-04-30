@@ -50,4 +50,14 @@ public class RefreshTokenRepositoryAdapter implements RefreshTokenRepository {
                 LocalDateTime.now()
         );
     }
+
+    @Override
+    public void revoke(RefreshToken token) {
+        // Ejecuta un UPDATE directo para evitar problemas de sesión
+        jpaRepository.revokeToken(
+                token.getId().value(),                // UUID del token
+                token.getReplacedByTokenHash(),       // hash del nuevo token
+                LocalDateTime.now()                   // momento de revocación
+        );
+    }
 }

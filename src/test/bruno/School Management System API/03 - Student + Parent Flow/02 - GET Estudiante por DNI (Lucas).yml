@@ -7,7 +7,7 @@ info:
 
 http:
   method: GET
-  url: "{{baseUrl}}/api/admin/students/dni/11223344"
+  url: "{{baseUrl}}/api/admin/students/dni/60123456"
   auth: inherit
 
 runtime:
@@ -21,3 +21,9 @@ runtime:
         } else {
           console.error("❌ Error al obtener estudiante");
         }
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

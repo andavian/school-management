@@ -164,7 +164,7 @@ public class StudentEnrollment {
     }
 
     public Boolean hasPassed() {
-        return passed;
+        return Boolean.TRUE.equals(this.passed);
     }
 
     public long getDurationInDays() {

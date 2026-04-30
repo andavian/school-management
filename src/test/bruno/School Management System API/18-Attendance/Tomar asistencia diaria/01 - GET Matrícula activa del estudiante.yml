@@ -1,0 +1,37 @@
+info:
+  name: 01 - GET Matrícula Activa
+  type: http
+  seq: 1
+  tags:
+    - Attendance
+    - Prerequisites
+
+http:
+  method: GET
+  url: "{{baseUrl}}/api/admin/students/{{new_student_id}}/enrollments/{{academic_year_id}}"
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        if (res.status === 200) {
+            var body = res.getBody();
+            bru.setEnvVar("enrollment_id", body.enrollmentId, { persist: true });
+            bru.setEnvVar("grade_level_id", body.gradeLevelId, { persist: true });
+            console.log("Matrícula activa: " + body.enrollmentId);
+        }
+    - type: tests
+      code: |-
+        test("Obtiene matrícula activa con curso", function() {
+            expect(res.status).to.equal(200);
+            var body = res.getBody();
+            expect(body).to.have.property("gradeLevelId");
+            expect(body).to.have.property("enrollmentId");
+        });
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

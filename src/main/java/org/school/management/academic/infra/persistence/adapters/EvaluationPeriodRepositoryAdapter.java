@@ -19,14 +19,14 @@ import java.util.stream.Collectors;
 
 @Component
 @RequiredArgsConstructor
-@Transactional(readOnly = true) // Transacciones de lectura por defecto
+@Transactional(readOnly = true)
 public class EvaluationPeriodRepositoryAdapter implements EvaluationPeriodRepository {
 
     private final EvaluationPeriodJpaRepository jpaRepository;
     private final EvaluationPeriodMapper mapper;
 
     @Override
-    @Transactional // Sobreescribir para permitir escritura
+    @Transactional
     public EvaluationPeriod save(EvaluationPeriod period) {
         EvaluationPeriodEntity entity = mapper.toEntity(period);
         EvaluationPeriodEntity saved = jpaRepository.save(entity);
@@ -48,32 +48,29 @@ public class EvaluationPeriodRepositoryAdapter implements EvaluationPeriodReposi
 
     @Override
     public Optional<EvaluationPeriod> findByAcademicYearAndNumber(AcademicYearId academicYearId, int periodNumber) {
-        // Implementa el método del contrato (usando el nombre JPA que sí existe)
         return jpaRepository.findByAcademicYearIdAndPeriodNumber(academicYearId.value(), periodNumber)
                 .map(mapper::toDomain);
     }
 
     @Override
     public Optional<EvaluationPeriod> findByAcademicYearAndPeriodNumber(AcademicYearId academicYearId, int periodNumber) {
-         return findByAcademicYearAndNumber(academicYearId, periodNumber);
+        return findByAcademicYearAndNumber(academicYearId, periodNumber);
     }
 
     @Override
     public Optional<EvaluationPeriod> findCurrentPeriod(AcademicYearId academicYearId) {
-          return jpaRepository.findCurrentPeriod(academicYearId.value())
+        return jpaRepository.findCurrentPeriod(academicYearId.value())
                 .map(mapper::toDomain);
     }
 
     @Override
     public Optional<EvaluationPeriod> findCurrentPeriod(AcademicYearId academicYearId, LocalDate date) {
-
         return jpaRepository.findByDate(academicYearId.value(), date)
                 .map(mapper::toDomain);
     }
 
     @Override
     public Optional<EvaluationPeriod> findCurrentPeriodInCurrentYear(LocalDate date) {
-        // Implementa el método del contrato (utiliza la query compleja que definimos en JPA)
         return jpaRepository.findCurrentPeriodInCurrentYear(date)
                 .map(mapper::toDomain);
     }
@@ -87,14 +84,12 @@ public class EvaluationPeriodRepositoryAdapter implements EvaluationPeriodReposi
 
     @Override
     public Optional<EvaluationPeriod> findByDate(AcademicYearId academicYearId, LocalDate date) {
-        // Implementa el método del contrato
         return jpaRepository.findByDate(academicYearId.value(), date)
                 .map(mapper::toDomain);
     }
 
     @Override
     public List<EvaluationPeriod> findByStatus(PeriodStatus status) {
-        // Implementa el método del contrato
         return jpaRepository.findByStatus(status.name()).stream()
                 .map(mapper::toDomain)
                 .collect(Collectors.toList());
@@ -102,7 +97,6 @@ public class EvaluationPeriodRepositoryAdapter implements EvaluationPeriodReposi
 
     @Override
     public boolean existsByAcademicYearAndPeriodNumber(AcademicYearId academicYearId, int periodNumber) {
-        // Implementa el método del contrato
         return jpaRepository.existsByAcademicYearIdAndPeriodNumber(
                 academicYearId.value(),
                 periodNumber
@@ -113,11 +107,5 @@ public class EvaluationPeriodRepositoryAdapter implements EvaluationPeriodReposi
     public int getMaxPeriodNumber(AcademicYearId academicYearId) {
         Integer max = jpaRepository.findMaxPeriodNumber(academicYearId.value());
         return max != null ? max : 0;
-    }
-
-    @Override
-    @Transactional // Sobreescribir para permitir escritura
-    public void delete(PeriodId id) {
-        jpaRepository.deleteById(id.value());
     }
 }

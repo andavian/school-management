@@ -1,0 +1,42 @@
+info:
+  name: 03 - GET Localidad (Córdoba)
+  type: http
+  seq: 4
+  tags:
+    - Students
+    - Prerequisites
+
+http:
+  method: GET
+  url: "{{baseUrl}}/api/geography/places/search?q=Córdoba"
+  params:
+    - name: q
+      value: Córdoba
+      type: query
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        if (res.status === 200) {
+            var body = res.getBody();
+            var lugar = body.find(function(p) { return p.type === "CIUDAD" && p.name === "Córdoba"; });
+            if (lugar) {
+                bru.setEnvVar("residence_place_id", lugar.placeId, { persist: true });
+                bru.setEnvVar("birth_place_id", lugar.placeId, { persist: true }); // misma localidad para nacimiento
+                console.log("Lugar: " + lugar.fullAddress);
+            }
+        }
+    - type: tests
+      code: |-
+        test("Busca localidad Córdoba", function() {
+            expect(res.status).to.equal(200);
+            expect(res.getBody()).to.be.an("array").and.not.empty;
+        });
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

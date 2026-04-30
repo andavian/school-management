@@ -7,7 +7,7 @@ info:
 
 http:
   method: POST
-  url: "{{base_url}}/api/admin/students/{{current_student_id}}/record/documents"
+  url: "{{baseUrl}}/api/admin/students/{{current_student_id}}/record/documents"
   body:
     type: json
     data: |-
@@ -29,3 +29,9 @@ runtime:
         } else {
           console.error("❌ Error al agregar documento:", res.getBody());
         }
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

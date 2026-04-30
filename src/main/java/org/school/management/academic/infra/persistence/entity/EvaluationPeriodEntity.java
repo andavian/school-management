@@ -1,10 +1,10 @@
 package org.school.management.academic.infra.persistence.entity;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
+import org.school.management.shared.infrastructure.persistence.converter.UuidBinaryConverter;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -12,16 +12,18 @@ import java.util.UUID;
 
 @Entity
 @Table(name = "evaluation_periods")
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
-@AllArgsConstructor
-@Builder
 public class EvaluationPeriodEntity {
+
     @Id
-    @Column(name = "period_id", columnDefinition = "BINARY(16)")
+    @Convert(converter = UuidBinaryConverter.class)
+    @Column(name = "period_id", columnDefinition = "BINARY(16)", updatable = false, nullable = false)
     private UUID periodId;
 
-    @Column(name = "academic_year_id", nullable = false, columnDefinition = "BINARY(16)")
+    @Convert(converter = UuidBinaryConverter.class)
+    @Column(name = "academic_year_id", columnDefinition = "BINARY(16)", nullable = false)
     private UUID academicYearId;
 
     @Column(name = "period_number", nullable = false)
@@ -48,11 +50,18 @@ public class EvaluationPeriodEntity {
     @Column(name = "closed_at")
     private LocalDateTime closedAt;
 
-    @Column(name = "updated_at", nullable = false, updatable = false)
+    @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
 
     @PrePersist
-    protected void onCreate() {
-        if (createdAt == null) createdAt = LocalDateTime.now();
+    protected void onPrePersist() {
+        LocalDateTime now = LocalDateTime.now();
+        if (createdAt == null) createdAt = now;
+        if (updatedAt == null) updatedAt = now;
+    }
+
+    @PreUpdate
+    protected void onPreUpdate() {
+        updatedAt = LocalDateTime.now();
     }
 }

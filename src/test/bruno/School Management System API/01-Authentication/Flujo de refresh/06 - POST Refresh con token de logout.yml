@@ -1,0 +1,30 @@
+info:
+  name: 06 - Refresh token inválido tras logout
+  type: http
+  seq: 6
+  tags:
+    - Authentication
+
+http:
+  method: POST
+  url: "{{baseUrl}}/api/auth/refresh-token"
+  body:
+    type: json
+    data: |-
+      {
+        "refreshToken": "{{logout_refresh_token}}"
+      }
+
+runtime:
+  scripts:
+    - type: tests
+      code: |-
+        test("Token de logout debe ser rechazado", function() {
+            expect(res.status).to.equal(401);
+        });
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

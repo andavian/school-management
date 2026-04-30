@@ -200,6 +200,7 @@ CREATE TABLE evaluation_periods (
     status              VARCHAR(20) NOT NULL DEFAULT 'PENDING',
     created_at          TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     closed_at           TIMESTAMP,
+    updated_at          TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 
     CONSTRAINT fk_periods_academic_year
         FOREIGN KEY (academic_year_id) REFERENCES academic_years(academic_year_id)

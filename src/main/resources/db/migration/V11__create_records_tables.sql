@@ -9,9 +9,11 @@ CREATE TABLE document_types (
     code                VARCHAR(20) NOT NULL UNIQUE,
     description         TEXT,
     is_mandatory        BOOLEAN NOT NULL DEFAULT FALSE,
-    category            VARCHAR(50) NOT NULL,  -- PERSONAL, ACADEMIC, MEDICAL, LEGAL
-    created_at          TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    category            VARCHAR(50) NOT NULL, -- PERSONAL, ACADEMIC, MEDICAL, LEGAL
+    valid_for_years     INT DEFAULT 1,
     is_active           BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at          TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
 
     INDEX idx_code (code),
     INDEX idx_category (category)

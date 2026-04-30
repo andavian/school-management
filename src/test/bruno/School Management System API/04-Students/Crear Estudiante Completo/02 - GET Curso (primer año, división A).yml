@@ -1,0 +1,38 @@
+info:
+  name: 02 - GET Curso 1°A
+  type: http
+  seq: 2
+  tags:
+    - Students
+    - Prerequisites
+
+http:
+  method: GET
+  url: "{{baseUrl}}/api/admin/grade-levels"
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        if (res.status === 200) {
+            var body = res.getBody();
+            // Asumiendo que el primer curso de la lista es 1°A, puedes filtrar por displayName
+            var curso = body.find(function(c) { return c.displayName === "1° A" || c.yearLevel === 1; });
+            if (curso) {
+                bru.setEnvVar("grade_level_id", curso.gradeLevelId, { persist: true });
+                console.log("Curso: " + curso.fullDisplayName);
+            }
+        }
+    - type: tests
+      code: |-
+        test("Lista cursos filtrados", function() {
+            expect(res.status).to.equal(200);
+            expect(res.getBody()).to.be.an("array").and.not.empty;
+        });
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

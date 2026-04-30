@@ -18,26 +18,16 @@ request:
   auth:
     type: bearer
     token: "{{jwt_token}}"
-  scripts:
-    - type: tests
-      code: |-
-        // Tests - Assertions avanzadas
-        bru.test("Status es 201 Created", () => {
-          expect(res.status).to.equal(201);
-        });
-
-        bru.test("Respuesta contiene ID", () => {
-          const body = res.getBody();
-          expect(body).to.have.property("id");
-          bru.setEnvVar("student_id", body.id);   // guarda el ID creado para siguientes requests
-        });
-
-        bru.test("Tiempo de respuesta < 800ms", () => {
-          expect(res.responseTime).to.be.lessThan(800);
-        });
 bundled: false
 extensions:
   bruno:
     ignore:
       - node_modules
       - .git
+    openapi:
+      - sourceUrl: http://localhost:8080/v3/api-docs.yaml
+        groupBy: tags
+        lastSyncDate: 2026-04-22T14:45:19.351Z
+        specHash: ae1c690bffdd2c133574c644fe1422a0
+        autoCheck: true
+        autoCheckInterval: 5

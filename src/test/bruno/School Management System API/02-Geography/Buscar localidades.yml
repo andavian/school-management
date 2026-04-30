@@ -7,14 +7,14 @@ info:
 
 http:
   method: GET
-  url: "{{baseUrl}}/api/geography/places/search"
+  url: "{{baseUrl}}/api/geography/places/search?q=córdoba&provinceId=3412a0ad-3809-11f1-ac89-cc4740a8b54c"
   params:
     - name: q
-      value: Alta Gracia
+      value: córdoba
       type: query
       description: Texto de búsqueda
     - name: provinceId
-      value: uuid
+      value: 3412a0ad-3809-11f1-ac89-cc4740a8b54c
       type: query
       description: ID opcional de provincia para filtrar
   auth: inherit

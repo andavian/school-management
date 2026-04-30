@@ -12,7 +12,9 @@ http:
     type: json
     data: |-
       {
-        "parentDni": "98765432"
+        "parentDni": "25917634",
+        "relationship":"MOTHER"
+        
       }
   auth: inherit
 
@@ -25,3 +27,9 @@ runtime:
         } else {
           console.error("❌ Error al vincular padre:", res.getBody());
         }
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

@@ -8,6 +8,7 @@ info:
 http:
   method: GET
   url: "{{baseUrl}}/api/geography/countries"
+  auth: inherit
 
 settings:
   encodeUrl: true

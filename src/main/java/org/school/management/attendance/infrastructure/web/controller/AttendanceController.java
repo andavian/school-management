@@ -16,6 +16,8 @@ import org.school.management.attendance.application.usecases.RecordDailyAttendan
 import org.school.management.attendance.infrastructure.web.dto.AttendanceWebDto;
 import org.school.management.attendance.infrastructure.web.mapper.AttendanceWebMapper;
 import org.school.management.auth.domain.model.User;
+import org.school.management.auth.infra.security.UserPrincipal;
+import org.school.management.auth.infra.web.SecurityContextHelper;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -48,10 +50,10 @@ public class AttendanceController {
     @Operation(summary = "Registrar asistencia diaria del curso")
     public ResponseEntity<AttendanceWebDto.DailyAttendanceWebResponse> recordDailyAttendance(
             @Valid @RequestBody AttendanceWebDto.RecordDailyAttendanceWebRequest request,
-            @AuthenticationPrincipal UserDetails userDetails) {
+            @AuthenticationPrincipal UserPrincipal userPrincipal) {
         var response = recordDailyAttendanceUseCase.execute(
                 webMapper.toAppRequest(request),
-                extractUserId(userDetails));
+                SecurityContextHelper.extractUserId(userPrincipal));
         return ResponseEntity.status(HttpStatus.CREATED).body(webMapper.toWebResponse(response));
     }
 
@@ -61,11 +63,11 @@ public class AttendanceController {
     public ResponseEntity<AttendanceWebDto.DailyAttendanceWebResponse> justifyAbsence(
             @PathVariable UUID dailyAttendanceId,
             @Valid @RequestBody AttendanceWebDto.JustifyAbsenceWebRequest request,
-            @AuthenticationPrincipal UserDetails userDetails) {
+            @AuthenticationPrincipal UserPrincipal userPrincipal) {
         var response = justifyAbsenceUseCase.execute(
                 dailyAttendanceId,
                 webMapper.toAppRequest(request),
-                extractUserId(userDetails));
+                SecurityContextHelper.extractUserId(userPrincipal));
         return ResponseEntity.ok(webMapper.toWebResponse(response));
     }
 
@@ -75,11 +77,11 @@ public class AttendanceController {
     public ResponseEntity<AttendanceWebDto.DailyAttendanceWebResponse> correctDailyAttendance(
             @PathVariable UUID dailyAttendanceId,
             @Valid @RequestBody AttendanceWebDto.CorrectAttendanceWebRequest request,
-            @AuthenticationPrincipal UserDetails userDetails) {
+            @AuthenticationPrincipal UserPrincipal userPrincipal) {
         var response = correctAttendanceUseCase.correctDaily(
                 dailyAttendanceId,
                 webMapper.toAppRequest(request),
-                extractUserId(userDetails));
+                SecurityContextHelper.extractUserId(userPrincipal));
         return ResponseEntity.ok(webMapper.toWebResponse(response));
     }
 
@@ -90,10 +92,10 @@ public class AttendanceController {
     @Operation(summary = "Registrar asistencia por materia")
     public ResponseEntity<AttendanceWebDto.CourseAttendanceWebResponse> recordCourseAttendance(
             @Valid @RequestBody AttendanceWebDto.RecordCourseAttendanceWebRequest request,
-            @AuthenticationPrincipal UserDetails userDetails) {
+            @AuthenticationPrincipal UserPrincipal userPrincipal) {
         var response = recordCourseAttendanceUseCase.execute(
                 webMapper.toAppRequest(request),
-                extractUserId(userDetails));
+                SecurityContextHelper.extractUserId(userPrincipal));
         return ResponseEntity.status(HttpStatus.CREATED).body(webMapper.toWebResponse(response));
     }
 
@@ -103,11 +105,11 @@ public class AttendanceController {
     public ResponseEntity<AttendanceWebDto.CourseAttendanceWebResponse> correctCourseAttendance(
             @PathVariable UUID courseAttendanceId,
             @Valid @RequestBody AttendanceWebDto.CorrectAttendanceWebRequest request,
-            @AuthenticationPrincipal UserDetails userDetails) {
+            @AuthenticationPrincipal UserPrincipal userPrincipal) {
         var response = correctAttendanceUseCase.correctCourse(
                 courseAttendanceId,
                 webMapper.toAppRequest(request),
-                extractUserId(userDetails));
+                SecurityContextHelper.extractUserId(userPrincipal));
         return ResponseEntity.ok(webMapper.toWebResponse(response));
     }
 
@@ -133,10 +135,5 @@ public class AttendanceController {
         return ResponseEntity.ok(webMapper.toAtRiskResponse(atRiskList));
     }
 
-    private UUID extractUserId(UserDetails userDetails) {
-        if (userDetails instanceof User user) {
-            return user.getUserId().value();
-        }
-        throw new IllegalStateException("Unexpected principal type: " + userDetails.getClass().getName());
-    }
+
 }

@@ -38,7 +38,7 @@ public interface ParentWebMapper {
                 response.parentId(),
                 response.userId(),
                 response.dni(),
-                response.cuil(),            // ← NUEVO
+                response.cuil(),
                 response.firstName(),
                 response.lastName(),
                 response.fullName(),
@@ -52,7 +52,7 @@ public interface ParentWebMapper {
                 response.addressNumber(),
                 response.addressFloor(),
                 response.addressApartment(),
-                response.placeId(),         // ← fix: era response.residencePlaceId()
+                response.placeId(),
                 response.postalCode(),
                 response.occupation(),
                 response.workplace(),

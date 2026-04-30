@@ -1,0 +1,33 @@
+info:
+  name: 04 - PATCH Justificar Ausencia
+  type: http
+  seq: 4
+  tags:
+    - Attendance
+
+http:
+  method: PATCH
+  url: "{{baseUrl}}/api/attendance/daily/{{daily_attendance_id}}/justify"
+  body:
+    type: json
+    data: |-
+      {
+        "reason": "Enfermedad con certificado médico"
+      }
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: tests
+      code: |-
+        test("Justifica la ausencia", function() {
+            expect(res.status).to.equal(200);
+            var body = res.getBody();
+            expect(body.justificationReason).to.contain("certificado");
+        });
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

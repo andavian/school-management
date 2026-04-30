@@ -94,8 +94,8 @@ public class RefreshTokenUseCase {
         String newRaw = tokenGenerator.generate();
         String newHash = tokenHasher.hash(newRaw);
 
-        // ⚠️ IMPORTANTE: revocar ANTES de persistir el nuevo
         oldToken.revoke(newHash);
+
 
         RefreshToken newToken = RefreshToken.builder()
                 .id(RefreshTokenId.generate())
@@ -108,7 +108,7 @@ public class RefreshTokenUseCase {
                 .userAgent(oldToken.getUserAgent())
                 .build();
 
-        repository.save(oldToken);
+        repository.revoke(oldToken);
         repository.save(newToken);
 
         return new RotationResult(newRaw);

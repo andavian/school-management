@@ -18,7 +18,7 @@ public record PhoneNumber(String value) {
     );
 
     private static final int MIN_DIGITS = 10;
-    private static final int MAX_DIGITS = 13; // +54 9 999 9999999
+    private static final int MAX_DIGITS = 14; // +54 9 999 9999999
 
     public PhoneNumber {
         if (value == null || value.isBlank()) {

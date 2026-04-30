@@ -1,0 +1,46 @@
+info:
+  name: 02 - POST Asistencia Diaria (Presente)
+  type: http
+  seq: 2
+  tags:
+    - Attendance
+
+http:
+  method: POST
+  url: "{{baseUrl}}/api/attendance/daily"
+  body:
+    type: json
+    data: |-
+      {
+        "studentId": "{{new_student_id}}",
+        "gradeLevelId": "{{grade_level_id}}",
+        "academicYearId": "{{academic_year_id}}",
+        "attendanceDate": "2026-04-23",
+        "status": "PRESENT",
+        "observations": "Asistencia normal"
+      }
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        if (res.status === 200) {
+            var body = res.getBody();
+            bru.setEnvVar("daily_attendance_id", body.dailyAttendanceId, { persist: true });
+            console.log("Asistencia registrada: " + body.dailyAttendanceId);
+        }
+    - type: tests
+      code: |-
+        test("Registra asistencia diaria", function() {
+            expect(res.status).to.equal(201);
+            var body = res.getBody();
+            expect(body).to.have.property("dailyAttendanceId");
+            expect(body.status).to.equal("PRESENT");
+        });
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

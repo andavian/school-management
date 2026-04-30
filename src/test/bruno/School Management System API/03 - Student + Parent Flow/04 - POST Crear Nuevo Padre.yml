@@ -12,11 +12,18 @@ http:
     type: json
     data: |-
       {
-        "firstName": "Miguel Ángel",
-        "lastName": "Romero",
-        "dni": "33445566",
+        "firstName": "Mara Fabiana",
+        "lastName": "Barreto",
+        "dni": "25917634",
+        "cuil":"23259176344",
         "phone": "3514556677",
-        "email": "miguel.romero@gmail.com",
-        "relationship": "PADRE"
+        "email": "mara.antuil@gmail.com",
+        "relationship": "MADRE"
       }
   auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

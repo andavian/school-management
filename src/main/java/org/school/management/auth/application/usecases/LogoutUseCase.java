@@ -25,7 +25,7 @@ public class LogoutUseCase {
 
         if (!token.isRevoked()) {
             token.revoke(null);
-            repository.save(token);
+            repository.revoke(token);
         }
     }
 

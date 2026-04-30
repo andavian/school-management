@@ -1,0 +1,39 @@
+info:
+  name: 01 - GET Materias del Estudiante
+  type: http
+  seq: 1
+  tags:
+    - Attendance
+    - Prerequisites
+
+http:
+  method: GET
+  url: "{{baseUrl}}/api/courses/enrollments/{{enrollment_id}}/courses"
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        if (res.status === 200) {
+            var body = res.getBody();
+            if (Array.isArray(body) && body.length > 0) {
+                // Tomamos la primera materia como ejemplo
+                var materia = body[0];
+                bru.setEnvVar("student_course_subject_id", materia.studentCourseSubjectId, { persist: true });
+                bru.setEnvVar("course_subject_id", materia.courseSubjectId, { persist: true });
+                console.log("Materia seleccionada: " + materia.studentCourseSubjectId);
+            }
+        }
+    - type: tests
+      code: |-
+        test("Lista materias del estudiante", function() {
+            expect(res.status).to.equal(200);
+            expect(res.getBody()).to.be.an("array").and.not.empty;
+        });
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

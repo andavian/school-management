@@ -10,7 +10,7 @@ http:
   url: "{{baseUrl}}/api/geography/countries/:countryId/provinces"
   params:
     - name: countryId
-      value: uuid
+      value: 341107d0-3809-11f1-ac89-cc4740a8b54c
       type: path
       description: ID del país
 

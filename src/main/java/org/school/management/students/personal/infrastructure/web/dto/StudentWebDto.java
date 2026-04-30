@@ -138,6 +138,7 @@ public final class StudentWebDto {
                 @NotBlank @Size(min = 2, max = 100)
                 @Pattern(regexp = "^[a-zA-ZáéíóúÁÉÍÓÚñÑ\\s]+$") String lastName,
                 @NotBlank @Pattern(regexp = "^\\d{8}$") String dni,
+                @NotBlank @Pattern(regexp = "\\d{11}") String cuil,
                 @NotBlank @Email @Size(max = 254) String email,
                 @NotBlank @Pattern(regexp = "^[+]?[\\d\\s\\-()]{7,20}$") String phone,
                 @NotBlank @Pattern(regexp = "FATHER|MOTHER|GUARDIAN|OTHER") String relationship,
