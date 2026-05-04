@@ -33,7 +33,7 @@ import java.util.UUID;
  */
 @Component
 @Profile("dev")
-@Order(5)
+@Order(4)
 @RequiredArgsConstructor
 @Slf4j
 public class AcademicDataSeeder implements ApplicationRunner {

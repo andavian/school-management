@@ -1,0 +1,16 @@
+info:
+  name: 05 - GET Resumen de Asistencia por Materia
+  type: http
+  seq: 5
+  tags:
+    - Attendance
+
+http:
+  method: GET
+  url: "{{baseUrl}}/api/attendance/course/summary"
+  query:
+    - name: studentCourseSubjectId
+      value: "{{student_course_subject_id}}"
+    - name: periodId
+      value: "{{period_id}}"
+  auth: inherit

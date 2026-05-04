@@ -1,7 +1,7 @@
 info:
-  name: 01 - GET Materias del Estudiante
+  name: 02 - GET Materias del Estudiante
   type: http
-  seq: 1
+  seq: 2
   tags:
     - Attendance
     - Prerequisites

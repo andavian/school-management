@@ -6,6 +6,7 @@ import org.school.management.auth.application.dto.requests.CreateUserRequest;
 import org.school.management.auth.application.usecases.CreateUserUseCase;
 import org.school.management.auth.application.usecases.GenerateConfirmationTokenUseCase;
 import org.school.management.auth.domain.valueobject.UserId;
+import org.school.management.auth.infra.security.token.TokenHasher;
 import org.school.management.shared.domain.service.EmailService;
 import org.school.management.shared.geography.domain.valueobject.PlaceId;
 import org.school.management.shared.person.domain.valueobject.*;
@@ -31,14 +32,15 @@ import java.util.UUID;
  *   <li>Validar unicidad DNI y CUIL en {@code teachers/}</li>
  *   <li>Generar password temporal segura</li>
  *   <li>Crear {@code User} con rol TEACHER via {@link CreateUserUseCase} (inactivo)</li>
- *   <li>Generar token de confirmación JWT (48h) via {@link GenerateConfirmationTokenUseCase}</li>
+ *   <li>Generar token de confirmación opaco via {@link GenerateConfirmationTokenUseCase}</li>
  *   <li>Construir y persistir la entidad {@code Teacher}</li>
- *   <li>Asignar el token de activación al {@code Teacher}</li>
+ *   <li>Asignar el <strong>hash</strong> del token al {@code Teacher} — nunca el raw token</li>
  *   <li>Enviar email de invitación con el link de activación (async)</li>
  * </ol>
  *
- * <p>La generación de password y token vive aquí — este use case es el único
- * que necesita ambos valores (para el {@code Teacher} y para el email).</p>
+ * <p><strong>Seguridad:</strong> {@code Teacher.activationToken} almacena el hash SHA-256
+ * del token de confirmación — no el token raw. El token raw viaja únicamente por email
+ * y nunca se persiste en texto plano en ninguna tabla.</p>
  *
  * <p>El email se envía de forma asíncrona y falla silenciosamente — un fallo
  * de email nunca revierte la creación del profesor.</p>
@@ -53,6 +55,7 @@ public class CreateTeacherUseCase {
     private final GenerateConfirmationTokenUseCase generateConfirmationTokenUseCase;
     private final GetTeacherByIdUseCase getTeacherByIdUseCase;
     private final EmailService emailService;
+    private final TokenHasher tokenHasher;
 
     @Value("${app.frontend.url:http://localhost:3000}")
     private String frontendUrl;
@@ -79,11 +82,18 @@ public class CreateTeacherUseCase {
         );
         UserId userId = UserId.from(userResponse.userId());
 
-        // 4. Generar token de confirmación JWT (48h)
-        String confirmationToken = generateConfirmationTokenUseCase.execute(request.dni());
-        String activationLink = frontendUrl + "/activate-account?token=" + confirmationToken;
+        // 4. Generar token de confirmación opaco (raw) via use case de auth/
+        //    El use case persiste el hash en confirmation_codes y retorna el raw token
+        String rawConfirmationToken = generateConfirmationTokenUseCase.execute(request.dni());
 
-        // 5. Construir entidad Teacher
+        // 5. Construir link de activación con el raw token — viaja SOLO por email
+        String activationLink = frontendUrl + "/activate-account?token=" + rawConfirmationToken;
+
+        // 6. Hashear el token para almacenarlo en Teacher
+        //    Teacher.activationToken almacena el hash, no el raw token
+        String tokenHash = tokenHasher.hash(rawConfirmationToken);
+
+        // 7. Construir entidad Teacher
         Teacher teacher = Teacher.create(
                 TeacherId.generate(),
                 userId,
@@ -106,12 +116,12 @@ public class CreateTeacherUseCase {
                 UserId.from(createdByUserId)
         );
 
-        // 6. Asignar token para trackear estado de activación pendiente
-        teacher.assignActivationToken(confirmationToken);
+        // 8. Asignar el HASH del token — nunca el raw token
+        teacher.assignActivationToken(tokenHash);
 
         Teacher saved = teacherRepository.save(teacher);
 
-        // 7. Enviar email de invitación (async — falla silenciosamente)
+        // 9. Enviar email de invitación con el raw token en el link (async — falla silenciosamente)
         sendInvitationEmail(request, plainPassword, activationLink);
 
         log.info("Teacher created successfully — DNI: {}, pendingActivation: {}",

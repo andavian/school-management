@@ -15,6 +15,9 @@ public record RecordCourseAttendanceRequest(
         @NotNull(message = "CourseSubjectId is required")
         UUID courseSubjectId,
 
+        @NotNull(message = "PeriodId is required")
+        UUID periodId,
+
         @NotNull(message = "ClassDate is required")
         @PastOrPresent(message = "ClassDate cannot be in the future")
         LocalDate classDate,

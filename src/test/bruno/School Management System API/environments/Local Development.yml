@@ -36,3 +36,5 @@ variables:
     value: 6a9b8361-304f-4820-82a4-dbd50d9f2e14
   - name: enrollment_id
     value: fae5cae0-7c6a-40c9-9cac-b694cb14abcb
+  - name: period_id
+    value: e0000000-0000-0000-0000-000000000002
