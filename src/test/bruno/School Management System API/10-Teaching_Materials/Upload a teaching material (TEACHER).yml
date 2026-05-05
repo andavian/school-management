@@ -23,29 +23,40 @@ runtime:
   scripts:
     - type: before-request
       code: |-
-        // Pre-request Script - Preparar Multipart dinámico (avanzado)
+        // Pre-request Script - Preparar Multipart dinÃ¡mico (avanzado)
         const fs = require('fs');
         const path = require('path');
 
-        // Activa en bruno.json: "filesystemAccess": { "allow": true } y moduleWhitelist si usás form-data
+        // Activa en bruno.json: "filesystemAccess": { "allow": true } y moduleWhitelist si usÃ¡s form-data
         const filePath = path.resolve(bru.cwd(), "test-files/material-ejemplo.pdf");
 
         if (fs.existsSync(filePath)) {
           // Bruno maneja multipart en UI, pero puedes modificar req.body si es necesario
-          console.log(`📁 Archivo listo: ${filePath}`);
+          console.log(`ðŸ“ Archivo listo: ${filePath}`);
         } else {
-          console.error("❌ Archivo no encontrado");
+          console.error("âŒ Archivo no encontrado");
         }
 
-        // Metadata dinámico
+        // Metadata dinÃ¡mico
         const metadata = {
           courseSubjectId: bru.getEnvVar("course_subject_id"),
           title: `Material de prueba - ${new Date().toISOString()}`,
-          description: "Generado automáticamente por script Bruno",
+          description: "Generado automÃ¡ticamente por script Bruno",
           visibleToStudents: true
         };
 
         bru.setVar("upload_metadata", JSON.stringify(metadata));
+    - type: tests
+      code: |-
+        test("Upload a teaching material (TEACHER) responde 201", function() {
+            expect(res.status).to.equal(201);
+        });
+
+        test("Upload a teaching material (TEACHER) devuelve cuerpo valido", function() {
+            if (res.status !== 204) {
+                expect(res.getBody()).to.not.be.undefined;
+            }
+        });
 
 settings:
   encodeUrl: true
@@ -53,43 +64,9 @@ settings:
   followRedirects: true
   maxRedirects: 5
 
-examples:
-  - name: 200 Response
-    description: OK
-    request:
-      url: "{{baseUrl}}/api/materials"
-      method: POST
-      body:
-        type: multipart-form
-        data:
-          - name: metadata
-            type: text
-            value: ""
-          - name: file
-            type: file
-            value: []
-    response:
-      status: 200
-      statusText: OK
-      headers:
-        - name: Content-Type
-          value: "*/*"
-      body:
-        type: text
-        data: |-
-          {
-            "materialId": "",
-            "teacherId": "",
-            "courseSubjectId": "",
-            "subjectId": "",
-            "academicYearId": "",
-            "title": "",
-            "description": "",
-            "materialType": "APUNTE",
-            "publicUrl": "",
-            "fileSizeBytes": 0,
-            "mimeType": "",
-            "visibleToStudents": false,
-            "createdAt": "",
-            "updatedAt": ""
-          }
+
+
+
+
+
+

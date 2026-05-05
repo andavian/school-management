@@ -123,6 +123,15 @@ public class QualificationRegistryRepositoryAdapter implements QualificationRegi
 
         return currentYearId.flatMap(academicYearId -> jpaRepository.findActiveByAcademicYear(academicYearId.value())
                 .map(mapper::toDomain));
+    }
 
+    @Override
+    public int getMaxSequenceNumber() {
+        return jpaRepository.getMaxSequenceNumber();
+    }
+
+    @Override
+    public long countAll() {
+        return jpaRepository.count();
     }
 }

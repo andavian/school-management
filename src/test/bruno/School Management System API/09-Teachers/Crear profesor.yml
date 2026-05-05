@@ -12,277 +12,98 @@ http:
     type: json
     data: |-
       {
-        "firstName": "",
-        "lastName": "",
-        "dni": "",
-        "cuil": "",
-        "email": "",
-        "birthDate": "",
-        "birthPlaceId": "",
-        "gender": "",
-        "nationality": "",
-        "phone": "",
+        "firstName": "Bruno",
+        "lastName": "Flow",
+        "dni": "{{teacher_dni}}",
+        "cuil": "{{teacher_cuil}}",
+        "email": "bruno.flow@example.com",
+        "birthDate": "2010-05-14",
+        "birthPlaceId": "{{birth_place_id}}",
+        "gender": "MALE",
+        "nationality": "Argentina",
+        "phone": "+5493515550101",
         "address": {
-          "street": "",
-          "number": "",
-          "floor": "",
-          "apartment": "",
-          "placeId": "",
-          "postalCode": ""
+          "street": "Av. Bruno",
+          "number": "132",
+          "floor": "1",
+          "apartment": "A",
+          "placeId": "{{place_id}}",
+          "postalCode": "5000"
         },
-        "specialization": "",
-        "teachingLicense": "",
-        "hireDate": "",
+        "specialization": "Matematica",
+        "teachingLicense": "LIC-BRUNO",
+        "hireDate": "2025-03-01",
         "employmentType": "FULL_TIME"
       }
   auth: inherit
 
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        if (res.status >= 200 && res.status < 300 && res.status !== 204) {
+            const body = res.getBody();
+            const source = Array.isArray(body) ? body[0] : body;
+            if (source && typeof source === "object") {
+                const vars = {
+                    accessToken: "jwt_token",
+                    refreshToken: "refresh_token",
+                    userId: "current_user_id",
+                    academicYearId: "academic_year_id",
+                    periodId: "period_id",
+                    gradeLevelId: "grade_level_id",
+                    orientationId: "orientation_id",
+                    subjectId: "subject_id",
+                    teacherId: "teacher_id",
+                    studentId: "current_student_id",
+                    parentId: "parent_id",
+                    healthRecordId: "health_record_id",
+                    recordId: "record_id",
+                    documentId: "document_id",
+                    documentTypeId: "document_type_id",
+                    enrollmentId: "enrollment_id",
+                    courseSubjectId: "course_subject_id",
+                    evaluationId: "evaluation_id",
+                    finalGradeId: "final_grade_id",
+                    dailyAttendanceId: "daily_attendance_id",
+                    courseAttendanceId: "course_attendance_id",
+                    resourceId: "resource_id",
+                    unitId: "unit_id",
+                    reservationId: "reservation_id",
+                    materialId: "material_id",
+                    placeId: "place_id",
+                    provinceId: "province_id",
+                    countryId: "country_id"
+                };
+                Object.entries(vars).forEach(([field, envName]) => {
+                    if (source[field]) {
+                        bru.setEnvVar(envName, source[field], { persist: true });
+                    }
+                });
+            }
+        }
+    - type: tests
+      code: |-
+        test("Crear profesor responde 201", function() {
+            expect(res.status).to.equal(201);
+        });
+
+        test("Crear profesor devuelve cuerpo valido", function() {
+            if (res.status !== 204) {
+                expect(res.getBody()).to.not.be.undefined;
+            }
+        });
 settings:
   encodeUrl: true
   timeout: 0
   followRedirects: true
   maxRedirects: 5
 
-examples:
-  - name: 201 Response
-    description: Profesor creado exitosamente
-    request:
-      url: "{{baseUrl}}/api/admin/teachers"
-      method: POST
-      body:
-        type: json
-        data: |-
-          {
-            "firstName": "",
-            "lastName": "",
-            "dni": "",
-            "cuil": "",
-            "email": "",
-            "birthDate": "",
-            "birthPlaceId": "",
-            "gender": "",
-            "nationality": "",
-            "phone": "",
-            "address": {
-              "street": "",
-              "number": "",
-              "floor": "",
-              "apartment": "",
-              "placeId": "",
-              "postalCode": ""
-            },
-            "specialization": "",
-            "teachingLicense": "",
-            "hireDate": "",
-            "employmentType": "FULL_TIME"
-          }
-    response:
-      status: 201
-      statusText: Created
-      headers:
-        - name: Content-Type
-          value: "*/*"
-      body:
-        type: text
-        data: |-
-          {
-            "teacherId": "",
-            "userId": "",
-            "firstName": "",
-            "lastName": "",
-            "fullName": "",
-            "dni": "",
-            "cuil": "",
-            "email": "",
-            "birthDate": "",
-            "gender": "",
-            "nationality": "",
-            "phone": "",
-            "address": {
-              "street": "",
-              "number": "",
-              "floor": "",
-              "apartment": "",
-              "postalCode": "",
-              "placeId": ""
-            },
-            "birthPlace": {
-              "placeId": "",
-              "placeName": "",
-              "provinceName": "",
-              "countryName": ""
-            },
-            "residencePlace": {},
-            "specialization": "",
-            "teachingLicense": "",
-            "hireDate": "",
-            "employmentStatus": "ACTIVE",
-            "employmentType": "FULL_TIME",
-            "active": false,
-            "pendingActivation": false,
-            "activatedAt": "",
-            "createdAt": "",
-            "updatedAt": ""
-          }
-  - name: 409 Response
-    description: Ya existe un profesor con ese DNI o CUIL
-    request:
-      url: "{{baseUrl}}/api/admin/teachers"
-      method: POST
-      body:
-        type: json
-        data: |-
-          {
-            "firstName": "",
-            "lastName": "",
-            "dni": "",
-            "cuil": "",
-            "email": "",
-            "birthDate": "",
-            "birthPlaceId": "",
-            "gender": "",
-            "nationality": "",
-            "phone": "",
-            "address": {
-              "street": "",
-              "number": "",
-              "floor": "",
-              "apartment": "",
-              "placeId": "",
-              "postalCode": ""
-            },
-            "specialization": "",
-            "teachingLicense": "",
-            "hireDate": "",
-            "employmentType": "FULL_TIME"
-          }
-    response:
-      status: 409
-      statusText: Conflict
-      headers:
-        - name: Content-Type
-          value: "*/*"
-      body:
-        type: text
-        data: |-
-          {
-            "teacherId": "",
-            "userId": "",
-            "firstName": "",
-            "lastName": "",
-            "fullName": "",
-            "dni": "",
-            "cuil": "",
-            "email": "",
-            "birthDate": "",
-            "gender": "",
-            "nationality": "",
-            "phone": "",
-            "address": {
-              "street": "",
-              "number": "",
-              "floor": "",
-              "apartment": "",
-              "postalCode": "",
-              "placeId": ""
-            },
-            "birthPlace": {
-              "placeId": "",
-              "placeName": "",
-              "provinceName": "",
-              "countryName": ""
-            },
-            "residencePlace": {},
-            "specialization": "",
-            "teachingLicense": "",
-            "hireDate": "",
-            "employmentStatus": "ACTIVE",
-            "employmentType": "FULL_TIME",
-            "active": false,
-            "pendingActivation": false,
-            "activatedAt": "",
-            "createdAt": "",
-            "updatedAt": ""
-          }
-  - name: 422 Response
-    description: Datos inválidos
-    request:
-      url: "{{baseUrl}}/api/admin/teachers"
-      method: POST
-      body:
-        type: json
-        data: |-
-          {
-            "firstName": "",
-            "lastName": "",
-            "dni": "",
-            "cuil": "",
-            "email": "",
-            "birthDate": "",
-            "birthPlaceId": "",
-            "gender": "",
-            "nationality": "",
-            "phone": "",
-            "address": {
-              "street": "",
-              "number": "",
-              "floor": "",
-              "apartment": "",
-              "placeId": "",
-              "postalCode": ""
-            },
-            "specialization": "",
-            "teachingLicense": "",
-            "hireDate": "",
-            "employmentType": "FULL_TIME"
-          }
-    response:
-      status: 422
-      statusText: Unprocessable Entity
-      headers:
-        - name: Content-Type
-          value: "*/*"
-      body:
-        type: text
-        data: |-
-          {
-            "teacherId": "",
-            "userId": "",
-            "firstName": "",
-            "lastName": "",
-            "fullName": "",
-            "dni": "",
-            "cuil": "",
-            "email": "",
-            "birthDate": "",
-            "gender": "",
-            "nationality": "",
-            "phone": "",
-            "address": {
-              "street": "",
-              "number": "",
-              "floor": "",
-              "apartment": "",
-              "postalCode": "",
-              "placeId": ""
-            },
-            "birthPlace": {
-              "placeId": "",
-              "placeName": "",
-              "provinceName": "",
-              "countryName": ""
-            },
-            "residencePlace": {},
-            "specialization": "",
-            "teachingLicense": "",
-            "hireDate": "",
-            "employmentStatus": "ACTIVE",
-            "employmentType": "FULL_TIME",
-            "active": false,
-            "pendingActivation": false,
-            "activatedAt": "",
-            "createdAt": "",
-            "updatedAt": ""
-          }
+docs: Crea un profesor y su usuario asociado. Se genera una contraseÃ±a temporal y se envÃ­a invitaciÃ³n por email.
 
-docs: Crea un profesor y su usuario asociado. Se genera una contraseña temporal y se envía invitación por email.
+
+
+
+
+
+

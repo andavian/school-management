@@ -8,6 +8,15 @@ http:
   url: "{{baseUrl}}/api/attendance/course/{{course_attendance_id}}"
   auth: inherit
 
+runtime:
+  scripts:
+    - type: tests
+      code: |-
+        test("Corrige a ausente", function() {
+            expect(res.status).to.equal(200);
+            expect(res.getBody().status).to.equal("ABSENT");
+        });
+
 settings:
   encodeUrl: true
   timeout: 0

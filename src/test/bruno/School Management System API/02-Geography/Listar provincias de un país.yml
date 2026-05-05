@@ -1,5 +1,5 @@
 info:
-  name: Listar provincias de un país
+  name: Listar provincias de un paÃ­s
   type: http
   seq: 9
   tags:
@@ -7,48 +7,79 @@ info:
 
 http:
   method: GET
-  url: "{{baseUrl}}/api/geography/countries/:countryId/provinces"
+  url: "{{baseUrl}}/api/geography/countries/{{country_id}}/provinces"
   params:
     - name: countryId
       value: 341107d0-3809-11f1-ac89-cc4740a8b54c
       type: path
-      description: ID del país
+      description: ID del paÃ­s
 
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        if (res.status >= 200 && res.status < 300 && res.status !== 204) {
+            const body = res.getBody();
+            const source = Array.isArray(body) ? body[0] : body;
+            if (source && typeof source === "object") {
+                const vars = {
+                    accessToken: "jwt_token",
+                    refreshToken: "refresh_token",
+                    userId: "current_user_id",
+                    academicYearId: "academic_year_id",
+                    periodId: "period_id",
+                    gradeLevelId: "grade_level_id",
+                    orientationId: "orientation_id",
+                    subjectId: "subject_id",
+                    teacherId: "teacher_id",
+                    studentId: "current_student_id",
+                    parentId: "parent_id",
+                    healthRecordId: "health_record_id",
+                    recordId: "record_id",
+                    documentId: "document_id",
+                    documentTypeId: "document_type_id",
+                    enrollmentId: "enrollment_id",
+                    courseSubjectId: "course_subject_id",
+                    evaluationId: "evaluation_id",
+                    finalGradeId: "final_grade_id",
+                    dailyAttendanceId: "daily_attendance_id",
+                    courseAttendanceId: "course_attendance_id",
+                    resourceId: "resource_id",
+                    unitId: "unit_id",
+                    reservationId: "reservation_id",
+                    materialId: "material_id",
+                    placeId: "place_id",
+                    provinceId: "province_id",
+                    countryId: "country_id"
+                };
+                Object.entries(vars).forEach(([field, envName]) => {
+                    if (source[field]) {
+                        bru.setEnvVar(envName, source[field], { persist: true });
+                    }
+                });
+            }
+        }
+    - type: tests
+      code: |-
+        test("Listar provincias de un país responde 200", function() {
+            expect(res.status).to.equal(200);
+        });
+
+        test("Listar provincias de un país devuelve cuerpo valido", function() {
+            if (res.status !== 204) {
+                expect(res.getBody()).to.not.be.undefined;
+            }
+        });
 settings:
   encodeUrl: true
   timeout: 0
   followRedirects: true
   maxRedirects: 5
 
-examples:
-  - name: 200 Response
-    description: OK
-    request:
-      url: "{{baseUrl}}/api/geography/countries/:countryId/provinces"
-      method: GET
-      params:
-        - name: countryId
-          value: uuid
-          type: path
-          description: ID del país
-    response:
-      status: 200
-      statusText: OK
-      headers:
-        - name: Content-Type
-          value: "*/*"
-      body:
-        type: text
-        data: |-
-          [
-            {
-              "provinceId": "",
-              "countryId": "",
-              "countryName": "",
-              "name": "",
-              "code": "",
-              "createdAt": ""
-            }
-          ]
+docs: Retorna todas las provincias pertenecientes al paÃ­s especificado.
 
-docs: Retorna todas las provincias pertenecientes al país especificado.
+
+
+
+
+

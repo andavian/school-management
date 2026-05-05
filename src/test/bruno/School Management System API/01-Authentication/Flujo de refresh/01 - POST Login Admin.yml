@@ -12,9 +12,9 @@ http:
     type: json
     data: |-
       {
-        "dni": "10000001",
-        "password": "Admin123!",
-        "rememberMe": "false"
+        "dni": "{{admin_dni}}",
+        "password": "{{admin_password}}",
+        "rememberMe": false
       }
 
 runtime:
@@ -44,3 +44,10 @@ settings:
   timeout: 0
   followRedirects: true
   maxRedirects: 5
+
+
+
+
+
+
+

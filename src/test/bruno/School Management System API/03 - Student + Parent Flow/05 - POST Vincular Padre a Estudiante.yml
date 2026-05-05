@@ -23,13 +23,30 @@ runtime:
     - type: after-response
       code: |-
         if (res.status === 201) {
-          console.log("✅ Padre vinculado correctamente al estudiante");
+          console.log("âœ… Padre vinculado correctamente al estudiante");
         } else {
-          console.error("❌ Error al vincular padre:", res.getBody());
+          console.error("âŒ Error al vincular padre:", res.getBody());
         }
+    - type: tests
+      code: |-
+        test("05 - POST Vincular Padre a Estudiante responde 201", function() {
+            expect(res.status).to.equal(201);
+        });
+
+        test("05 - POST Vincular Padre a Estudiante devuelve cuerpo valido", function() {
+            if (res.status !== 204) {
+                expect(res.getBody()).to.not.be.undefined;
+            }
+        });
 
 settings:
   encodeUrl: true
   timeout: 0
   followRedirects: true
   maxRedirects: 5
+
+
+
+
+
+

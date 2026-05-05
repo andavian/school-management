@@ -4,6 +4,7 @@ import lombok.Builder;
 import lombok.Value;
 import lombok.With;
 import org.school.management.academic.domain.exception.RegistryFullException;
+import org.school.management.academic.domain.exception.RegistryNotClosedException;
 import org.school.management.academic.domain.valueobject.ids.AcademicYearId;
 import org.school.management.academic.domain.valueobject.ids.RegistryId;
 import org.school.management.academic.domain.valueobject.RegistryNumber;
@@ -58,6 +59,8 @@ public class QualificationRegistry {
         return status == RegistryStatus.ACTIVE;
     }
 
+
+
     public int getAvailableFolios() {
         return Math.max(0, endFolio - currentFolio + 1);
     }
@@ -66,6 +69,22 @@ public class QualificationRegistry {
         return this.toBuilder()
                 .status(RegistryStatus.CLOSED)
                 .closedAt(LocalDateTime.now())
+                .build();
+    }
+
+    /**
+     * Reactiva un registro cerrado, devolviéndolo a estado ACTIVE.
+     * @throws IllegalStateException si el registro no está CLOSED.
+     */
+    public QualificationRegistry reactivate() {
+        if (status != RegistryStatus.CLOSED) {
+            throw new RegistryNotClosedException(
+                    "Registry " + registryNumber.value() + " is not closed (current status: " + status + ")");
+        }
+        return this.toBuilder()
+                .status(RegistryStatus.ACTIVE)
+                .closedAt(null)
+                .updatedAt(LocalDateTime.now())
                 .build();
     }
 

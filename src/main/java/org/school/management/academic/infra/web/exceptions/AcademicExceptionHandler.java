@@ -125,6 +125,18 @@ public class AcademicExceptionHandler {
         return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
     }
 
+    @ExceptionHandler(RegistryAlreadyClosedException.class)
+    public ResponseEntity<ErrorResponse> handleRegistryAlreadyClosed(
+            RegistryAlreadyClosedException ex,
+            WebRequest request) {
+        log.warn("Registry already closed: {}", ex.getMessage());
+        ErrorResponse error = ErrorResponse.of(
+                HttpStatus.CONFLICT,
+                ex.getMessage(),
+                request.getDescription(false).replace("uri=", ""));
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
+    }
+
     // ========================================================================
     // BAD REQUEST EXCEPTIONS (400)
     // ========================================================================
@@ -155,6 +167,18 @@ public class AcademicExceptionHandler {
                 request.getDescription(false).replace("uri=", "")
         );
 
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
+    }
+
+    @ExceptionHandler(RegistryNotClosedException.class)
+    public ResponseEntity<ErrorResponse> handleRegistryNotClosed(
+            RegistryNotClosedException ex,
+            WebRequest request) {
+        log.warn("Registry not closed: {}", ex.getMessage());
+        ErrorResponse error = ErrorResponse.of(
+                HttpStatus.BAD_REQUEST,
+                ex.getMessage(),
+                request.getDescription(false).replace("uri=", ""));
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
     }
 

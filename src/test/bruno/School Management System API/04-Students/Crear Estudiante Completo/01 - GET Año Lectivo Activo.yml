@@ -18,11 +18,11 @@ runtime:
         if (res.status === 200) {
             var body = res.getBody();
             bru.setEnvVar("academic_year_id", body.academicYearId, { persist: true });
-            console.log("Año lectivo activo: " + body.year);
+            console.log("AÃ±o lectivo activo: " + body.year);
         }
     - type: tests
       code: |-
-        test("Obtiene año lectivo activo", function() {
+        test("Obtiene aÃ±o lectivo activo", function() {
             expect(res.status).to.equal(200);
             expect(res.getBody()).to.have.property("academicYearId");
         });

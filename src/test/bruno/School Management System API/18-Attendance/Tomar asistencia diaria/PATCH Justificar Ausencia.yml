@@ -12,7 +12,7 @@ http:
     type: json
     data: |-
       {
-        "reason": "Enfermedad con certificado médico"
+        "reason": "Enfermedad con certificado mÃ©dico"
       }
   auth: inherit
 
@@ -31,3 +31,9 @@ settings:
   timeout: 0
   followRedirects: true
   maxRedirects: 5
+
+
+
+
+
+

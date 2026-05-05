@@ -22,10 +22,10 @@ http:
         "nationality": "Argentina",
         "phone": "+5493515551234",
         "email": "valen.moreno1@example.com",
-        "addressStreet": "Av. Colón",
+        "addressStreet": "Av. ColÃ³n",
         "addressNumber": "1234",
-        "addressFloor": "",
-        "addressApartment": "",
+        "addressFloor": "1",
+        "addressApartment": "A",
         "postalCode": "5000",
         "residencePlaceId": "{{residence_place_id}}",
         "healthData": {
@@ -33,18 +33,18 @@ http:
             "healthInsurance": "OSDE",
             "healthInsuranceNumber": "123456789",
             "allergies": "Ninguna",
-            "chronicConditions": "",
-            "medications": "",
-            "medicalObservations": "",
-            "emergencyContactFirstName": "María",
-            "emergencyContactLastName": "Gómez",
+            "chronicConditions": "Sin condiciones cronicas",
+            "medications": "Sin medicacion",
+            "medicalObservations": "Ficha actualizada desde Bruno",
+            "emergencyContactFirstName": "MarÃ­a",
+            "emergencyContactLastName": "GÃ³mez",
             "emergencyContactPhone": "+5493515559876"
         },
         "parent": {
             "firstName": "Carlos",
             "lastName": "Moreno",
-            "dni": "11222333",
-            "cuil": "23112223339",
+            "dni": "{{parent_dni}}",
+            "cuil": "{{parent_cuil}}",
             "email": "carlos.moreno@example.com",
             "phone": "+5493515551111",
             "relationship": "FATHER",
@@ -54,7 +54,7 @@ http:
         "gradeLevelId": "{{grade_level_id}}",
         "enrollmentType": "NEW",
         "isRepeating": false,
-        "previousSchool": ""
+        "previousSchool": "Escuela anterior"
       }
   auth: inherit
 
@@ -62,7 +62,7 @@ runtime:
   scripts:
     - type: before-request
       code: |-
-        console.log("📦 JSON que se enviará:");
+        console.log("ðŸ“¦ JSON que se enviarÃ¡:");
         console.log(JSON.stringify(req.body, null, 2));
     - type: after-response
       code: |-
@@ -73,7 +73,7 @@ runtime:
         }
     - type: tests
       code: |-
-        test("Creación retorna 201 y datos completos", function() {
+        test("CreaciÃ³n retorna 201 y datos completos", function() {
             expect(res.status).to.equal(201);
             var body = res.getBody();
             expect(body).to.have.property("studentId");
@@ -82,10 +82,10 @@ runtime:
             expect(body.dni).to.equal("99887766");
         });
 
-        test("Ficha médica creada automáticamente", function() {
+        test("Ficha mÃ©dica creada automÃ¡ticamente", function() {
             var body = res.getBody();
-            // El spec devuelve healthRecord dentro del estudiante? Según los specs, StudentWebResponse no incluye healthRecord directamente, 
-            // pero sí hay un endpoint separado. Sin embargo, en la respuesta del POST, algunos backends devuelven el healthRecord.
+            // El spec devuelve healthRecord dentro del estudiante? SegÃºn los specs, StudentWebResponse no incluye healthRecord directamente, 
+            // pero sÃ­ hay un endpoint separado. Sin embargo, en la respuesta del POST, algunos backends devuelven el healthRecord.
             // Si tu backend lo incluye, descomenta:
             // expect(body).to.have.property("healthRecord");
             // Si no, este test puede omitirse o consultar el endpoint GET /api/admin/students/{id}/health
@@ -102,3 +102,10 @@ settings:
   timeout: 0
   followRedirects: true
   maxRedirects: 5
+
+
+
+
+
+
+

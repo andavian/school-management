@@ -12,9 +12,9 @@ http:
     type: json
     data: |-
       {
-        "dni": "10000001",
-        "password": "Admin123!",
-        "rememberMe": "false"
+        "dni": "{{admin_dni}}",
+        "password": "{{admin_password}}",
+        "rememberMe": false
       }
 
 runtime:
@@ -27,16 +27,34 @@ runtime:
 
           if (token) {
             bru.setEnvVar("jwt_token", token, { persist: true });
-            console.log("✅ Token ADMIN guardado correctamente");
+            console.log("âœ… Token ADMIN guardado correctamente");
           } else {
-            console.error("⚠️ No se encontró token en la respuesta");
+            console.error("âš ï¸ No se encontrÃ³ token en la respuesta");
           }
         } else {
-          console.error(`❌ Login falló con status ${res.status}`);
+          console.error(`âŒ Login fallÃ³ con status ${res.status}`);
         }
+    - type: tests
+      code: |-
+        test("01 - POST Login Admin responde 200", function() {
+            expect(res.status).to.equal(200);
+        });
+
+        test("01 - POST Login Admin devuelve cuerpo valido", function() {
+            if (res.status !== 204) {
+                expect(res.getBody()).to.not.be.undefined;
+            }
+        });
 
 settings:
   encodeUrl: true
   timeout: 0
   followRedirects: true
   maxRedirects: 5
+
+
+
+
+
+
+

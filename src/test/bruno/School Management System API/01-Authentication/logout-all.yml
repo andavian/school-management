@@ -1,0 +1,41 @@
+info:
+  name: logout-all
+  type: http
+  seq: 8
+  tags:
+    - Authentication
+
+http:
+  method: POST
+  url: "{{baseUrl}}/api/auth/logout-all"
+  body:
+    type: json
+    data: |-
+      {
+        "refreshToken": "{{refresh_token}}"
+      }
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: tests
+      code: |-
+        test("Cierra todas las sesiones", function() {
+            expect(res.status).to.equal(200);
+            const body = res.getBody();
+            expect(body).to.have.property("success");
+            expect(body.success).to.equal(true);
+            expect(body.message).to.contain("sesiones");
+        });
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+
+
+
+
+
+

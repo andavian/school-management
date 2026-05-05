@@ -1,0 +1,39 @@
+info:
+  name: 03 - GET Listar Periodos
+  type: http
+  seq: 3
+  tags:
+    - Evaluation_Periods
+
+http:
+  method: GET
+  url: "{{baseUrl}}/api/admin/academic-years/{{academic_year_id}}/periods"
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: tests
+      code: |-
+        test("Lista periodos del ciclo lectivo", function() {
+            expect(res.status).to.equal(200);
+            const body = res.getBody();
+            expect(body).to.be.an("array");
+            if (body.length > 0) {
+                expect(body[0]).to.have.property("periodId");
+                expect(body[0]).to.have.property("academicYearId");
+                expect(body[0]).to.have.property("periodNumber");
+                expect(body[0]).to.have.property("status");
+            }
+        });
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+
+
+
+
+
+

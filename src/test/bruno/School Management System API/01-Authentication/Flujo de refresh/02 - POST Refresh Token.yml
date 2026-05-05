@@ -28,7 +28,7 @@ runtime:
         }
     - type: tests
       code: |-
-        test("Refresh exitoso y rotación", function() {
+        test("Refresh exitoso y rotaciÃ³n", function() {
             expect(res.status).to.equal(200);
             expect(res.getBody()).to.have.property("accessToken");
         });
@@ -38,3 +38,9 @@ settings:
   timeout: 0
   followRedirects: true
   maxRedirects: 5
+
+
+
+
+
+

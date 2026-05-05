@@ -18,6 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class FolioAssignmentService {
 
     private final QualificationRegistryRepository registryRepository;
+    private final QualificationRegistryFactory registryFactory;
 
     // --- MÉTODOS PÚBLICOS DE ASIGNACIÓN (Transaccionales) ---
 
@@ -107,8 +108,15 @@ public class FolioAssignmentService {
                 QualificationRegistry closed = updatedRegistry.markAsFull();
                 registryRepository.save(closed);
                 log.warn("Registry {} is now FULL", updatedRegistry.getRegistryNumber());
+
+                QualificationRegistry newRegistry = registryFactory.create(updatedRegistry.getAcademicYearId());
+
+                registryRepository.save(newRegistry);
+                log.info("Auto-created new active registry: {} for academic year {}",
+                        newRegistry.getRegistryNumberAsString(), updatedRegistry.getAcademicYearId());
             });
         }
+
 
         log.info("Assigned folio {} from registry {}", assignedFolio, registry.getRegistryNumber());
         return assignedFolio;

@@ -2,39 +2,111 @@ name: Local Development
 variables:
   - name: baseUrl
     value: http://localhost:8080
-  - name: current_student_id
-    value: ed000000-0000-0000-0000-000000000001
-  - name: new_parent_id
-    value: '""'
-  - name: new_created_student_id
-    value: 5b0bb879-3c96-4bf4-bc2f-b16ab6423f68
-  - name: cordoba_place_id
-    value: 34312114-3809-11f1-ac89-cc4740a8b54c
-  - name: grade_level_1a_id
-    value: 01250000-0000-0000-0000-000000000101
-  - name: current_record_id
-    value: '""'
+  - name: admin_dni
+    value: "10000001"
   - secret: true
-    name: logout_refresh_token
+    name: admin_password
+  - name: test_dni
+    value: "10000001"
+  - secret: true
+    name: test_password
   - secret: true
     name: jwt_token
   - secret: true
     name: refresh_token
   - secret: true
     name: old_refresh_token
-  - name: new_student_id
-    value: 9d1fc316-1431-45f8-ae78-74acbd11e0c7
-  - name: academic_year_id
-    value: a0000000-0000-0000-0000-000000002025
-  - name: grade_level_id
-    value: 01250000-0000-0000-0000-000000000101
+  - secret: true
+    name: logout_refresh_token
+  - secret: true
+    name: activation_token
+  - name: current_user_id
+    value: bab11331-da1f-4485-a06d-45f3f595b908
+  - name: current_role
+    value: SUPER_ADMIN
+  - name: country_id
+    value: a88644a6-4497-11f1-ac89-cc4740a8b54c
+  - name: country_iso_code
+    value: ARG
+  - name: province_id
+    value: a8886439-4497-11f1-ac89-cc4740a8b54c
+  - name: place_id
+    value: 2cadfd20-d281-4382-ba2f-a3eea52ebbe2
+  - name: cordoba_place_id
+    value: 34312114-3809-11f1-ac89-cc4740a8b54c
   - name: residence_place_id
     value: d1317587-3f11-11f1-ac89-cc4740a8b54c
   - name: birth_place_id
     value: d1317587-3f11-11f1-ac89-cc4740a8b54c
-  - name: daily_attendance_id
-    value: 6a9b8361-304f-4820-82a4-dbd50d9f2e14
-  - name: enrollment_id
-    value: fae5cae0-7c6a-40c9-9cac-b694cb14abcb
+  - name: academic_year_id
+    value: a0000000-0000-0000-0000-000000002025
   - name: period_id
     value: e0000000-0000-0000-0000-000000000002
+  - name: evaluation_period_id
+    value: e0000000-0000-0000-0000-000000000002
+  - name: grade_level_id
+    value: 01250000-0000-0000-0000-000000000102
+  - name: grade_level_1a_id
+    value: 01250000-0000-0000-0000-000000000101
+  - name: orientation_id
+    value: 00000001-0000-0000-0000-000000000001
+  - name: subject_id
+    value: 00010000-0000-0000-0000-000000000101
+  - name: year_level
+    value: "1"
+  - name: current_student_id
+    value: ed000000-0000-0000-0000-000000000001
+  - name: new_student_id
+    value: ed000000-0000-0000-0000-000000000001
+  - name: student_dni
+    value: "11223344"
+  - name: parent_id
+    value: afa5ea71-3165-401e-b319-99207b53b568
+  - name: new_parent_id
+    value: fa000000-0000-0000-0000-000000000001
+  - name: parent_dni
+    value: "22334455"
+  - name: parent_cuil
+    value: "27223344559"
+  - name: record_id
+    value: ""
+  - name: current_record_id
+    value: ""
+  - name: document_id
+    value: ""
+  - name: document_type_id
+    value: a1000001-0000-0000-0000-000000000001
+  - name: enrollment_id
+    value: 0e014f5b-ee86-417c-9fad-ffe560c6efb2
+  - name: withdrawal_reason_id
+    value: ""
+  - name: teacher_id
+    value: 0c000000-0000-0000-0000-000000000001
+  - name: teacher_dni
+    value: "66778899"
+  - name: teacher_cuil
+    value: "20667788991"
+  - name: course_subject_id
+    value: ""
+  - name: student_course_subject_id
+    value: ""
+  - name: evaluation_type_id
+    value: ""
+  - name: evaluation_id
+    value: ""
+  - name: final_grade_id
+    value: ""
+  - name: daily_attendance_id
+    value: ""
+  - name: course_attendance_id
+    value: ""
+  - name: resource_id
+    value: 0f74e193-875e-43dd-ac87-f5caae25c13d
+  - name: unit_id
+    value: 1c624990-388c-422d-af4c-c09c116b3125
+  - name: reservation_id
+    value: ""
+  - name: material_id
+    value: ""
+  - name: new_created_student_id
+    value: ""

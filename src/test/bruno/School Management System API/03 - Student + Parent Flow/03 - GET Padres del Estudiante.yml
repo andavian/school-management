@@ -16,5 +16,23 @@ runtime:
       code: |-
         if (res.status === 200) {
           const parents = res.getBody();
-          console.log(`👨‍👩‍👧 Padres vinculados: ${parents.length}`);
+          console.log(`ðŸ‘¨â€ðŸ‘©â€ðŸ‘§ Padres vinculados: ${parents.length}`);
         }
+    - type: tests
+      code: |-
+        test("03 - GET Padres del Estudiante responde 200", function() {
+            expect(res.status).to.equal(200);
+        });
+
+        test("03 - GET Padres del Estudiante devuelve lista", function() {
+            const body = res.getBody();
+            expect(body).to.be.an("array");
+        });
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+
+

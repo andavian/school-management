@@ -1,0 +1,36 @@
+info:
+  name: 05 - GET Periodo por ID
+  type: http
+  seq: 5
+  tags:
+    - Evaluation_Periods
+
+http:
+  method: GET
+  url: "{{baseUrl}}/api/admin/periods/{{period_id}}"
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: tests
+      code: |-
+        test("Obtiene periodo por ID", function() {
+            expect(res.status).to.equal(200);
+            const body = res.getBody();
+            expect(body).to.have.property("periodId");
+            expect(body.periodId).to.equal(bru.getEnvVar("period_id"));
+            expect(body).to.have.property("periodNumber");
+            expect(body).to.have.property("status");
+        });
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+
+
+
+
+
+

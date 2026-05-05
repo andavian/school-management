@@ -1,0 +1,40 @@
+info:
+  name: 01 - GET Ciclo Lectivo Actual
+  type: http
+  seq: 1
+  tags:
+    - Evaluation_Periods
+
+http:
+  method: GET
+  url: "{{baseUrl}}/api/admin/academic-years/current"
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        if (res.status === 200) {
+            const body = res.getBody();
+            bru.setEnvVar("academic_year_id", body.academicYearId, { persist: true });
+        }
+    - type: tests
+      code: |-
+        test("Obtiene ciclo lectivo activo", function() {
+            expect(res.status).to.equal(200);
+            const body = res.getBody();
+            expect(body).to.have.property("academicYearId");
+            expect(body).to.have.property("status");
+        });
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+
+
+
+
+
+

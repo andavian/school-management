@@ -53,4 +53,10 @@ public interface QualificationRegistryJpaRepository extends JpaRepository<Qualif
     @Query("SELECT (qr.endFolio - qr.currentFolio + 1) FROM QualificationRegistryEntity qr " +
             "WHERE qr.registryId = :id")
     Integer getAvailableFolios(@Param("id") UUID id);
+
+    @Query(value = """
+    SELECT COALESCE(MAX(CAST(SUBSTRING(registry_number, 10) AS UNSIGNED)), 0)
+    FROM qualification_registries
+    """, nativeQuery = true)
+    int getMaxSequenceNumber();
 }

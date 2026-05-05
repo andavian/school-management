@@ -12,527 +12,119 @@ http:
     type: json
     data: |-
       {
-        "firstName": "",
-        "lastName": "",
-        "dni": "",
-        "cuil": "",
-        "birthDate": "",
-        "birthPlaceId": "",
-        "gender": "",
-        "nationality": "",
-        "phone": "",
-        "email": "",
-        "addressStreet": "",
-        "addressNumber": "",
-        "addressFloor": "",
-        "addressApartment": "",
-        "postalCode": "",
-        "residencePlaceId": "",
+        "firstName": "Bruno",
+        "lastName": "Flow",
+        "dni": "{{student_dni}}",
+        "cuil": "20112233449",
+        "birthDate": "2010-05-14",
+        "birthPlaceId": "{{birth_place_id}}",
+        "gender": "MALE",
+        "nationality": "Argentina",
+        "phone": "+5493515550101",
+        "email": "bruno.flow@example.com",
+        "addressStreet": "Av. Bruno",
+        "addressNumber": "132",
+        "addressFloor": "1",
+        "addressApartment": "A",
+        "postalCode": "5000",
+        "residencePlaceId": "{{residence_place_id}}",
         "healthData": {
-          "bloodType": "",
-          "healthInsurance": "",
-          "healthInsuranceNumber": "",
-          "allergies": "",
-          "chronicConditions": "",
-          "medications": "",
-          "medicalObservations": "",
-          "emergencyContactFirstName": "",
-          "emergencyContactLastName": "",
-          "emergencyContactPhone": ""
+          "bloodType": "O+",
+          "healthInsurance": "APROSS",
+          "healthInsuranceNumber": "BRU-123",
+          "allergies": "Sin alergias declaradas",
+          "chronicConditions": "Sin condiciones cronicas",
+          "medications": "Sin medicacion",
+          "medicalObservations": "Ficha actualizada desde Bruno",
+          "emergencyContactFirstName": "Contacto",
+          "emergencyContactLastName": "Bruno",
+          "emergencyContactPhone": "+5493515550102"
         },
         "parent": {
-          "firstName": "",
-          "lastName": "",
-          "dni": "",
-          "email": "",
-          "phone": "",
-          "relationship": "",
+          "firstName": "Bruno",
+          "lastName": "Flow",
+          "dni": "{{parent_dni}}",
+          "cuil": "{{parent_cuil}}",
+          "email": "bruno.flow@example.com",
+          "phone": "+5493515550101",
+          "relationship": "FATHER",
           "isPrimaryContact": false,
           "isAuthorizedPickup": false
         },
-        "gradeLevelId": "",
-        "enrollmentType": "",
+        "gradeLevelId": "{{grade_level_id}}",
+        "enrollmentType": "NEW",
         "isRepeating": false,
-        "previousSchool": ""
+        "previousSchool": "Escuela anterior"
       }
   auth: inherit
 
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        if (res.status >= 200 && res.status < 300 && res.status !== 204) {
+            const body = res.getBody();
+            const source = Array.isArray(body) ? body[0] : body;
+            if (source && typeof source === "object") {
+                const vars = {
+                    accessToken: "jwt_token",
+                    refreshToken: "refresh_token",
+                    userId: "current_user_id",
+                    academicYearId: "academic_year_id",
+                    periodId: "period_id",
+                    gradeLevelId: "grade_level_id",
+                    orientationId: "orientation_id",
+                    subjectId: "subject_id",
+                    teacherId: "teacher_id",
+                    studentId: "current_student_id",
+                    parentId: "parent_id",
+                    healthRecordId: "health_record_id",
+                    recordId: "record_id",
+                    documentId: "document_id",
+                    documentTypeId: "document_type_id",
+                    enrollmentId: "enrollment_id",
+                    courseSubjectId: "course_subject_id",
+                    evaluationId: "evaluation_id",
+                    finalGradeId: "final_grade_id",
+                    dailyAttendanceId: "daily_attendance_id",
+                    courseAttendanceId: "course_attendance_id",
+                    resourceId: "resource_id",
+                    unitId: "unit_id",
+                    reservationId: "reservation_id",
+                    materialId: "material_id",
+                    placeId: "place_id",
+                    provinceId: "province_id",
+                    countryId: "country_id"
+                };
+                Object.entries(vars).forEach(([field, envName]) => {
+                    if (source[field]) {
+                        bru.setEnvVar(envName, source[field], { persist: true });
+                    }
+                });
+            }
+        }
+    - type: tests
+      code: |-
+        test("Crear estudiante responde 201", function() {
+            expect(res.status).to.equal(201);
+        });
+
+        test("Crear estudiante devuelve cuerpo valido", function() {
+            if (res.status !== 204) {
+                expect(res.getBody()).to.not.be.undefined;
+            }
+        });
 settings:
   encodeUrl: true
   timeout: 0
   followRedirects: true
   maxRedirects: 5
 
-examples:
-  - name: 201 Response
-    description: Estudiante creado exitosamente
-    request:
-      url: "{{baseUrl}}/api/admin/students"
-      method: POST
-      body:
-        type: json
-        data: |-
-          {
-            "firstName": "",
-            "lastName": "",
-            "dni": "",
-            "cuil": "",
-            "birthDate": "",
-            "birthPlaceId": "",
-            "gender": "",
-            "nationality": "",
-            "phone": "",
-            "email": "",
-            "addressStreet": "",
-            "addressNumber": "",
-            "addressFloor": "",
-            "addressApartment": "",
-            "postalCode": "",
-            "residencePlaceId": "",
-            "healthData": {
-              "bloodType": "",
-              "healthInsurance": "",
-              "healthInsuranceNumber": "",
-              "allergies": "",
-              "chronicConditions": "",
-              "medications": "",
-              "medicalObservations": "",
-              "emergencyContactFirstName": "",
-              "emergencyContactLastName": "",
-              "emergencyContactPhone": ""
-            },
-            "parent": {
-              "firstName": "",
-              "lastName": "",
-              "dni": "",
-              "email": "",
-              "phone": "",
-              "relationship": "",
-              "isPrimaryContact": false,
-              "isAuthorizedPickup": false
-            },
-            "gradeLevelId": "",
-            "enrollmentType": "",
-            "isRepeating": false,
-            "previousSchool": ""
-          }
-    response:
-      status: 201
-      statusText: Created
-      headers:
-        - name: Content-Type
-          value: "*/*"
-      body:
-        type: text
-        data: |-
-          {
-            "studentId": "",
-            "userId": "",
-            "dni": "",
-            "cuil": "",
-            "firstName": "",
-            "lastName": "",
-            "fullName": "",
-            "birthDate": "",
-            "age": 0,
-            "isAdult": false,
-            "gender": "",
-            "nationality": "",
-            "phone": "",
-            "email": "",
-            "address": {
-              "street": "",
-              "number": "",
-              "floor": "",
-              "apartment": "",
-              "postalCode": "",
-              "placeId": ""
-            },
-            "birthPlace": {
-              "placeId": "",
-              "placeName": "",
-              "provinceName": "",
-              "countryName": ""
-            },
-            "residencePlace": {},
-            "createdAt": "",
-            "updatedAt": ""
-          }
-  - name: 400 Response
-    description: Datos de entrada inválidos
-    request:
-      url: "{{baseUrl}}/api/admin/students"
-      method: POST
-      body:
-        type: json
-        data: |-
-          {
-            "firstName": "",
-            "lastName": "",
-            "dni": "",
-            "cuil": "",
-            "birthDate": "",
-            "birthPlaceId": "",
-            "gender": "",
-            "nationality": "",
-            "phone": "",
-            "email": "",
-            "addressStreet": "",
-            "addressNumber": "",
-            "addressFloor": "",
-            "addressApartment": "",
-            "postalCode": "",
-            "residencePlaceId": "",
-            "healthData": {
-              "bloodType": "",
-              "healthInsurance": "",
-              "healthInsuranceNumber": "",
-              "allergies": "",
-              "chronicConditions": "",
-              "medications": "",
-              "medicalObservations": "",
-              "emergencyContactFirstName": "",
-              "emergencyContactLastName": "",
-              "emergencyContactPhone": ""
-            },
-            "parent": {
-              "firstName": "",
-              "lastName": "",
-              "dni": "",
-              "email": "",
-              "phone": "",
-              "relationship": "",
-              "isPrimaryContact": false,
-              "isAuthorizedPickup": false
-            },
-            "gradeLevelId": "",
-            "enrollmentType": "",
-            "isRepeating": false,
-            "previousSchool": ""
-          }
-    response:
-      status: 400
-      statusText: Bad Request
-      headers:
-        - name: Content-Type
-          value: "*/*"
-      body:
-        type: text
-        data: |-
-          {
-            "studentId": "",
-            "userId": "",
-            "dni": "",
-            "cuil": "",
-            "firstName": "",
-            "lastName": "",
-            "fullName": "",
-            "birthDate": "",
-            "age": 0,
-            "isAdult": false,
-            "gender": "",
-            "nationality": "",
-            "phone": "",
-            "email": "",
-            "address": {
-              "street": "",
-              "number": "",
-              "floor": "",
-              "apartment": "",
-              "postalCode": "",
-              "placeId": ""
-            },
-            "birthPlace": {
-              "placeId": "",
-              "placeName": "",
-              "provinceName": "",
-              "countryName": ""
-            },
-            "residencePlace": {},
-            "createdAt": "",
-            "updatedAt": ""
-          }
-  - name: 409 Response
-    description: Ya existe un estudiante con ese DNI o CUIL
-    request:
-      url: "{{baseUrl}}/api/admin/students"
-      method: POST
-      body:
-        type: json
-        data: |-
-          {
-            "firstName": "",
-            "lastName": "",
-            "dni": "",
-            "cuil": "",
-            "birthDate": "",
-            "birthPlaceId": "",
-            "gender": "",
-            "nationality": "",
-            "phone": "",
-            "email": "",
-            "addressStreet": "",
-            "addressNumber": "",
-            "addressFloor": "",
-            "addressApartment": "",
-            "postalCode": "",
-            "residencePlaceId": "",
-            "healthData": {
-              "bloodType": "",
-              "healthInsurance": "",
-              "healthInsuranceNumber": "",
-              "allergies": "",
-              "chronicConditions": "",
-              "medications": "",
-              "medicalObservations": "",
-              "emergencyContactFirstName": "",
-              "emergencyContactLastName": "",
-              "emergencyContactPhone": ""
-            },
-            "parent": {
-              "firstName": "",
-              "lastName": "",
-              "dni": "",
-              "email": "",
-              "phone": "",
-              "relationship": "",
-              "isPrimaryContact": false,
-              "isAuthorizedPickup": false
-            },
-            "gradeLevelId": "",
-            "enrollmentType": "",
-            "isRepeating": false,
-            "previousSchool": ""
-          }
-    response:
-      status: 409
-      statusText: Conflict
-      headers:
-        - name: Content-Type
-          value: "*/*"
-      body:
-        type: text
-        data: |-
-          {
-            "studentId": "",
-            "userId": "",
-            "dni": "",
-            "cuil": "",
-            "firstName": "",
-            "lastName": "",
-            "fullName": "",
-            "birthDate": "",
-            "age": 0,
-            "isAdult": false,
-            "gender": "",
-            "nationality": "",
-            "phone": "",
-            "email": "",
-            "address": {
-              "street": "",
-              "number": "",
-              "floor": "",
-              "apartment": "",
-              "postalCode": "",
-              "placeId": ""
-            },
-            "birthPlace": {
-              "placeId": "",
-              "placeName": "",
-              "provinceName": "",
-              "countryName": ""
-            },
-            "residencePlace": {},
-            "createdAt": "",
-            "updatedAt": ""
-          }
-  - name: 422 Response
-    description: "Error de validación de dominio (ej: CUIL↔DNI no coinciden)"
-    request:
-      url: "{{baseUrl}}/api/admin/students"
-      method: POST
-      body:
-        type: json
-        data: |-
-          {
-            "firstName": "",
-            "lastName": "",
-            "dni": "",
-            "cuil": "",
-            "birthDate": "",
-            "birthPlaceId": "",
-            "gender": "",
-            "nationality": "",
-            "phone": "",
-            "email": "",
-            "addressStreet": "",
-            "addressNumber": "",
-            "addressFloor": "",
-            "addressApartment": "",
-            "postalCode": "",
-            "residencePlaceId": "",
-            "healthData": {
-              "bloodType": "",
-              "healthInsurance": "",
-              "healthInsuranceNumber": "",
-              "allergies": "",
-              "chronicConditions": "",
-              "medications": "",
-              "medicalObservations": "",
-              "emergencyContactFirstName": "",
-              "emergencyContactLastName": "",
-              "emergencyContactPhone": ""
-            },
-            "parent": {
-              "firstName": "",
-              "lastName": "",
-              "dni": "",
-              "email": "",
-              "phone": "",
-              "relationship": "",
-              "isPrimaryContact": false,
-              "isAuthorizedPickup": false
-            },
-            "gradeLevelId": "",
-            "enrollmentType": "",
-            "isRepeating": false,
-            "previousSchool": ""
-          }
-    response:
-      status: 422
-      statusText: Unprocessable Entity
-      headers:
-        - name: Content-Type
-          value: "*/*"
-      body:
-        type: text
-        data: |-
-          {
-            "studentId": "",
-            "userId": "",
-            "dni": "",
-            "cuil": "",
-            "firstName": "",
-            "lastName": "",
-            "fullName": "",
-            "birthDate": "",
-            "age": 0,
-            "isAdult": false,
-            "gender": "",
-            "nationality": "",
-            "phone": "",
-            "email": "",
-            "address": {
-              "street": "",
-              "number": "",
-              "floor": "",
-              "apartment": "",
-              "postalCode": "",
-              "placeId": ""
-            },
-            "birthPlace": {
-              "placeId": "",
-              "placeName": "",
-              "provinceName": "",
-              "countryName": ""
-            },
-            "residencePlace": {},
-            "createdAt": "",
-            "updatedAt": ""
-          }
-  - name: 500 Response
-    description: No hay año académico activo
-    request:
-      url: "{{baseUrl}}/api/admin/students"
-      method: POST
-      body:
-        type: json
-        data: |-
-          {
-            "firstName": "",
-            "lastName": "",
-            "dni": "",
-            "cuil": "",
-            "birthDate": "",
-            "birthPlaceId": "",
-            "gender": "",
-            "nationality": "",
-            "phone": "",
-            "email": "",
-            "addressStreet": "",
-            "addressNumber": "",
-            "addressFloor": "",
-            "addressApartment": "",
-            "postalCode": "",
-            "residencePlaceId": "",
-            "healthData": {
-              "bloodType": "",
-              "healthInsurance": "",
-              "healthInsuranceNumber": "",
-              "allergies": "",
-              "chronicConditions": "",
-              "medications": "",
-              "medicalObservations": "",
-              "emergencyContactFirstName": "",
-              "emergencyContactLastName": "",
-              "emergencyContactPhone": ""
-            },
-            "parent": {
-              "firstName": "",
-              "lastName": "",
-              "dni": "",
-              "email": "",
-              "phone": "",
-              "relationship": "",
-              "isPrimaryContact": false,
-              "isAuthorizedPickup": false
-            },
-            "gradeLevelId": "",
-            "enrollmentType": "",
-            "isRepeating": false,
-            "previousSchool": ""
-          }
-    response:
-      status: 500
-      statusText: Internal Server Error
-      headers:
-        - name: Content-Type
-          value: "*/*"
-      body:
-        type: text
-        data: |-
-          {
-            "studentId": "",
-            "userId": "",
-            "dni": "",
-            "cuil": "",
-            "firstName": "",
-            "lastName": "",
-            "fullName": "",
-            "birthDate": "",
-            "age": 0,
-            "isAdult": false,
-            "gender": "",
-            "nationality": "",
-            "phone": "",
-            "email": "",
-            "address": {
-              "street": "",
-              "number": "",
-              "floor": "",
-              "apartment": "",
-              "postalCode": "",
-              "placeId": ""
-            },
-            "birthPlace": {
-              "placeId": "",
-              "placeName": "",
-              "provinceName": "",
-              "countryName": ""
-            },
-            "residencePlace": {},
-            "createdAt": "",
-            "updatedAt": ""
-          }
+docs: "Crea un estudiante completo en 15 pasos atÃ³micos: datos personales + salud + matrÃ­cula + legajo. TODO O NADA."
 
-docs: "Crea un estudiante completo en 15 pasos atómicos: datos personales + salud + matrícula + legajo. TODO O NADA."
+
+
+
+
+
+

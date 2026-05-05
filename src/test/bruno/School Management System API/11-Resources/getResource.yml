@@ -7,56 +7,78 @@ info:
 
 http:
   method: GET
-  url: "{{baseUrl}}/api/resources/:resourceId"
+  url: "{{baseUrl}}/api/resources/{{resource_id}}"
   params:
     - name: resourceId
       value: ""
       type: path
   auth: inherit
 
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        if (res.status >= 200 && res.status < 300 && res.status !== 204) {
+            const body = res.getBody();
+            const source = Array.isArray(body) ? body[0] : body;
+            if (source && typeof source === "object") {
+                const vars = {
+                    accessToken: "jwt_token",
+                    refreshToken: "refresh_token",
+                    userId: "current_user_id",
+                    academicYearId: "academic_year_id",
+                    periodId: "period_id",
+                    gradeLevelId: "grade_level_id",
+                    orientationId: "orientation_id",
+                    subjectId: "subject_id",
+                    teacherId: "teacher_id",
+                    studentId: "current_student_id",
+                    parentId: "parent_id",
+                    healthRecordId: "health_record_id",
+                    recordId: "record_id",
+                    documentId: "document_id",
+                    documentTypeId: "document_type_id",
+                    enrollmentId: "enrollment_id",
+                    courseSubjectId: "course_subject_id",
+                    evaluationId: "evaluation_id",
+                    finalGradeId: "final_grade_id",
+                    dailyAttendanceId: "daily_attendance_id",
+                    courseAttendanceId: "course_attendance_id",
+                    resourceId: "resource_id",
+                    unitId: "unit_id",
+                    reservationId: "reservation_id",
+                    materialId: "material_id",
+                    placeId: "place_id",
+                    provinceId: "province_id",
+                    countryId: "country_id"
+                };
+                Object.entries(vars).forEach(([field, envName]) => {
+                    if (source[field]) {
+                        bru.setEnvVar(envName, source[field], { persist: true });
+                    }
+                });
+            }
+        }
+    - type: tests
+      code: |-
+        test("getResource responde 200", function() {
+            expect(res.status).to.equal(200);
+        });
+
+        test("getResource devuelve cuerpo valido", function() {
+            if (res.status !== 204) {
+                expect(res.getBody()).to.not.be.undefined;
+            }
+        });
 settings:
   encodeUrl: true
   timeout: 0
   followRedirects: true
   maxRedirects: 5
 
-examples:
-  - name: 200 Response
-    description: OK
-    request:
-      url: "{{baseUrl}}/api/resources/:resourceId"
-      method: GET
-      params:
-        - name: resourceId
-          value: ""
-          type: path
-    response:
-      status: 200
-      statusText: OK
-      headers:
-        - name: Content-Type
-          value: "*/*"
-      body:
-        type: text
-        data: |-
-          {
-            "resourceId": "",
-            "name": "",
-            "code": "",
-            "resourceType": "PROJECTOR",
-            "description": "",
-            "location": "",
-            "reservable": false,
-            "notes": "",
-            "isActive": false,
-            "units": [
-              {
-                "unitId": "",
-                "unitCode": "",
-                "serialNumber": "",
-                "conditionStatus": "GOOD",
-                "unitStatus": "AVAILABLE",
-                "notes": ""
-              }
-            ]
-          }
+
+
+
+
+
+

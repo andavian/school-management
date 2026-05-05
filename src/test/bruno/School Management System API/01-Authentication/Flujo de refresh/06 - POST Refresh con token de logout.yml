@@ -1,5 +1,5 @@
 info:
-  name: 06 - Refresh token inválido tras logout
+  name: 06 - Refresh token invÃ¡lido tras logout
   type: http
   seq: 6
   tags:
@@ -28,3 +28,9 @@ settings:
   timeout: 0
   followRedirects: true
   maxRedirects: 5
+
+
+
+
+
+

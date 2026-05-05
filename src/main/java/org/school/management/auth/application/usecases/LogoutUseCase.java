@@ -87,7 +87,7 @@ public class LogoutUseCase {
 
         if (!token.isRevoked()) {
             token.revoke(null);
-            refreshTokenRepository.save(token);
+            refreshTokenRepository.revoke(token);
             log.info("Refresh token revoked — DNI: {}", token.getUserDni().value());
         } else {
             log.warn("Refresh token already revoked — DNI: {}", token.getUserDni().value());

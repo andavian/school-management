@@ -38,4 +38,8 @@ public interface QualificationRegistryRepository {
     void delete(RegistryId id);
 
     Optional<QualificationRegistry> findActiveInCurrentYear();
+
+    int getMaxSequenceNumber();
+
+    long countAll();
 }

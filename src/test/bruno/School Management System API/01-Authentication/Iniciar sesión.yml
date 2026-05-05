@@ -1,5 +1,5 @@
 info:
-  name: Iniciar sesión
+  name: Iniciar sesiÃ³n
   type: http
   seq: 3
   tags:
@@ -19,8 +19,8 @@ http:
     type: json
     data: |-
       {
-        "dni": "",
-        "password": "",
+        "dni": "{{admin_dni}}",
+        "password": "{{admin_password}}",
         "rememberMe": false
       }
   auth: inherit
@@ -37,22 +37,22 @@ runtime:
         if (res.status === 200 || res.status === 201) {
             const body = res.getBody();
 
-            // Ajusta según la estructura real de tu respuesta de login
+            // Ajusta segÃºn la estructura real de tu respuesta de login
             const accessToken = body.token || body.accessToken || body.jwt || body.data?.token;
             const refreshToken = body.refreshToken || body.refresh_token || body.data?.refreshToken;
 
             if (accessToken) {
-                // Guardar token principal (usado en toda la colección)
+                // Guardar token principal (usado en toda la colecciÃ³n)
                 bru.setEnvVar("jwt_token", accessToken, { persist: true });
-                console.log("✅ Access Token guardado correctamente");
+                console.log("âœ… Access Token guardado correctamente");
 
                 // Guardar refresh token si existe
                 if (refreshToken) {
                     bru.setEnvVar("refresh_token", refreshToken, { persist: true });
-                    console.log("🔄 Refresh Token guardado");
+                    console.log("ðŸ”„ Refresh Token guardado");
                 }
 
-                // Opcional: Guardar información del usuario
+                // Opcional: Guardar informaciÃ³n del usuario
                 if (body.user || body.data?.user) {
                     const user = body.user || body.data.user;
                     bru.setEnvVar("current_user_id", user.id || user.userId);
@@ -60,35 +60,35 @@ runtime:
                 }
 
                 // Mostrar resumen en consola
-                console.log(`🔐 Sesión iniciada - Rol: ${bru.getEnvVar("current_role") || "N/A"}`);
+                console.log(`ðŸ” SesiÃ³n iniciada - Rol: ${bru.getEnvVar("current_role") || "N/A"}`);
             } 
             else {
-                console.error("⚠️ No se encontró access token en la respuesta de login");
+                console.error("âš ï¸ No se encontrÃ³ access token en la respuesta de login");
             }
         } 
         else {
-            console.error(`❌ Login falló con código ${res.status}`);
+            console.error(`âŒ Login fallÃ³ con cÃ³digo ${res.status}`);
             console.error("Respuesta:", res.getBody());
         }
 
         // ================================================
-        // LÓGICA DE REFRESH AUTOMÁTICO (simulada por ahora)
+        // LÃ“GICA DE REFRESH AUTOMÃTICO (simulada por ahora)
         // ================================================
 
-        // Función reutilizable para refrescar token
+        // FunciÃ³n reutilizable para refrescar token
         bru.refreshToken = async function() {
-            console.log("🔄 Intentando refrescar token...");
+            console.log("ðŸ”„ Intentando refrescar token...");
 
             // Mientras el endpoint real no exista, simulamos con un nuevo login
             // (puedes cambiar esto cuando implementes /refresh-token)
 
-            const dni = bru.getEnvVar("test_dni") || "12345678";           // poné tu DNI de prueba
+            const dni = bru.getEnvVar("test_dni") || "12345678";           // ponÃ© tu DNI de prueba
             const password = bru.getEnvVar("test_password") || "TuPassword123";
 
             // Crear request de refresh simulada
             const refreshRequest = {
                 method: "POST",
-                url: "{{base_url}}/api/auth/login",
+                url: "{{baseUrl}}/api/auth/login",
                 header: {
                     "Content-Type": "application/json"
                 },
@@ -107,18 +107,29 @@ runtime:
 
                     if (newToken) {
                         bru.setEnvVar("jwt_token", newToken, { persist: true });
-                        console.log("✅ Token refrescado exitosamente (simulado con login)");
+                        console.log("âœ… Token refrescado exitosamente (simulado con login)");
                         return true;
                     }
                 }
                 
-                console.error("❌ Falló el refresh del token");
+                console.error("âŒ FallÃ³ el refresh del token");
                 return false;
             } catch (error) {
                 console.error("Error en refresh:", error);
                 return false;
             }
         };
+    - type: tests
+      code: |-
+        test("Iniciar sesión responde 200", function() {
+            expect(res.status).to.equal(200);
+        });
+
+        test("Iniciar sesión devuelve cuerpo valido", function() {
+            if (res.status !== 204) {
+                expect(res.getBody()).to.not.be.undefined;
+            }
+        });
 
 settings:
   encodeUrl: true
@@ -126,115 +137,11 @@ settings:
   followRedirects: true
   maxRedirects: 5
 
-examples:
-  - name: 200 Response
-    description: Login exitoso
-    request:
-      url: "{{baseUrl}}/api/auth/login"
-      method: POST
-      body:
-        type: json
-        data: |-
-          {
-            "dni": "",
-            "password": "",
-            "rememberMe": false
-          }
-    response:
-      status: 200
-      statusText: OK
-      headers:
-        - name: Content-Type
-          value: "*/*"
-      body:
-        type: text
-        data: |-
-          {
-            "accessToken": "",
-            "refreshToken": "",
-            "tokenType": "",
-            "expiresIn": 0,
-            "user": {
-              "userId": "",
-              "dni": "",
-              "roles": [],
-              "isActive": false,
-              "createdAt": "",
-              "lastLoginAt": "",
-              "updatedAt": ""
-            }
-          }
-  - name: 400 Response
-    description: Credenciales inválidas
-    request:
-      url: "{{baseUrl}}/api/auth/login"
-      method: POST
-      body:
-        type: json
-        data: |-
-          {
-            "dni": "",
-            "password": "",
-            "rememberMe": false
-          }
-    response:
-      status: 400
-      statusText: Bad Request
-      headers:
-        - name: Content-Type
-          value: "*/*"
-      body:
-        type: text
-        data: |-
-          {
-            "success": false,
-            "message": "",
-            "errorCode": "",
-            "timestamp": "",
-            "path": "",
-            "fieldErrors": [
-              {
-                "field": "",
-                "rejectedValue": {},
-                "message": ""
-              }
-            ]
-          }
-  - name: 403 Response
-    description: Usuario inactivo
-    request:
-      url: "{{baseUrl}}/api/auth/login"
-      method: POST
-      body:
-        type: json
-        data: |-
-          {
-            "dni": "",
-            "password": "",
-            "rememberMe": false
-          }
-    response:
-      status: 403
-      statusText: Forbidden
-      headers:
-        - name: Content-Type
-          value: "*/*"
-      body:
-        type: text
-        data: |-
-          {
-            "success": false,
-            "message": "",
-            "errorCode": "",
-            "timestamp": "",
-            "path": "",
-            "fieldErrors": [
-              {
-                "field": "",
-                "rejectedValue": {},
-                "message": ""
-              }
-            ]
-          }
+docs: Autentica un usuario por DNI y contraseÃ±a. Devuelve JWT si las credenciales son vÃ¡lidas.
 
-docs: Autentica un usuario por DNI y contraseña. Devuelve JWT si las credenciales son válidas.
+
+
+
+
+
+

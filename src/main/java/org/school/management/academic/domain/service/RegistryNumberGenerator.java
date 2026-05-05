@@ -2,8 +2,9 @@ package org.school.management.academic.domain.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.school.management.academic.domain.exception.RegistrySequenceExhaustedException;
 import org.school.management.academic.domain.repository.QualificationRegistryRepository;
-import org.school.management.academic.domain.valueobject.RegistryNumber; // Importación crucial
+import org.school.management.academic.domain.valueobject.RegistryNumber;
 import org.school.management.academic.domain.valueobject.ids.AcademicYearId;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
@@ -17,39 +18,39 @@ public class RegistryNumberGenerator {
     private final QualificationRegistryRepository registryRepository;
 
     /**
-     * Genera un número de registro único en formato: REG-{año}-{secuencia},
-     * delegando el formato al Value Object.
-     * * @param academicYearId ID del año académico
-     * @param year Valor del año (ej. 2025)
-     * @return String con el número de registro generado
+     * Genera un nuevo número de registro correlativo global.
+     * Formato: REG-AAAA-NNN (AAAA = año, NNN = secuencia global de 3 dígitos).
+     *
+     * @param academicYearId ID del año académico (para metadata del año).
+     * @param year           Valor del año (ej. 2025) usado en el prefijo.
+     * @return String con el número generado.
      */
     @Transactional(propagation = Propagation.MANDATORY)
     public String generate(AcademicYearId academicYearId, int year) {
-        log.debug("Generating registry number for academic year: {}", year);
+        log.debug("Generating next global registry number for year {}", year);
 
-        long sequenceBaseLong = registryRepository.countByAcademicYear(academicYearId);
+        // Obtener la máxima secuencia actual de la BD (global)
+        int maxSeq = registryRepository.getMaxSequenceNumber();
+        int nextSeq = maxSeq + 1;
 
-        if (sequenceBaseLong > Integer.MAX_VALUE) {
-              throw new IllegalStateException("The total number of registries exceeded the maximum capacity.");
+        if (nextSeq > RegistryNumber.MAX_SEQUENCE_ALLOWED) {
+            throw new RegistrySequenceExhaustedException(
+                    "Maximum registry sequence (" + RegistryNumber.MAX_SEQUENCE_ALLOWED + ") reached. Cannot generate new number.");
         }
 
-        int sequenceBase = (int) sequenceBaseLong;
-        int sequence = sequenceBase + 1;
+        RegistryNumber registryNumber = RegistryNumber.generate(year, nextSeq);
+        log.info("Generated registry number: {}", registryNumber.value());
+        return registryNumber.value();
+    }
 
-
-        if (sequence > RegistryNumber.MAX_SEQUENCE_ALLOWED) { // Asumiendo que definiste una constante
-            log.error("Registry sequence exceeded max allowed value.");
-            // ... lanzar excepción de negocio
+    /**
+     * Formatea un número de registro con año y secuencia sin consultar la BD.
+     * Útil para el seed inicial.
+     */
+    public String formatNumber(int year, int sequence) {
+        if (sequence <= 0 || sequence > RegistryNumber.MAX_SEQUENCE_ALLOWED) {
+            throw new IllegalArgumentException("Sequence must be between 1 and " + RegistryNumber.MAX_SEQUENCE_ALLOWED);
         }
-
-        // 2. CONSTRUCCIÓN DEL OBJETO (RESPONSABILIDAD DEL VALUE OBJECT)
-        // Delegamos la creación y el formato al VO.
-        RegistryNumber registryNumberVo = RegistryNumber.generate(year, sequence);
-
-        // 3. Devolvemos el valor crudo (String) para el consumo en la capa de aplicación/persistencia
-        String registryNumber = registryNumberVo.value();
-
-        log.info("Generated registry number: {}", registryNumber);
-        return registryNumber;
+        return RegistryNumber.generate(year, sequence).value();
     }
 }

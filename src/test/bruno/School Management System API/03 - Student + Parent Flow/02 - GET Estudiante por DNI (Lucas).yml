@@ -17,13 +17,30 @@ runtime:
         if (res.status === 200) {
           const body = res.getBody();
           bru.setEnvVar("current_student_id", body.id || body.studentId);
-          console.log(`✅ Estudiante Lucas Romero encontrado - ID: ${bru.getEnvVar("current_student_id")}`);
+          console.log(`âœ… Estudiante Lucas Romero encontrado - ID: ${bru.getEnvVar("current_student_id")}`);
         } else {
-          console.error("❌ Error al obtener estudiante");
+          console.error("âŒ Error al obtener estudiante");
         }
+    - type: tests
+      code: |-
+        test("02 - GET Estudiante por DNI (Lucas) responde 200", function() {
+            expect(res.status).to.equal(200);
+        });
+
+        test("02 - GET Estudiante por DNI (Lucas) devuelve cuerpo valido", function() {
+            if (res.status !== 204) {
+                expect(res.getBody()).to.not.be.undefined;
+            }
+        });
 
 settings:
   encodeUrl: true
   timeout: 0
   followRedirects: true
   maxRedirects: 5
+
+
+
+
+
+

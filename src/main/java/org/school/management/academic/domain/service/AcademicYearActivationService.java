@@ -77,17 +77,6 @@ public class AcademicYearActivationService {
                         "Academic year not found: " + academicYearId
                 ));
 
-        // Cerrar todos los registros de calificaciones de este año
-        List<QualificationRegistry> registries =
-                registryRepository.findByAcademicYear(academicYearId);
-
-        for (QualificationRegistry registry : registries) {
-            if (registry.getStatus() == RegistryStatus.ACTIVE) {
-                QualificationRegistry closed = registry.close();
-                registryRepository.save(closed);
-                log.info("Closed registry: {}", registry.getRegistryNumber());
-            }
-        }
 
         // Cerrar el año académico
         AcademicYear closed = year.close();

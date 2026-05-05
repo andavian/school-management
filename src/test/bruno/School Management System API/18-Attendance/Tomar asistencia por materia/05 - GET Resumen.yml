@@ -8,9 +8,21 @@ info:
 http:
   method: GET
   url: "{{baseUrl}}/api/attendance/course/summary"
-  query:
-    - name: studentCourseSubjectId
-      value: "{{student_course_subject_id}}"
-    - name: periodId
-      value: "{{period_id}}"
   auth: inherit
+
+runtime:
+  scripts:
+    - type: tests
+      code: |-
+        test("Resumen generado correctamente", function() {
+            expect(res.status).to.equal(200);
+            var body = res.getBody();
+            expect(body).to.have.property("attendancePercentage");
+            expect(body.weightedAbsences).to.be.above(0);
+        });
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

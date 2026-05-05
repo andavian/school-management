@@ -1,0 +1,35 @@
+info:
+  name: 07 - PATCH Cerrar Periodo
+  type: http
+  seq: 7
+  tags:
+    - Evaluation_Periods
+
+http:
+  method: PATCH
+  url: "{{baseUrl}}/api/admin/periods/{{period_id}}/close"
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: tests
+      code: |-
+        test("Cierra periodo de evaluacion", function() {
+            expect(res.status).to.equal(200);
+            const body = res.getBody();
+            expect(body.periodId).to.equal(bru.getEnvVar("period_id"));
+            expect(body.status).to.equal("CLOSED");
+            expect(body).to.have.property("isInProgress");
+        });
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+
+
+
+
+
+

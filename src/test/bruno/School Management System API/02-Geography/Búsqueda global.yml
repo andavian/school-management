@@ -1,5 +1,5 @@
 info:
-  name: Búsqueda global
+  name: BÃºsqueda global
   type: http
   seq: 2
   tags:
@@ -12,59 +12,79 @@ http:
     - name: q
       value: ""
       type: query
-      description: Texto de búsqueda general
+      description: Texto de bÃºsqueda general
     - name: limit
       value: "50"
       type: query
-      description: Límite de resultados
+      description: LÃ­mite de resultados
   auth: inherit
 
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        if (res.status >= 200 && res.status < 300 && res.status !== 204) {
+            const body = res.getBody();
+            const source = Array.isArray(body) ? body[0] : body;
+            if (source && typeof source === "object") {
+                const vars = {
+                    accessToken: "jwt_token",
+                    refreshToken: "refresh_token",
+                    userId: "current_user_id",
+                    academicYearId: "academic_year_id",
+                    periodId: "period_id",
+                    gradeLevelId: "grade_level_id",
+                    orientationId: "orientation_id",
+                    subjectId: "subject_id",
+                    teacherId: "teacher_id",
+                    studentId: "current_student_id",
+                    parentId: "parent_id",
+                    healthRecordId: "health_record_id",
+                    recordId: "record_id",
+                    documentId: "document_id",
+                    documentTypeId: "document_type_id",
+                    enrollmentId: "enrollment_id",
+                    courseSubjectId: "course_subject_id",
+                    evaluationId: "evaluation_id",
+                    finalGradeId: "final_grade_id",
+                    dailyAttendanceId: "daily_attendance_id",
+                    courseAttendanceId: "course_attendance_id",
+                    resourceId: "resource_id",
+                    unitId: "unit_id",
+                    reservationId: "reservation_id",
+                    materialId: "material_id",
+                    placeId: "place_id",
+                    provinceId: "province_id",
+                    countryId: "country_id"
+                };
+                Object.entries(vars).forEach(([field, envName]) => {
+                    if (source[field]) {
+                        bru.setEnvVar(envName, source[field], { persist: true });
+                    }
+                });
+            }
+        }
+    - type: tests
+      code: |-
+        test("Búsqueda global responde 200", function() {
+            expect(res.status).to.equal(200);
+        });
+
+        test("Búsqueda global devuelve cuerpo valido", function() {
+            if (res.status !== 204) {
+                expect(res.getBody()).to.not.be.undefined;
+            }
+        });
 settings:
   encodeUrl: true
   timeout: 0
   followRedirects: true
   maxRedirects: 5
 
-examples:
-  - name: 200 Response
-    description: OK
-    request:
-      url: "{{baseUrl}}/api/geography/search"
-      method: GET
-      params:
-        - name: q
-          value: ""
-          type: query
-          description: Texto de búsqueda general
-        - name: limit
-          value: "50"
-          type: query
-          description: Límite de resultados
-    response:
-      status: 200
-      statusText: OK
-      headers:
-        - name: Content-Type
-          value: "*/*"
-      body:
-        type: text
-        data: |-
-          [
-            {
-              "placeId": "",
-              "provinceId": "",
-              "name": "",
-              "type": "",
-              "typeDisplayName": "",
-              "postalCode": "",
-              "createdAt": "",
-              "provinceName": "",
-              "provinceCode": "",
-              "countryName": "",
-              "countryIsoCode": "",
-              "fullAddress": "",
-              "fullDescription": ""
-            }
-          ]
+docs: "Realiza una bÃºsqueda en toda la jerarquÃ­a geogrÃ¡fica: paÃ­ses, provincias y localidades."
 
-docs: "Realiza una búsqueda en toda la jerarquía geográfica: países, provincias y localidades."
+
+
+
+
+

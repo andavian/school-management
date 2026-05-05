@@ -13,7 +13,7 @@ http:
     data: |-
       {
         "newStatus": "ABSENT",
-        "observations": "El alumno no asistió"
+        "observations": "El alumno no asistiÃ³"
       }
   auth: inherit
 
@@ -32,3 +32,9 @@ settings:
   timeout: 0
   followRedirects: true
   maxRedirects: 5
+
+
+
+
+
+

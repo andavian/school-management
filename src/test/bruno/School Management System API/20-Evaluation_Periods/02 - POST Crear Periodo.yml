@@ -1,0 +1,52 @@
+info:
+  name: 02 - POST Crear Periodo
+  type: http
+  seq: 2
+  tags:
+    - Evaluation_Periods
+
+http:
+  method: POST
+  url: "{{baseUrl}}/api/admin/academic-years/{{academic_year_id}}/periods"
+  body:
+    type: json
+    data: |-
+      {
+        "periodNumber": 4,
+        "name": "Cuarto periodo",
+        "startDate": "2026-10-01",
+        "endDate": "2026-12-15"
+      }
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        if (res.status === 201) {
+            const body = res.getBody();
+            bru.setEnvVar("period_id", body.periodId, { persist: true });
+            bru.setEnvVar("evaluation_period_id", body.periodId, { persist: true });
+        }
+    - type: tests
+      code: |-
+        test("Crea periodo de evaluacion", function() {
+            expect(res.status).to.equal(201);
+            const body = res.getBody();
+            expect(body).to.have.property("periodId");
+            expect(body.academicYearId).to.equal(bru.getEnvVar("academic_year_id"));
+            expect(body.periodNumber).to.equal(4);
+            expect(body.name).to.equal("Cuarto periodo");
+        });
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+
+
+
+
+
+
