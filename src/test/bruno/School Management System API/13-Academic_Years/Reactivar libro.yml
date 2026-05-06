@@ -1,0 +1,19 @@
+info:
+  name: Reactivar libro
+  type: http
+  seq: 8
+
+http:
+  method: PATCH
+  url: "{{baseUrl}}/api/admin/qualification-registries/:registryId/reactivate"
+  params:
+    - name: registryId
+      value: ""
+      type: path
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

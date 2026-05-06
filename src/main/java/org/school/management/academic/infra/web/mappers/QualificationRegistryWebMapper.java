@@ -21,6 +21,9 @@ public interface QualificationRegistryWebMapper {
     // Web request → Application request
     InitRegistrySequenceRequest toInitRegistrySequenceRequest(InitRegistrySequenceWebRequest webRequest);
 
+    @Mapping(target = "startFolio", ignore = true)
+    @Mapping(target = "endFolio", ignore = true)
+    @Mapping(target = "maxFolios", ignore = true)
     CreateQualificationRegistryRequest toCreateQualificationRegistryRequest(CreateQualificationRegistryWebRequest webRequest);
 
     // Application response → Web response
