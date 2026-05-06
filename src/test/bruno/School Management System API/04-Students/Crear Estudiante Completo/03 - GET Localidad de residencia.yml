@@ -8,10 +8,10 @@ info:
 
 http:
   method: GET
-  url: "{{baseUrl}}/api/geography/places/search?q=CÃ³rdoba"
+  url: "{{baseUrl}}/api/geography/places/search?q=Córdoba"
   params:
     - name: q
-      value: CÃ³rdoba
+      value: Córdoba
       type: query
   auth: inherit
 
@@ -40,9 +40,3 @@ settings:
   timeout: 0
   followRedirects: true
   maxRedirects: 5
-
-
-
-
-
-

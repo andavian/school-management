@@ -7,10 +7,10 @@ info:
 
 http:
   method: GET
-  url: "{{baseUrl}}/api/geography/search"
+  url: "{{baseUrl}}/api/geography/search?q=alta&limit=50"
   params:
     - name: q
-      value: ""
+      value: alta
       type: query
       description: Texto de bÃºsqueda general
     - name: limit
@@ -75,6 +75,7 @@ runtime:
                 expect(res.getBody()).to.not.be.undefined;
             }
         });
+
 settings:
   encodeUrl: true
   timeout: 0
@@ -82,9 +83,3 @@ settings:
   maxRedirects: 5
 
 docs: "Realiza una bÃºsqueda en toda la jerarquÃ­a geogrÃ¡fica: paÃ­ses, provincias y localidades."
-
-
-
-
-
-

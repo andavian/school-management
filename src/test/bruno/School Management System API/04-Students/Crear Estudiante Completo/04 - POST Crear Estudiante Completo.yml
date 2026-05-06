@@ -22,7 +22,7 @@ http:
         "nationality": "Argentina",
         "phone": "+5493515551234",
         "email": "valen.moreno1@example.com",
-        "addressStreet": "Av. ColÃ³n",
+        "addressStreet": "Av. Colón",
         "addressNumber": "1234",
         "addressFloor": "1",
         "addressApartment": "A",
@@ -36,8 +36,8 @@ http:
             "chronicConditions": "Sin condiciones cronicas",
             "medications": "Sin medicacion",
             "medicalObservations": "Ficha actualizada desde Bruno",
-            "emergencyContactFirstName": "MarÃ­a",
-            "emergencyContactLastName": "GÃ³mez",
+            "emergencyContactFirstName": "María",
+            "emergencyContactLastName": "Gómez",
             "emergencyContactPhone": "+5493515559876"
         },
         "parent": {
@@ -102,10 +102,3 @@ settings:
   timeout: 0
   followRedirects: true
   maxRedirects: 5
-
-
-
-
-
-
-

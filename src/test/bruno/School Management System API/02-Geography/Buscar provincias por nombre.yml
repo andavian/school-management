@@ -7,10 +7,10 @@ info:
 
 http:
   method: GET
-  url: "{{baseUrl}}/api/geography/provinces/search"
+  url: "{{baseUrl}}/api/geography/provinces/search?q=salta"
   params:
     - name: q
-      value: CÃ³rdoba
+      value: salta
       type: query
       description: Texto de bÃºsqueda
   auth: inherit
@@ -71,6 +71,7 @@ runtime:
                 expect(res.getBody()).to.not.be.undefined;
             }
         });
+
 settings:
   encodeUrl: true
   timeout: 0
@@ -78,9 +79,3 @@ settings:
   maxRedirects: 5
 
 docs: Permite buscar provincias por coincidencia parcial del nombre.
-
-
-
-
-
-

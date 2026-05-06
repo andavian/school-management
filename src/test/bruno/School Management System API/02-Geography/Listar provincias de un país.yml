@@ -10,7 +10,7 @@ http:
   url: "{{baseUrl}}/api/geography/countries/{{country_id}}/provinces"
   params:
     - name: countryId
-      value: 341107d0-3809-11f1-ac89-cc4740a8b54c
+      value: ""
       type: path
       description: ID del paÃ­s
 
@@ -70,6 +70,7 @@ runtime:
                 expect(res.getBody()).to.not.be.undefined;
             }
         });
+
 settings:
   encodeUrl: true
   timeout: 0
@@ -77,9 +78,3 @@ settings:
   maxRedirects: 5
 
 docs: Retorna todas las provincias pertenecientes al paÃ­s especificado.
-
-
-
-
-
-

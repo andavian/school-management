@@ -5,16 +5,10 @@ info:
 
 http:
   method: GET
-  url: |-
-    GET {{baseUrl}}/api/admin/qualification-registries?status=CLOSED
-    p
-    GET {{baseUrl}}/api/admin/qualification-registries?status=CLOSED
+  url: "{{baseUrl}}/api/admin/qualification-registries?status=CLOSED"
   params:
     - name: status
-      value: |-
-        CLOSED
-        p
-        GET {{baseUrl}}/api/admin/qualification-registries?status=CLOSED
+      value: CLOSED
       type: query
   auth: inherit
 

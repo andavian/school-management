@@ -8,7 +8,7 @@ http:
   url: "{{baseUrl}}/api/admin/qualification-registries/:registryId/reactivate"
   params:
     - name: registryId
-      value: ""
+      value: 00000000-0000-0000-0000-000000002025
       type: path
   auth: inherit
 

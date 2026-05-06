@@ -7,14 +7,14 @@ info:
 
 http:
   method: GET
-  url: "{{baseUrl}}/api/geography/places/search?q=cÃ³rdoba&provinceId=3412a0ad-3809-11f1-ac89-cc4740a8b54c"
+  url: "{{baseUrl}}/api/geography/places/search?q=alta&provinceId={{province_id}}"
   params:
     - name: q
-      value: cÃ³rdoba
+      value: alta
       type: query
       description: Texto de bÃºsqueda
     - name: provinceId
-      value: 3412a0ad-3809-11f1-ac89-cc4740a8b54c
+      value: "{{province_id}}"
       type: query
       description: ID opcional de provincia para filtrar
   auth: inherit
@@ -75,6 +75,7 @@ runtime:
                 expect(res.getBody()).to.not.be.undefined;
             }
         });
+
 settings:
   encodeUrl: true
   timeout: 0
@@ -82,9 +83,3 @@ settings:
   maxRedirects: 5
 
 docs: Permite buscar localidades por nombre, con filtro opcional por provincia.
-
-
-
-
-
-
