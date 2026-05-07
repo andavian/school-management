@@ -19,7 +19,7 @@ runtime:
         if (res.status === 201) {
           console.log("âœ… Archivo subido y asociado al legajo correctamente");
         } else {
-          console.error("âŒ Error al subir archivo:", res.getBody());
+          console.error("❌ Error al subir archivo:", res.getBody());
         }
     - type: tests
       code: |-

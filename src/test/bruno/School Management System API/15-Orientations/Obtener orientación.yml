@@ -1,5 +1,5 @@
 info:
-  name: Obtener orientaciÃ³n
+  name: Obtener orientación
   type: http
   seq: 1
   tags:
@@ -12,7 +12,7 @@ http:
     - name: id
       value: orientation-uuid
       type: path
-      description: ID de la orientaciÃ³n
+      description: ID de la orientación
   auth:
     type: bearer
     token: "{{jwt_token}}"
@@ -79,7 +79,7 @@ settings:
   followRedirects: true
   maxRedirects: 5
 
-docs: Devuelve una orientaciÃ³n por su ID.
+docs: Devuelve una orientación por su ID.
 
 
 

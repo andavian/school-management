@@ -74,7 +74,7 @@ settings:
   followRedirects: true
   maxRedirects: 5
 
-docs: Devuelve todos los ciclos lectivos ordenados por aÃ±o descendente.
+docs: Devuelve todos los ciclos lectivos ordenados por año descendente.
 
 
 

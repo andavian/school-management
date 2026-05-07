@@ -130,7 +130,7 @@ public class TeacherDataSeeder implements ApplicationRunner {
                 new TeacherData(
                         TEACHER_1_ID, TEACHER_1_USER_ID,
                         "Juan", "García",
-                        "12345678", "20123456782", // DV: 2
+                        "12345678", "20123456786", // DV: 6
                         "juan.garcia@ipet132.edu.ar", "3514001001",
                         LocalDate.of(1980, 5, 15),
                         "Matemática", "Teacher123!"
@@ -138,7 +138,7 @@ public class TeacherDataSeeder implements ApplicationRunner {
                 new TeacherData(
                         TEACHER_2_ID, TEACHER_2_USER_ID,
                         "María", "López",
-                        "23456789", "27234567894", // DV: 4
+                        "23456789", "27234567891", // DV: 1
                         "maria.lopez@ipet132.edu.ar", "3514002002",
                         LocalDate.of(1985, 8, 22),
                         "Física", "Teacher123!"
@@ -146,7 +146,7 @@ public class TeacherDataSeeder implements ApplicationRunner {
                 new TeacherData(
                         TEACHER_3_ID, TEACHER_3_USER_ID,
                         "Carlos", "Fernández",
-                        "34567890", "20345678902", // DV: 2
+                        "34567890", "20345678906", // DV: 6
                         "carlos.fernandez@ipet132.edu.ar", "3514003003",
                         LocalDate.of(1978, 3, 10),
                         "Electrotecnia", "Teacher123!"

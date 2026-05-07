@@ -1,5 +1,5 @@
 info:
-  name: Cargar nota de evaluaciÃ³n
+  name: Cargar nota de evaluación
   type: http
   seq: 7
   tags:

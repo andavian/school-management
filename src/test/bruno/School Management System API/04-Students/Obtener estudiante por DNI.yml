@@ -12,7 +12,7 @@ http:
     - name: dni
       value: ""
       type: path
-      description: DNI del estudiante (8 dÃ­gitos)
+      description: DNI del estudiante (8 dígitos)
   auth: inherit
 
 runtime:

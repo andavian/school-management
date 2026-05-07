@@ -1,5 +1,5 @@
 info:
-  name: Listar orientaciones por aÃ±o
+  name: Listar orientaciones por año
   type: http
   seq: 6
   tags:
@@ -12,7 +12,7 @@ http:
     - name: yearLevel
       value: "6"
       type: path
-      description: AÃ±o escolar (4-7)
+      description: Año escolar (4-7)
   auth:
     type: bearer
     token: "{{jwt_token}}"
@@ -80,8 +80,8 @@ settings:
   maxRedirects: 5
 
 docs: |
-  Devuelve las orientaciones habilitadas para un aÃ±o especÃ­fico
-  entre 4Â° y 7Â° del nivel medio tÃ©cnico.
+  Devuelve las orientaciones habilitadas para un año específico
+  entre 4° y 7° del nivel medio técnico.
 
 
 

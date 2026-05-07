@@ -1,5 +1,5 @@
 info:
-  name: Obtener estadÃ­sticas geogrÃ¡ficas
+  name: Obtener estadísticas geográficas
   type: http
   seq: 1
   tags:
@@ -72,7 +72,7 @@ settings:
   followRedirects: true
   maxRedirects: 5
 
-docs: Solo para administradores. Retorna conteos y mÃ©tricas generales del mÃ³dulo de geografÃ­a.
+docs: Solo para administradores. Retorna conteos y métricas generales del módulo de geografía.
 
 
 

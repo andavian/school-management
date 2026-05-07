@@ -8,12 +8,15 @@ import org.school.management.course.domain.exception.StudentCourseSubjectNotFoun
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.core.Ordered;
+import org.springframework.core.annotation.Order;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import java.net.URI;
 import java.time.Instant;
 
 @RestControllerAdvice
+@Order(Ordered.HIGHEST_PRECEDENCE)
 @Slf4j
 public class CourseExceptionHandler {
 

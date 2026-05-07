@@ -5,12 +5,15 @@ import org.school.management.students.enrollment.domain.exception.*;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.core.Ordered;
+import org.springframework.core.annotation.Order;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import java.net.URI;
 import java.time.Instant;
 
 @RestControllerAdvice
+@Order(Ordered.HIGHEST_PRECEDENCE)
 @Slf4j
 public class EnrollmentExceptionHandler {
 
@@ -82,6 +85,30 @@ public class EnrollmentExceptionHandler {
                 .forStatusAndDetail(HttpStatus.UNPROCESSABLE_ENTITY, ex.getMessage());
         problem.setTitle("Invalid Enrollment Data");
         problem.setType(URI.create("/errors/invalid-enrollment-data"));
+        problem.setProperty("timestamp", Instant.now());
+        return problem;
+    }
+
+    // 409 — Estudiante ya inscripto
+    @ExceptionHandler(StudentAlreadyEnrolledException.class)
+    public ProblemDetail handleStudentAlreadyEnrolled(StudentAlreadyEnrolledException ex) {
+        log.warn("Student already enrolled: {}", ex.getMessage());
+        ProblemDetail problem = ProblemDetail
+                .forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
+        problem.setTitle("Student Already Enrolled");
+        problem.setType(URI.create("/errors/student-already-enrolled"));
+        problem.setProperty("timestamp", Instant.now());
+        return problem;
+    }
+
+    // 422 — Estudiante no activo
+    @ExceptionHandler(StudentNotActiveException.class)
+    public ProblemDetail handleStudentNotActive(StudentNotActiveException ex) {
+        log.warn("Student not active: {}", ex.getMessage());
+        ProblemDetail problem = ProblemDetail
+                .forStatusAndDetail(HttpStatus.UNPROCESSABLE_ENTITY, ex.getMessage());
+        problem.setTitle("Student Not Active");
+        problem.setType(URI.create("/errors/student-not-active"));
         problem.setProperty("timestamp", Instant.now());
         return problem;
     }

@@ -99,7 +99,7 @@ settings:
   followRedirects: true
   maxRedirects: 5
 
-docs: Crea un profesor y su usuario asociado. Se genera una contraseÃ±a temporal y se envÃ­a invitaciÃ³n por email.
+docs: Crea un profesor y su usuario asociado. Se genera una contraseña temporal y se envía invitación por email.
 
 
 

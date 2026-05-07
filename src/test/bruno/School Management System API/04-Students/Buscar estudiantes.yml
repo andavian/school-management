@@ -12,12 +12,12 @@ http:
     - name: dni
       value: ""
       type: query
-      description: DNI exacto (8 dÃ­gitos)
+      description: DNI exacto (8 dígitos)
       disabled: true
     - name: fullName
       value: ""
       type: query
-      description: Nombre o apellido (bÃºsqueda parcial)
+      description: Nombre o apellido (búsqueda parcial)
       disabled: true
     - name: residencePlaceId
       value: ""
@@ -88,7 +88,7 @@ settings:
   followRedirects: true
   maxRedirects: 5
 
-docs: "BÃºsqueda con prioridad: dni > residencePlaceId > fullName > todos. Solo se usa el primer parÃ¡metro no nulo."
+docs: "Búsqueda con prioridad: dni > residencePlaceId > fullName > todos. Solo se usa el primer parámetro no nulo."
 
 
 

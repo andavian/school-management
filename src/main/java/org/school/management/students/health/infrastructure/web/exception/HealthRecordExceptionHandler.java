@@ -5,6 +5,8 @@ import org.school.management.students.health.domain.exception.HealthRecordNotFou
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.core.Ordered;
+import org.springframework.core.annotation.Order;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import java.net.URI;
@@ -15,6 +17,7 @@ import java.time.Instant;
  * Usa ProblemDetail (RFC 9457) — consistente con el resto del proyecto.
  */
 @RestControllerAdvice
+@Order(Ordered.HIGHEST_PRECEDENCE)
 @Slf4j
 public class HealthRecordExceptionHandler {
 

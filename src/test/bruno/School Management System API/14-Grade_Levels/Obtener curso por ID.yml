@@ -79,7 +79,7 @@ settings:
   followRedirects: true
   maxRedirects: 5
 
-docs: Devuelve los detalles de un curso especÃ­fico por su ID.
+docs: Devuelve los detalles de un curso específico por su ID.
 
 
 

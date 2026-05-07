@@ -1,5 +1,5 @@
 info:
-  name: Iniciar sesiÃ³n
+  name: Iniciar sesión
   type: http
   seq: 3
   tags:
@@ -37,12 +37,12 @@ runtime:
         if (res.status === 200 || res.status === 201) {
             const body = res.getBody();
 
-            // Ajusta segÃºn la estructura real de tu respuesta de login
+            // Ajusta según la estructura real de tu respuesta de login
             const accessToken = body.token || body.accessToken || body.jwt || body.data?.token;
             const refreshToken = body.refreshToken || body.refresh_token || body.data?.refreshToken;
 
             if (accessToken) {
-                // Guardar token principal (usado en toda la colecciÃ³n)
+                // Guardar token principal (usado en toda la colección)
                 bru.setEnvVar("jwt_token", accessToken, { persist: true });
                 console.log("âœ… Access Token guardado correctamente");
 
@@ -52,7 +52,7 @@ runtime:
                     console.log("ðŸ”„ Refresh Token guardado");
                 }
 
-                // Opcional: Guardar informaciÃ³n del usuario
+                // Opcional: Guardar información del usuario
                 if (body.user || body.data?.user) {
                     const user = body.user || body.data.user;
                     bru.setEnvVar("current_user_id", user.id || user.userId);
@@ -60,29 +60,29 @@ runtime:
                 }
 
                 // Mostrar resumen en consola
-                console.log(`ðŸ” SesiÃ³n iniciada - Rol: ${bru.getEnvVar("current_role") || "N/A"}`);
+                console.log(`🔐 Sesión iniciada - Rol: ${bru.getEnvVar("current_role") || "N/A"}`);
             } 
             else {
-                console.error("âš ï¸ No se encontrÃ³ access token en la respuesta de login");
+                console.error("⚠️ No se encontró access token en la respuesta de login");
             }
         } 
         else {
-            console.error(`âŒ Login fallÃ³ con cÃ³digo ${res.status}`);
+            console.error(`❌ Login falló con código ${res.status}`);
             console.error("Respuesta:", res.getBody());
         }
 
         // ================================================
-        // LÃ“GICA DE REFRESH AUTOMÃTICO (simulada por ahora)
+        // LÓGICA DE REFRESH AUTOMÁTICO (simulada por ahora)
         // ================================================
 
-        // FunciÃ³n reutilizable para refrescar token
+        // Función reutilizable para refrescar token
         bru.refreshToken = async function() {
             console.log("ðŸ”„ Intentando refrescar token...");
 
             // Mientras el endpoint real no exista, simulamos con un nuevo login
             // (puedes cambiar esto cuando implementes /refresh-token)
 
-            const dni = bru.getEnvVar("test_dni") || "12345678";           // ponÃ© tu DNI de prueba
+            const dni = bru.getEnvVar("test_dni") || "12345678";           // poné tu DNI de prueba
             const password = bru.getEnvVar("test_password") || "TuPassword123";
 
             // Crear request de refresh simulada
@@ -112,7 +112,7 @@ runtime:
                     }
                 }
                 
-                console.error("âŒ FallÃ³ el refresh del token");
+                console.error("❌ Falló el refresh del token");
                 return false;
             } catch (error) {
                 console.error("Error en refresh:", error);
@@ -137,7 +137,7 @@ settings:
   followRedirects: true
   maxRedirects: 5
 
-docs: Autentica un usuario por DNI y contraseÃ±a. Devuelve JWT si las credenciales son vÃ¡lidas.
+docs: Autentica un usuario por DNI y contraseña. Devuelve JWT si las credenciales son válidas.
 
 
 

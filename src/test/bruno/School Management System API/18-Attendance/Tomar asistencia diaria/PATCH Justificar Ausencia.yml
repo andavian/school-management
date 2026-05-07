@@ -12,7 +12,7 @@ http:
     type: json
     data: |-
       {
-        "reason": "Enfermedad con certificado mÃ©dico"
+        "reason": "Enfermedad con certificado médico"
       }
   auth: inherit
 

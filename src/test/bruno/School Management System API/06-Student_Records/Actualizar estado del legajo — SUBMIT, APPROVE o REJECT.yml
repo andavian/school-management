@@ -1,5 +1,5 @@
 info:
-  name: Actualizar estado del legajo â€” SUBMIT, APPROVE o REJECT
+  name: Actualizar estado del legajo "” SUBMIT, APPROVE o REJECT
   type: http
   seq: 4
   tags:

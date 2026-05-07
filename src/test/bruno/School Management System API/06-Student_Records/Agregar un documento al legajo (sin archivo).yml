@@ -13,7 +13,7 @@ http:
     data: |-
       {
         "documentTypeId": "{{document_type_id}}",
-        "title": "Certificado de VacunaciÃ³n 2025",
+        "title": "Certificado de Vacunación 2025",
         "description": "Certificado completo de vacunas obligatorias",
         "issueDate": "2025-03-01",
         "issuingAuthority": "Ministerio de Salud"
@@ -27,7 +27,7 @@ runtime:
         if (res.status === 201) {
           console.log("âœ… Documento agregado al legajo correctamente");
         } else {
-          console.error("âŒ Error al agregar documento:", res.getBody());
+          console.error("❌ Error al agregar documento:", res.getBody());
         }
     - type: tests
       code: |-

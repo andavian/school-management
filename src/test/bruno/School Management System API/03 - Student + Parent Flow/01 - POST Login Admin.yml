@@ -29,10 +29,10 @@ runtime:
             bru.setEnvVar("jwt_token", token, { persist: true });
             console.log("âœ… Token ADMIN guardado correctamente");
           } else {
-            console.error("âš ï¸ No se encontrÃ³ token en la respuesta");
+            console.error("⚠️ No se encontró token en la respuesta");
           }
         } else {
-          console.error(`âŒ Login fallÃ³ con status ${res.status}`);
+          console.error(`❌ Login falló con status ${res.status}`);
         }
     - type: tests
       code: |-

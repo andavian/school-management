@@ -77,7 +77,7 @@ settings:
   followRedirects: true
   maxRedirects: 5
 
-docs: Retorna la localidad y su jerarquÃ­a completa (provincia y paÃ­s).
+docs: Retorna la localidad y su jerarquía completa (provincia y país).
 
 
 

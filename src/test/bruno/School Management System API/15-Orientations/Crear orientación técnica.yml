@@ -1,5 +1,5 @@
 info:
-  name: Crear orientaciÃ³n tÃ©cnica
+  name: Crear orientación técnica
   type: http
   seq: 5
   tags:
@@ -84,8 +84,8 @@ settings:
   maxRedirects: 5
 
 docs: |
-  Crea una nueva orientaciÃ³n tÃ©cnica del nivel secundario.
-  Las orientaciones se aplican entre 4Âº y 7Âº aÃ±o.
+  Crea una nueva orientación técnica del nivel secundario.
+  Las orientaciones se aplican entre 4º y 7º año.
 
 
 

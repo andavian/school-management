@@ -239,7 +239,7 @@ public class StudentRecord {
     // ============ Domain Logic - Cálculos ============
 
     private void recalculateCompleteness() {
-        if (documents.isEmpty()) {
+        if (documents == null || documents.isEmpty()) {
             this.completenessPercentage = BigDecimal.ZERO;
             return;
         }
@@ -265,7 +265,7 @@ public class StudentRecord {
 
         if (hasRejected) {
             this.status = RecordStatus.REJECTED;
-        } else if (documents.isEmpty()) {
+        } else if (documents == null || documents.isEmpty()) {
             this.status = RecordStatus.INCOMPLETE;
         }
     }

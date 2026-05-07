@@ -79,7 +79,7 @@ settings:
   followRedirects: true
   maxRedirects: 5
 
-docs: Devuelve una materia especÃ­fica segÃºn su ID.
+docs: Devuelve una materia específica según su ID.
 
 
 

@@ -1,5 +1,5 @@
 info:
-  name: Actualizar matrÃ­cula â€” cierre de ciclo o baja del estudiante
+  name: Actualizar matrícula "” cierre de ciclo o baja del estudiante
   type: http
   seq: 1
   tags:

@@ -20,7 +20,7 @@ runtime:
           console.log(`Estado: ${body.status}`);
           console.log(`Cantidad de documentos: ${body.documents ? body.documents.length : 0}`);
         } else {
-          console.error("âŒ Error al obtener legajo:", res.getBody());
+          console.error("❌ Error al obtener legajo:", res.getBody());
         }
     - type: tests
       code: |-

@@ -17,7 +17,7 @@ runtime:
       code: |-
         if (res.status === 200) {
             var body = res.getBody();
-            // Asumiendo que el primer curso de la lista es 1Â°A, puedes filtrar por displayName
+            // Asumiendo que el primer curso de la lista es 1°A, puedes filtrar por displayName
             var curso = body.find(function(c) { return c.displayName === "1° A" || c.yearLevel === 1; });
             if (curso) {
                 bru.setEnvVar("grade_level_id", curso.gradeLevelId, { persist: true });

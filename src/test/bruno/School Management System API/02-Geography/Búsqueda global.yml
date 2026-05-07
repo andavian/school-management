@@ -1,5 +1,5 @@
 info:
-  name: BÃºsqueda global
+  name: Búsqueda global
   type: http
   seq: 2
   tags:
@@ -12,11 +12,11 @@ http:
     - name: q
       value: alta
       type: query
-      description: Texto de bÃºsqueda general
+      description: Texto de búsqueda general
     - name: limit
       value: "50"
       type: query
-      description: LÃ­mite de resultados
+      description: Límite de resultados
   auth: inherit
 
 runtime:
@@ -82,4 +82,4 @@ settings:
   followRedirects: true
   maxRedirects: 5
 
-docs: "Realiza una bÃºsqueda en toda la jerarquÃ­a geogrÃ¡fica: paÃ­ses, provincias y localidades."
+docs: "Realiza una búsqueda en toda la jerarquía geográfica: países, provincias y localidades."

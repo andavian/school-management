@@ -1,5 +1,5 @@
 info:
-  name: Obtener historial de matrÃ­culas del estudiante
+  name: Obtener historial de matrículas del estudiante
   type: http
   seq: 2
   tags:

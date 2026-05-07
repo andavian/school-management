@@ -1,5 +1,5 @@
 info:
-  name: Obtener matrÃ­cula del estudiante en un aÃ±o acadÃ©mico
+  name: Obtener matrícula del estudiante en un año académico
   type: http
   seq: 3
   tags:

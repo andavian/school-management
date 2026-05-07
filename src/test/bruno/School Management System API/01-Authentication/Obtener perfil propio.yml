@@ -74,7 +74,7 @@ settings:
   followRedirects: true
   maxRedirects: 5
 
-docs: Devuelve la informaciÃ³n del usuario autenticado.
+docs: Devuelve la información del usuario autenticado.
 
 
 

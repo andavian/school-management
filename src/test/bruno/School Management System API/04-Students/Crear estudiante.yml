@@ -15,7 +15,7 @@ http:
         "firstName": "Bruno",
         "lastName": "Flow",
         "dni": "{{student_dni}}",
-        "cuil": "20112233449",
+        "cuil": "20112233440",
         "birthDate": "2010-05-14",
         "birthPlaceId": "{{birth_place_id}}",
         "gender": "MALE",
@@ -120,7 +120,7 @@ settings:
   followRedirects: true
   maxRedirects: 5
 
-docs: "Crea un estudiante completo en 15 pasos atÃ³micos: datos personales + salud + matrÃ­cula + legajo. TODO O NADA."
+docs: "Crea un estudiante completo en 15 pasos atómicos: datos personales + salud + matrícula + legajo. TODO O NADA."
 
 
 

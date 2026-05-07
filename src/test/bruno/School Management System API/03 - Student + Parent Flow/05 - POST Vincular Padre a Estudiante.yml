@@ -25,7 +25,7 @@ runtime:
         if (res.status === 201) {
           console.log("âœ… Padre vinculado correctamente al estudiante");
         } else {
-          console.error("âŒ Error al vincular padre:", res.getBody());
+          console.error("❌ Error al vincular padre:", res.getBody());
         }
     - type: tests
       code: |-

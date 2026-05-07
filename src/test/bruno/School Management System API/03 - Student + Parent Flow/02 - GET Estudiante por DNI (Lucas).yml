@@ -19,7 +19,7 @@ runtime:
           bru.setEnvVar("current_student_id", body.id || body.studentId);
           console.log(`âœ… Estudiante Lucas Romero encontrado - ID: ${bru.getEnvVar("current_student_id")}`);
         } else {
-          console.error("âŒ Error al obtener estudiante");
+          console.error("❌ Error al obtener estudiante");
         }
     - type: tests
       code: |-

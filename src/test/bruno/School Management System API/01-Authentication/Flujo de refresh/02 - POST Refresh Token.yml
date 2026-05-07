@@ -28,7 +28,7 @@ runtime:
         }
     - type: tests
       code: |-
-        test("Refresh exitoso y rotaciÃ³n", function() {
+        test("Refresh exitoso y rotación", function() {
             expect(res.status).to.equal(200);
             expect(res.getBody()).to.have.property("accessToken");
         });

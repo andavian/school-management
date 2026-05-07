@@ -62,7 +62,7 @@ runtime:
   scripts:
     - type: before-request
       code: |-
-        console.log("ðŸ“¦ JSON que se enviarÃ¡:");
+        console.log("📦 JSON que se enviará:");
         console.log(JSON.stringify(req.body, null, 2));
     - type: after-response
       code: |-
@@ -73,7 +73,7 @@ runtime:
         }
     - type: tests
       code: |-
-        test("CreaciÃ³n retorna 201 y datos completos", function() {
+        test("Creación retorna 201 y datos completos", function() {
             expect(res.status).to.equal(201);
             var body = res.getBody();
             expect(body).to.have.property("studentId");
@@ -82,10 +82,10 @@ runtime:
             expect(body.dni).to.equal("99887766");
         });
 
-        test("Ficha mÃ©dica creada automÃ¡ticamente", function() {
+        test("Ficha médica creada automáticamente", function() {
             var body = res.getBody();
-            // El spec devuelve healthRecord dentro del estudiante? SegÃºn los specs, StudentWebResponse no incluye healthRecord directamente, 
-            // pero sÃ­ hay un endpoint separado. Sin embargo, en la respuesta del POST, algunos backends devuelven el healthRecord.
+            // El spec devuelve healthRecord dentro del estudiante? Según los specs, StudentWebResponse no incluye healthRecord directamente, 
+            // pero sí hay un endpoint separado. Sin embargo, en la respuesta del POST, algunos backends devuelven el healthRecord.
             // Si tu backend lo incluye, descomenta:
             // expect(body).to.have.property("healthRecord");
             // Si no, este test puede omitirse o consultar el endpoint GET /api/admin/students/{id}/health

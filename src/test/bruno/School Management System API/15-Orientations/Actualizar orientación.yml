@@ -1,5 +1,5 @@
 info:
-  name: Actualizar orientaciÃ³n
+  name: Actualizar orientación
   type: http
   seq: 2
   tags:
@@ -12,7 +12,7 @@ http:
     - name: id
       value: ""
       type: path
-      description: ID de la orientaciÃ³n a actualizar
+      description: ID de la orientación a actualizar
   body:
     type: json
     data: |-
@@ -92,7 +92,7 @@ settings:
   followRedirects: true
   maxRedirects: 5
 
-docs: Actualiza los datos de una orientaciÃ³n existente.
+docs: Actualiza los datos de una orientación existente.
 
 
 

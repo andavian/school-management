@@ -12,11 +12,11 @@ http:
     - name: yearLevel
       value: "5"
       type: query
-      description: AÃ±o para filtrar (1-7)
+      description: Año para filtrar (1-7)
     - name: orientationId
       value: orientation-uuid
       type: query
-      description: ID de la orientaciÃ³n para filtrar
+      description: ID de la orientación para filtrar
     - name: activeOnly
       value: "true"
       type: query
@@ -90,8 +90,8 @@ settings:
 docs: |
   Devuelve las materias disponibles.
   Se puede filtrar por:
-  - AÃ±o escolar (`yearLevel`)
-  - OrientaciÃ³n tÃ©cnica (`orientationId`)
+  - Año escolar (`yearLevel`)
+  - Orientación técnica (`orientationId`)
   - Estado activo (`activeOnly`)
 
 

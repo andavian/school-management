@@ -12,12 +12,12 @@ http:
     - name: dni
       value: ""
       type: query
-      description: DNI exacto (8 dÃ­gitos)
+      description: DNI exacto (8 dígitos)
       disabled: true
     - name: lastName
       value: ""
       type: query
-      description: Apellido (bÃºsqueda parcial)
+      description: Apellido (búsqueda parcial)
       disabled: true
   auth: inherit
 
@@ -83,7 +83,7 @@ settings:
   followRedirects: true
   maxRedirects: 5
 
-docs: BÃºsqueda por DNI exacto o apellido parcial. Sin parÃ¡metros retorna todos los profesores activos.
+docs: Búsqueda por DNI exacto o apellido parcial. Sin parámetros retorna todos los profesores activos.
 
 
 

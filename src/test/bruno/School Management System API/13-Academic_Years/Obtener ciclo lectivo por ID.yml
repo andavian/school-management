@@ -79,7 +79,7 @@ settings:
   followRedirects: true
   maxRedirects: 5
 
-docs: Devuelve un ciclo lectivo especÃ­fico por su ID.
+docs: Devuelve un ciclo lectivo específico por su ID.
 
 
 

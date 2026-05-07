@@ -67,7 +67,7 @@ variables:
   - name: parent_dni
     value: "22334455"
   - name: parent_cuil
-    value: "27223344559"
+    value: "27223344556"
   - name: record_id
     value: ""
   - name: current_record_id
@@ -85,7 +85,7 @@ variables:
   - name: teacher_dni
     value: "66778899"
   - name: teacher_cuil
-    value: "20667788991"
+    value: "20667788995"
   - name: course_subject_id
     value: ""
   - name: student_course_subject_id

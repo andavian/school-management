@@ -12,7 +12,7 @@ http:
     - name: q
       value: salta
       type: query
-      description: Texto de bÃºsqueda
+      description: Texto de búsqueda
   auth: inherit
 
 runtime:

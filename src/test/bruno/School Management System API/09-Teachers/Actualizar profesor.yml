@@ -102,7 +102,7 @@ settings:
   followRedirects: true
   maxRedirects: 5
 
-docs: PATCH semÃ¡ntico â€” null conserva el valor existente. Soporta actualizaciÃ³n de datos personales, contacto y profesionales.
+docs: PATCH semántico "” null conserva el valor existente. Soporta actualización de datos personales, contacto y profesionales.
 
 
 

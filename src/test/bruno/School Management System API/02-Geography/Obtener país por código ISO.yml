@@ -1,5 +1,5 @@
 info:
-  name: Obtener paÃ­s por cÃ³digo ISO
+  name: Obtener país por código ISO
   type: http
   seq: 8
   tags:
@@ -12,7 +12,7 @@ http:
     - name: isoCode
       value: ARG
       type: path
-      description: CÃ³digo ISO del paÃ­s
+      description: Código ISO del país
   auth: inherit
 
 runtime:
@@ -77,7 +77,7 @@ settings:
   followRedirects: true
   maxRedirects: 5
 
-docs: Retorna la informaciÃ³n del paÃ­s correspondiente al cÃ³digo ISO proporcionado.
+docs: Retorna la información del país correspondiente al código ISO proporcionado.
 
 
 

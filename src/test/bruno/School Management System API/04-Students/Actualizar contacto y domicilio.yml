@@ -92,7 +92,7 @@ settings:
   followRedirects: true
   maxRedirects: 5
 
-docs: "Solo actualiza: nombre, telÃ©fono, email y domicilio. DNI, CUIL y datos de nacimiento son inmutables."
+docs: "Solo actualiza: nombre, teléfono, email y domicilio. DNI, CUIL y datos de nacimiento son inmutables."
 
 
 

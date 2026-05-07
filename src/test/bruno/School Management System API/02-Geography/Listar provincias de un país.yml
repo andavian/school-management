@@ -1,5 +1,5 @@
 info:
-  name: Listar provincias de un paÃ­s
+  name: Listar provincias de un país
   type: http
   seq: 9
   tags:
@@ -12,7 +12,7 @@ http:
     - name: countryId
       value: ""
       type: path
-      description: ID del paÃ­s
+      description: ID del país
 
 runtime:
   scripts:
@@ -77,4 +77,4 @@ settings:
   followRedirects: true
   maxRedirects: 5
 
-docs: Retorna todas las provincias pertenecientes al paÃ­s especificado.
+docs: Retorna todas las provincias pertenecientes al país especificado.

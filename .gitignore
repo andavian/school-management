@@ -42,3 +42,4 @@ build/
 bruno.json.lock
 environments/*-personal.bru     # entornos con tokens personales
 *.log
+.opencode/

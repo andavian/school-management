@@ -1,5 +1,5 @@
 info:
-  name: Obtener ficha mÃ©dica por ID de estudiante
+  name: Obtener ficha médica por ID de estudiante
   type: http
   seq: 1
   tags:

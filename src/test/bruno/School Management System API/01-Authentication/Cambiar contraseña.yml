@@ -1,5 +1,5 @@
 info:
-  name: Cambiar contraseÃ±a
+  name: Cambiar contraseña
   type: http
   seq: 1
   tags:
@@ -81,7 +81,7 @@ settings:
   followRedirects: true
   maxRedirects: 5
 
-docs: Permite al usuario autenticado cambiar su contraseÃ±a actual.
+docs: Permite al usuario autenticado cambiar su contraseña actual.
 
 
 

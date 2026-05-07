@@ -1,5 +1,5 @@
 info:
-  name: Calcular nota de perÃ­odo
+  name: Calcular nota de período
   type: http
   seq: 1
   tags:

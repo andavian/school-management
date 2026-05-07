@@ -1,5 +1,5 @@
 info:
-  name: Obtener materias de un alumno por inscripciÃ³n
+  name: Obtener materias de un alumno por inscripción
   type: http
   seq: 5
   tags:

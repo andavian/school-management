@@ -85,7 +85,7 @@ settings:
   followRedirects: true
   maxRedirects: 5
 
-docs: Renueva un token JWT expirado usando un refresh token vÃ¡lido.
+docs: Renueva un token JWT expirado usando un refresh token válido.
 
 
 

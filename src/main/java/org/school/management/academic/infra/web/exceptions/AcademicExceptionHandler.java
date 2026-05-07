@@ -7,6 +7,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.core.Ordered;
+import org.springframework.core.annotation.Order;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
 
@@ -64,7 +66,8 @@ record ValidationErrorResponse(
 // GLOBAL EXCEPTION HANDLER
 // ============================================================================
 
-@RestControllerAdvice(basePackages = "org.school.management.academic.infrastructure.web.controller")
+@RestControllerAdvice(basePackages = "org.school.management.academic.infra.web.controllers")
+@Order(Ordered.HIGHEST_PRECEDENCE)
 @Slf4j
 public class AcademicExceptionHandler {
 
@@ -228,25 +231,5 @@ public class AcademicExceptionHandler {
         );
 
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
-    }
-
-    // ========================================================================
-    // GENERIC EXCEPTION (500)
-    // ========================================================================
-
-    @ExceptionHandler(Exception.class)
-    public ResponseEntity<ErrorResponse> handleGenericException(
-            Exception ex,
-            WebRequest request) {
-
-        log.error("Unexpected error occurred", ex);
-
-        ErrorResponse error = ErrorResponse.of(
-                HttpStatus.INTERNAL_SERVER_ERROR,
-                "An unexpected error occurred. Please contact support.",
-                request.getDescription(false).replace("uri=", "")
-        );
-
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
     }
 }

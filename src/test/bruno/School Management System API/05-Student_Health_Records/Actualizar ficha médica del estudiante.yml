@@ -1,5 +1,5 @@
 info:
-  name: Actualizar ficha mÃ©dica del estudiante
+  name: Actualizar ficha médica del estudiante
   type: http
   seq: 2
   tags:

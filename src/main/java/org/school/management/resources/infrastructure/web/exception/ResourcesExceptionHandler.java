@@ -7,6 +7,8 @@ import org.school.management.resources.domain.exception.*;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.core.Ordered;
+import org.springframework.core.annotation.Order;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import java.net.URI;
@@ -16,6 +18,7 @@ import java.time.Instant;
  * Manejador de excepciones específico para el bounded context resources.
  */
 @RestControllerAdvice(basePackages = "org.school.management.resources.infrastructure.web.controller")
+@Order(Ordered.HIGHEST_PRECEDENCE)
 @Slf4j
 public class ResourcesExceptionHandler {
 

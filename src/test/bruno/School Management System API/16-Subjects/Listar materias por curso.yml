@@ -80,8 +80,8 @@ settings:
   maxRedirects: 5
 
 docs: |
-  Devuelve las materias correspondientes a un curso especÃ­fico (grade level),
-  combinando las materias comunes con las especÃ­ficas de la orientaciÃ³n.
+  Devuelve las materias correspondientes a un curso específico (grade level),
+  combinando las materias comunes con las específicas de la orientación.
 
 
 

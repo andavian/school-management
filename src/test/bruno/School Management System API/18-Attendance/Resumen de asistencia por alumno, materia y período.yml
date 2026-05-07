@@ -1,5 +1,5 @@
 info:
-  name: Resumen de asistencia por alumno, materia y perÃ­odo
+  name: Resumen de asistencia por alumno, materia y período
   type: http
   seq: 6
   tags:

@@ -1,5 +1,5 @@
 info:
-  name: Listar paÃ­ses
+  name: Listar países
   type: http
   seq: 7
   tags:
@@ -72,7 +72,7 @@ settings:
   followRedirects: true
   maxRedirects: 5
 
-docs: Retorna todos los paÃ­ses registrados en el sistema.
+docs: Retorna todos los países registrados en el sistema.
 
 
 
