@@ -67,9 +67,34 @@ mvn spring-boot:run -Dspring-boot.run.profiles=local  # run + Mailhog (docker ru
 
 ## Test conventions
 
-- `@ExtendWith(MockitoExtension.class)` + `@Tag("unit")` for unit tests.
-- Models with `final` fields and `@Builder` (like `Parent`) → build real instances with builder, never `mock()`.
-- Valid CUILs for tests: compute with weights `[5,4,3,2,7,6,5,4,3,2]`.
+### Structure
+- `@ExtendWith(MockitoExtension.class)` + `@Tag("unit")` for unit tests. Use `@Mock` + `@InjectMocks`.
+- AAA pattern with `// given // when // then` comments. AssertJ assertions (`assertThat(...).isEqualTo(...)`).
+- One scenario per method: `execute_whenX_thenY`. File: `{UseCaseName}Test.java` in `application/usecases/`.
+
+### Mocking rules
+- Never mock simple value objects (Dni, Cuil, FullName, Email, UUID-based IDs) — use `of()`/`from()` factories.
+- Never mock enums (RoleName, Gender, FinalGradeStatus). Use real values.
+- `Role` → `Role.reconstruct(RoleId.generate(), RoleName.of("ROLE"), ...)`. Never `mock(Role.class)`.
+- Models with `@Builder` (Parent, StudentRecord, etc.) → build via builder, never `mock()`.
+- Only `mock()` complex models when the use case calls their methods.
+- `TokenHashUtil` is static — cannot mock; use `anyString()` matchers in verify.
+- `SecurityContextHelper.extractUserId(any())` and `SecurityContextHelper.extractRoles(any())` can be mocked via `mockStatic`.
+
+### Strict stubbing (Mockito strict mode)
+- When repo returns `Optional.empty()` or empty list → remove stubs for mappers that won't be called.
+- If a code path uses a mapper only conditionally, stub only for the path being tested.
+- `UnnecessaryStubbingException` means a stub is declared but never consumed — remove it.
+
+### Running subsets
+```bash
+mvn test -Dgroups="unit" -Dtest="org.school.management.{bc}.**.*Test"  # one BC
+mvn test -Dgroups="unit" -Dtest="org.school.management.{bc}.application.usecases.*Test,org.school.management.{bc2}.application.usecases.*Test"  # multiple
+```
+
+### Known pre-existing failures (3 tests, not caused by recent changes)
+- `CreateTeacherUseCaseTest`: 2 errors — `TokenHasher` not mocked (null pointer).
+- `CorrectAttendanceUseCaseTest.correctCourse_whenPresentToAbsent_thenRecalculatesSummary`: 1 failure.
 
 ## Bruno API Testing (endpoint tests)
 
